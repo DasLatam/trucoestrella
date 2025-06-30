@@ -4,38 +4,74 @@
   <meta charset="UTF-8">
   <title>TrucoEstrella</title>
   <style>
-    body { font-family: sans-serif; background-color: #004d40; color: white; text-align: center; }
-    h1, h2 { color: #b2dfdb; }
-    .mesa { background-color: #00695c; border: 2px solid #00796b; border-radius: 10px; padding: 20px; margin: 20px auto; min-height: 150px; display: flex; justify-content: center; align-items: center; gap: 20px; }
-    .mano-jugador { margin-top: 20px; min-height: 140px; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #004d40; color: white; text-align: center; }
+    h1, h2 { color: #b2dfdb; text-shadow: 1px 1px 2px black; }
+    .mesa {
+      background-color: #00695c; border: 2px solid #00796b; border-radius: 10px;
+      padding: 10px; margin: 10px auto; display: flex; flex-direction: column;
+      gap: 15px; width: 350px;
+    }
+    .fila-jugador { display: flex; justify-content: space-around; gap: 10px; }
+    .slot-carta {
+      width: 85px; height: 125px; border: 2px dashed rgba(255,255,255,0.2);
+      border-radius: 8px; position: relative;
+    }
     .carta {
       background-color: white; color: black; border: 2px solid black; border-radius: 8px;
-      width: 80px; height: 120px; display: inline-flex; flex-direction: column;
+      width: 100%; height: 100%; display: flex; flex-direction: column;
       justify-content: space-between; padding: 5px; font-size: 20px; font-weight: bold;
-      cursor: pointer; transition: all 0.2s; box-shadow: 3px 3px 5px rgba(0,0,0,0.3);
+      box-sizing: border-box; transition: all 0.3s ease;
+      box-shadow: 3px 3px 5px rgba(0,0,0,0.3); position: absolute; top: 0; left: 0;
     }
-    .carta:not([disabled]):hover { transform: translateY(-10px) scale(1.05); border-color: #ffab00; }
-    .carta[disabled] { cursor: not-allowed; opacity: 0.7; }
-    .carta.palo-oros, .carta.palo-bastos { color: #b71c1c; }
-    #info-juego { font-size: 1.2em; min-height: 30px; margin: 15px 0; color: #ffcc80; }
-    #btn-nuevo-juego {
+    .mano-jugador .carta { position: static; /* Las cartas en la mano no son absolutas */ }
+    .mano-jugador .carta:not([disabled]) { cursor: pointer; }
+    .mano-jugador .carta:not([disabled]):hover { transform: translateY(-10px) scale(1.05); border-color: #ffab00; }
+    .carta[disabled] { cursor: not-allowed; opacity: 0.8; }
+    .carta.palo-oros, .carta.palo-bastos { color: #d32f2f; }
+    #info-juego { font-size: 1.2em; min-height: 40px; margin: 15px 0; color: #ffcc80; font-weight: bold; }
+    #controles-juego button {
       padding: 10px 20px; font-size: 1em; cursor: pointer; border-radius: 5px;
       border: none; background-color: #ffab00; color: black; font-weight: bold;
-      margin-top: 20px; display: none; /* Oculto por defecto */
+      margin: 5px; display: none; /* Ocultos por defecto */
+    }
+    /* NUEVO: Estilos para la carta ganadora y perdedora */
+    .carta-perdedora { z-index: 1; }
+    .carta-ganadora {
+        z-index: 2;
+        transform: scale(1.05);
+        border: 3px solid #ffeb3b;
+        box-shadow: 0 0 15px #ffeb3b;
     }
   </style>
 </head>
 <body>
   <h1>TrucoEstrella</h1>
   <div id="info-juego"></div>
-  <h2>Mesa</h2>
-  <div class="mesa" id="mesa"></div>
+
+  <div class="mesa" id="mesa">
+    <div class="fila-jugador" id="fila-cpu">
+      <div class="slot-carta" id="slot-cpu-1"></div>
+      <div class="slot-carta" id="slot-cpu-2"></div>
+      <div class="slot-carta" id="slot-cpu-3"></div>
+    </div>
+    <div class="fila-jugador" id="fila-humano">
+      <div class="slot-carta" id="slot-humano-1"></div>
+      <div class="slot-carta" id="slot-humano-2"></div>
+      <div class="slot-carta" id="slot-humano-3"></div>
+    </div>
+  </div>
+
   <h2>Tu Mano</h2>
-  <div class="mano-jugador" id="mano-humano"></div>
-  <button id="btn-nuevo-juego" onclick="iniciarJuego()">Jugar de Nuevo</button>
+  <div class="mano-jugador fila-jugador" id="mano-humano"></div>
+
+  <div id="controles-juego">
+      <button id="btn-envido" onclick="cantarEnvido()">Cantar Envido</button>
+      <button id="btn-nuevo-juego" onclick="iniciarJuego()">Jugar de Nuevo</button>
+  </div>
 
   <script>
-    // --- Definiciones Fundamentales (sin cambios) ---
+    // --- Definiciones del Juego (sin cambios) ---
+    // ... (El bloque de constantes y funciones básicas como crearBarajaTruco, barajar, etc., no cambia)
     const PALOS = ['oros', 'copas', 'espadas', 'bastos'];
     const NUMEROS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
     const JERARQUIA_TRUCO = {
@@ -58,35 +94,52 @@
     }
     function barajar(b) { for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[b[i], b[j]] = [b[j], b[i]]; } }
     function compararCartas(c1, c2) { if (c1.rankingTruco < c2.rankingTruco) return 'humano'; if (c2.rankingTruco < c1.rankingTruco) return 'cpu'; return 'empate'; }
+    function calcularEnvido(mano) {
+      const palos = {};
+      for (const carta of mano) { if (!palos[carta.palo]) { palos[carta.palo] = []; } palos[carta.palo].push(carta.valorEnvido); }
+      let mejorPuntaje = 0;
+      for (const palo in palos) {
+        const cartasDelPalo = palos[palo];
+        if (cartasDelPalo.length >= 2) {
+          cartasDelPalo.sort((a, b) => b - a); 
+          const puntaje = 20 + cartasDelPalo[0] + cartasDelPalo[1];
+          if (puntaje > mejorPuntaje) { mejorPuntaje = puntaje; }
+        }
+      }
+      if (mejorPuntaje === 0) { const valores = mano.map(carta => carta.valorEnvido); mejorPuntaje = Math.max(...valores); }
+      return mejorPuntaje;
+    }
 
-    // --- NUEVO: ESTADO DEL JUEGO (La memoria del juego) ---
-    let jugadorHumano = { nombre: 'Jugador', mano: [] };
-    let jugadorCPU = { nombre: 'Computadora', mano: [] };
-    let manoActual;
-    let manosGanadas;
-    let resultadosManos;
-    let turnoDelHumano;
+
+    // --- Estado del Juego ---
+    let jugadorHumano, jugadorCPU, manoActual, manosGanadas, resultadosManos, turnoDelHumano, envidoYaCantado;
 
     // --- Elementos del DOM ---
     const divManoHumano = document.getElementById('mano-humano');
-    const divMesa = document.getElementById('mesa');
     const divInfoJuego = document.getElementById('info-juego');
     const btnNuevoJuego = document.getElementById('btn-nuevo-juego');
+    const btnEnvido = document.getElementById('btn-envido');
 
     function iniciarJuego() {
-      // 1. (Re)iniciar el estado del juego
+      // (Re)iniciar estado
+      jugadorHumano = { nombre: 'Jugador', mano: [] };
+      jugadorCPU = { nombre: 'Computadora', mano: [] };
       manoActual = 1;
       manosGanadas = { humano: 0, cpu: 0 };
       resultadosManos = [];
       turnoDelHumano = true;
+      envidoYaCantado = false;
+      
+      // (Re)iniciar UI
       btnNuevoJuego.style.display = 'none';
-      divMesa.innerHTML = '';
+      btnEnvido.style.display = 'inline-block';
+      for(let i=1; i<=3; i++) {
+          document.getElementById(`slot-humano-${i}`).innerHTML = '';
+          document.getElementById(`slot-cpu-${i}`).innerHTML = '';
+      }
       
       const baraja = crearBarajaTruco();
       barajar(baraja);
-
-      jugadorHumano.mano = [];
-      jugadorCPU.mano = [];
       for (let i = 0; i < 3; i++) {
         jugadorHumano.mano.push(baraja.pop());
         jugadorCPU.mano.push(baraja.pop());
@@ -99,58 +152,58 @@
     function dibujarMano() {
       divManoHumano.innerHTML = '';
       jugadorHumano.mano.forEach(carta => {
-        const cartaHTML = document.createElement('button');
-        cartaHTML.className = `carta palo-${carta.palo}`;
-        cartaHTML.innerHTML = `<span>${carta.numero}</span><span>${carta.palo.slice(0,1).toUpperCase()}</span>`;
+        const cartaHTML = crearElementoCarta(carta);
         cartaHTML.disabled = !turnoDelHumano;
         cartaHTML.onclick = () => jugarCarta(carta);
         divManoHumano.appendChild(cartaHTML);
       });
     }
-    
+
     function jugarCarta(cartaHumano) {
-      if (!turnoDelHumano) return; // No hacer nada si no es su turno
+      if (!turnoDelHumano) return;
       turnoDelHumano = false;
-      
-      // Quitar la carta de la mano y dibujarla en la mesa
+      btnEnvido.style.display = 'none'; // Ya no se puede cantar envido
+
       jugadorHumano.mano = jugadorHumano.mano.filter(c => c.id !== cartaHumano.id);
       dibujarMano();
       
-      // CPU juega su carta (estrategia simple: la primera que tenga)
       const cartaCPU = jugadorCPU.mano.shift();
       
-      // Dibujar ambas cartas en la mesa
-      divMesa.innerHTML = ''; // Limpiar mesa anterior
-      dibujarCartaEnMesa(cartaHumano, 'humano');
-      dibujarCartaEnMesa(cartaCPU, 'cpu');
-      
-      // Evaluar la mano después de una pausa para que se vea la jugada
+      const slotHumano = document.getElementById(`slot-humano-${manoActual}`);
+      const slotCPU = document.getElementById(`slot-cpu-${manoActual}`);
+
+      const cartaHumanoEl = crearElementoCarta(cartaHumano);
+      const cartaCPU_El = crearElementoCarta(cartaCPU);
+
+      slotHumano.appendChild(cartaHumanoEl);
+      slotCPU.appendChild(cartaCPU_El);
+
       actualizarInfo(`La CPU está pensando...`);
-      setTimeout(() => evaluarMano(cartaHumano, cartaCPU), 1500);
+      setTimeout(() => evaluarMano(cartaHumano, cartaCPU, cartaHumanoEl, cartaCPU_El), 1000);
     }
     
-    function evaluarMano(cartaHumano, cartaCPU) {
-      const ganadorMano = compararCartas(cartaHumano, cartaCPU);
+    function evaluarMano(cartaH, cartaC, elH, elC) {
+      const ganadorMano = compararCartas(cartaH, cartaC);
       resultadosManos.push(ganadorMano);
       
-      if (ganadorMano !== 'empate') {
-        manosGanadas[ganadorMano]++;
+      if (ganadorMano === 'humano') {
+        manosGanadas.humano++;
+        elH.classList.add('carta-ganadora');
+        elC.classList.add('carta-perdedora');
+      } else if (ganadorMano === 'cpu') {
+        manosGanadas.cpu++;
+        elC.classList.add('carta-ganadora');
+        elH.classList.add('carta-perdedora');
       }
       
-      let mensaje = `Jugaste ${cartaHumano.nombre}. CPU jugó ${cartaCPU.nombre}.<br>`;
-      if (ganadorMano === 'humano') mensaje += "¡Ganaste esta mano!";
-      else if (ganadorMano === 'cpu') mensaje += "La CPU gana esta mano.";
-      else mensaje += "¡Mano parda!";
+      let mensaje = (ganadorMano === 'humano') ? "¡Ganaste esta mano!" : (ganadorMano === 'cpu') ? "La CPU gana esta mano." : "¡Mano parda!";
       actualizarInfo(mensaje);
-      
-      // Después de una pausa, revisar si la ronda terminó o preparar la siguiente
       setTimeout(revisarFinDeRonda, 2000);
     }
-    
+
     function revisarFinDeRonda() {
-      // Condiciones para que termine la ronda
       const ganadorPorDosManos = manosGanadas.humano === 2 || manosGanadas.cpu === 2;
-      const ganadorPorParda = resultadosManos[0] === 'empate' && resultadosManos[1] !== 'empate';
+      const ganadorPorParda = resultadosManos.length > 1 && resultadosManos[0] === 'empate' && resultadosManos[1] !== 'empate';
 
       if (ganadorPorDosManos || ganadorPorParda || manoActual === 3) {
         finalizarRonda();
@@ -162,41 +215,54 @@
     function prepararSiguienteMano() {
       manoActual++;
       turnoDelHumano = true;
-      divMesa.innerHTML = '';
       actualizarInfo(`Mano ${manoActual}. Es tu turno.`);
       dibujarMano();
     }
 
     function finalizarRonda() {
       let ganadorFinal = '';
-      if (manosGanadas.humano > manosGanadas.cpu) {
-        ganadorFinal = jugadorHumano.nombre;
-      } else if (manosGanadas.cpu > manosGanadas.humano) {
-        ganadorFinal = jugadorCPU.nombre;
-      } else { // Empate en manos ganadas, define la primera mano o el "mano"
-        if (resultadosManos[0] === 'humano') ganadorFinal = jugadorHumano.nombre;
-        else if (resultadosManos[0] === 'cpu') ganadorFinal = jugadorCPU.nombre;
-        else ganadorFinal = jugadorHumano.nombre; // Si la primera es parda, gana el mano
-      }
+      if (manosGanadas.humano > manosGanadas.cpu) ganadorFinal = jugadorHumano.nombre;
+      else if (manosGanadas.cpu > manosGanadas.humano) ganadorFinal = jugadorCPU.nombre;
+      else ganadorFinal = (resultadosManos[0] === 'humano') ? jugadorHumano.nombre : (resultadosManos[0] === 'cpu') ? jugadorCPU.nombre : jugadorHumano.nombre;
       
       actualizarInfo(`🏆 ¡Gana la ronda ${ganadorFinal}! 🏆`);
       btnNuevoJuego.style.display = 'inline-block';
+      btnEnvido.style.display = 'none';
       turnoDelHumano = false;
-      dibujarMano(); // Redibujar para deshabilitar las cartas
-    }
-
-    function dibujarCartaEnMesa(carta, jugador) {
-      const cartaHTML = document.createElement('div');
-      cartaHTML.className = `carta palo-${carta.palo}`;
-      cartaHTML.innerHTML = `<span>${carta.numero}</span><span>${carta.palo.slice(0,1).toUpperCase()}</span>`;
-      divMesa.appendChild(cartaHTML);
+      dibujarMano();
     }
     
-    function actualizarInfo(mensaje) {
-      divInfoJuego.innerHTML = mensaje;
+    // --- NUEVAS FUNCIONES ---
+    function cantarEnvido() {
+        if(envidoYaCantado || manoActual > 1) return;
+        envidoYaCantado = true;
+        btnEnvido.style.display = 'none';
+
+        const puntosHumano = calcularEnvido(jugadorHumano.mano);
+        const puntosCPU = calcularEnvido(jugadorCPU.mano);
+
+        let mensaje = `Cantaste Envido. Tienes ${puntosHumano}. La CPU tiene ${puntosCPU}.<br>`;
+        if (puntosHumano > puntosCPU) {
+            mensaje += "¡Ganaste los puntos del envido!";
+        } else if (puntosCPU > puntosHumano) {
+            mensaje += "La CPU gana los puntos del envido.";
+        } else {
+            mensaje += "¡Empate! Gana el mano (tú).";
+        }
+        
+        actualizarInfo(mensaje);
+        // El juego no se detiene, solo muestra la info y permite seguir jugando la mano.
     }
 
-    // --- Iniciar el Juego ---
+    function crearElementoCarta(carta) {
+        const el = document.createElement('div');
+        el.className = `carta palo-${carta.palo}`;
+        el.innerHTML = `<span>${carta.numero}</span><span>${carta.palo.slice(0,1).toUpperCase()}</span>`;
+        return el;
+    }
+
+    function actualizarInfo(mensaje) { divInfoJuego.innerHTML = mensaje; }
+
     iniciarJuego();
   </script>
 </body>
