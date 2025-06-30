@@ -10,20 +10,10 @@
 
   <script>
     // --- Definiciones Fundamentales del Juego de Truco ---
-
-    // Los 4 palos de la baraja española.
     const PALOS = ['oros', 'copas', 'espadas', 'bastos'];
-
-    // Los números de las cartas usadas en el truco.
     const NUMEROS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
-
-    // Objeto que define la jerarquía de las cartas para el TRUCO.
-    // Un número más bajo significa que la carta es MÁS poderosa.
     const JERARQUIA_TRUCO = {
-      '1-espadas': 1,
-      '1-bastos': 2,
-      '7-espadas': 3,
-      '7-oros': 4,
+      '1-espadas': 1, '1-bastos': 2, '7-espadas': 3, '7-oros': 4,
       '3-espadas': 5, '3-oros': 5, '3-copas': 5, '3-bastos': 5,
       '2-espadas': 6, '2-oros': 6, '2-copas': 6, '2-bastos': 6,
       '1-oros': 7, '1-copas': 7,
@@ -36,9 +26,6 @@
       '4-espadas': 14, '4-oros': 14, '4-copas': 14, '4-bastos': 14,
     };
 
-    /**
-     * Crea una baraja completa de Truco Argentino (40 cartas).
-     */
     function crearBarajaTruco() {
       const baraja = [];
       for (const palo of PALOS) {
@@ -55,23 +42,84 @@
       return baraja;
     }
 
-    /**
-     * Mezcla un array de cartas de forma aleatoria.
-     */
     function barajar(baraja) {
       for (let i = baraja.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [baraja[i], baraja[j]] = [baraja[j], baraja[i]];
       }
     }
+    
+    // --- NUEVA LÓGICA DEL JUEGO ---
 
-    // --- Ejemplo de Uso ---
+    /**
+     * NUEVO: Calcula los puntos de envido para una mano de 3 cartas.
+     * @param {Array<Object>} mano - Un array con 3 objetos de carta.
+     * @returns {number} El puntaje del envido.
+     */
+    function calcularEnvido(mano) {
+      // Agrupamos las cartas por palo.
+      const palos = {};
+      for (const carta of mano) {
+        if (!palos[carta.palo]) {
+          palos[carta.palo] = [];
+        }
+        palos[carta.palo].push(carta.valorEnvido);
+      }
+
+      let mejorPuntaje = 0;
+      
+      // Caso 1: Hay cartas del mismo palo (posible envido o flor).
+      for (const palo in palos) {
+        const cartasDelPalo = palos[palo];
+        // Si hay 2 o 3 cartas del mismo palo...
+        if (cartasDelPalo.length >= 2) {
+          // Ordenamos para quedarnos con las 2 más altas.
+          cartasDelPalo.sort((a, b) => b - a); 
+          const puntaje = 20 + cartasDelPalo[0] + cartasDelPalo[1];
+          if (puntaje > mejorPuntaje) {
+            mejorPuntaje = puntaje;
+          }
+        }
+      }
+
+      // Caso 2: Si no hubo envido (mejorPuntaje sigue en 0), es la carta más alta.
+      if (mejorPuntaje === 0) {
+        const valores = mano.map(carta => carta.valorEnvido);
+        mejorPuntaje = Math.max(...valores);
+      }
+
+      return mejorPuntaje;
+    }
+
+    // --- NUEVO: Simulación de una ronda ---
+
     console.log("--- Cargando TrucoEstrella ---");
+
+    // 1. Creamos y barajamos el mazo.
     const miBaraja = crearBarajaTruco();
     barajar(miBaraja);
-    const manoJugador1 = miBaraja.slice(0, 3);
-    console.log("Mano repartida para el Jugador 1:", manoJugador1);
+    
+    // 2. Creamos los jugadores.
+    const jugador1 = { nombre: 'Jugador 1', mano: [] };
+    const jugador2 = { nombre: 'Jugador 2', mano: [] };
 
+    // 3. Repartimos 3 cartas a cada uno.
+    for (let i = 0; i < 3; i++) {
+        jugador1.mano.push(miBaraja.pop()); // .pop() saca la última carta del mazo
+        jugador2.mano.push(miBaraja.pop());
+    }
+
+    console.log("\n--- MANOS REPARTIDAS ---");
+    console.log(`${jugador1.nombre}:`, jugador1.mano);
+    console.log(`${jugador2.nombre}:`, jugador2.mano);
+    
+    // 4. Calculamos y mostramos el envido de cada jugador.
+    const envidoJ1 = calcularEnvido(jugador1.mano);
+    const envidoJ2 = calcularEnvido(jugador2.mano);
+
+    console.log("\n--- CÁLCULO DE ENVIDO ---");
+    console.log(`El puntaje de envido del ${jugador1.nombre} es: ${envidoJ1}`);
+    console.log(`El puntaje de envido del ${jugador2.nombre} es: ${envidoJ2}`);
   </script>
 </body>
 </html>

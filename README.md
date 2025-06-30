@@ -1,1 +1,1 @@
-# trucoestrella
+# TrucoEstrella, es mi prototipo del Juego de cartas de Argentina llamado Truco
