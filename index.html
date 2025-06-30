@@ -3,13 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <title>TrucoEstrella</title>
+  <style>
+    body { font-family: sans-serif; background-color: #004d40; color: white; text-align: center; }
+    .mesa { background-color: #00695c; border-radius: 10px; padding: 20px; margin: 20px auto; min-height: 150px; display: flex; justify-content: center; align-items: center; gap: 20px; }
+    .mano-jugador { margin-top: 30px; }
+    .carta {
+      background-color: white;
+      color: black;
+      border: 2px solid black;
+      border-radius: 8px;
+      width: 80px;
+      height: 120px;
+      display: inline-flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 5px;
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .carta:hover { transform: scale(1.1); border-color: #ffab00; }
+    .carta.palo-oros, .carta.palo-bastos { color: #b71c1c; }
+    .carta.palo-espadas, .carta.palo-copas { color: black; }
+    #info-juego { font-size: 1.2em; min-height: 30px; }
+  </style>
 </head>
 <body>
-  <h1>Bienvenido a TrucoEstrella</h1>
-  <p>El juego se está ejecutando. Abre la consola de desarrollador (F12) para ver la magia.</p>
+  <h1>TrucoEstrella</h1>
+  
+  <div id="info-juego">¡Bienvenido!</div>
+
+  <h2>Mesa</h2>
+  <div class="mesa" id="mesa"></div>
+  
+  <h2>Tu Mano</h2>
+  <div class="mano-jugador" id="mano-humano"></div>
 
   <script>
-    // --- Definiciones Fundamentales del Juego de Truco ---
+    // --- Definiciones Fundamentales (sin cambios) ---
     const PALOS = ['oros', 'copas', 'espadas', 'bastos'];
     const NUMEROS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
     const JERARQUIA_TRUCO = {
@@ -30,96 +62,92 @@
       const baraja = [];
       for (const palo of PALOS) {
         for (const numero of NUMEROS) {
-          const carta = {
-            numero: numero,
-            palo: palo,
+          baraja.push({
+            numero: numero, palo: palo,
             valorEnvido: (numero >= 10) ? 0 : numero,
-            rankingTruco: JERARQUIA_TRUCO[`${numero}-${palo}`]
-          };
-          baraja.push(carta);
+            rankingTruco: JERARQUIA_TRUCO[`${numero}-${palo}`],
+            nombre: `${numero} de ${palo}`,
+            id: `${numero}-${palo}`
+          });
         }
       }
       return baraja;
     }
+    function barajar(baraja) { for (let i = baraja.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[baraja[i], baraja[j]] = [baraja[j], baraja[i]]; } }
+    function compararCartas(carta1, carta2) { if (carta1.rankingTruco < carta2.rankingTruco) return 'humano'; if (carta2.rankingTruco < carta1.rankingTruco) return 'cpu'; return 'empate'; }
 
-    function barajar(baraja) {
-      for (let i = baraja.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [baraja[i], baraja[j]] = [baraja[j], baraja[i]];
-      }
-    }
-    
-    // --- NUEVA LÓGICA DEL JUEGO ---
+    // --- NUEVO: Lógica del Juego Interactivo ---
+    let jugadorHumano = { nombre: 'Jugador', mano: [] };
+    let jugadorCPU = { nombre: 'Computadora', mano: [] };
 
-    /**
-     * NUEVO: Calcula los puntos de envido para una mano de 3 cartas.
-     * @param {Array<Object>} mano - Un array con 3 objetos de carta.
-     * @returns {number} El puntaje del envido.
-     */
-    function calcularEnvido(mano) {
-      // Agrupamos las cartas por palo.
-      const palos = {};
-      for (const carta of mano) {
-        if (!palos[carta.palo]) {
-          palos[carta.palo] = [];
-        }
-        palos[carta.palo].push(carta.valorEnvido);
-      }
+    // Obtenemos los elementos del HTML para manipularlos
+    const divManoHumano = document.getElementById('mano-humano');
+    const divMesa = document.getElementById('mesa');
+    const divInfoJuego = document.getElementById('info-juego');
 
-      let mejorPuntaje = 0;
+    function iniciarJuego() {
+      const baraja = crearBarajaTruco();
+      barajar(baraja);
+
+      jugadorHumano.mano = [];
+      jugadorCPU.mano = [];
       
-      // Caso 1: Hay cartas del mismo palo (posible envido o flor).
-      for (const palo in palos) {
-        const cartasDelPalo = palos[palo];
-        // Si hay 2 o 3 cartas del mismo palo...
-        if (cartasDelPalo.length >= 2) {
-          // Ordenamos para quedarnos con las 2 más altas.
-          cartasDelPalo.sort((a, b) => b - a); 
-          const puntaje = 20 + cartasDelPalo[0] + cartasDelPalo[1];
-          if (puntaje > mejorPuntaje) {
-            mejorPuntaje = puntaje;
-          }
-        }
+      for (let i = 0; i < 3; i++) {
+        jugadorHumano.mano.push(baraja.pop());
+        jugadorCPU.mano.push(baraja.pop());
       }
-
-      // Caso 2: Si no hubo envido (mejorPuntaje sigue en 0), es la carta más alta.
-      if (mejorPuntaje === 0) {
-        const valores = mano.map(carta => carta.valorEnvido);
-        mejorPuntaje = Math.max(...valores);
-      }
-
-      return mejorPuntaje;
+      
+      divInfoJuego.textContent = "Tu turno. Elige una carta para jugar.";
+      dibujarMano();
     }
 
-    // --- NUEVO: Simulación de una ronda ---
-
-    console.log("--- Cargando TrucoEstrella ---");
-
-    // 1. Creamos y barajamos el mazo.
-    const miBaraja = crearBarajaTruco();
-    barajar(miBaraja);
+    function dibujarMano() {
+      divManoHumano.innerHTML = ''; // Limpiamos la mano anterior
+      jugadorHumano.mano.forEach(carta => {
+        const cartaHTML = document.createElement('button');
+        cartaHTML.className = `carta palo-${carta.palo}`;
+        cartaHTML.innerHTML = `<span>${carta.numero}</span><span>${carta.palo.slice(0,1).toUpperCase()}</span>`;
+        
+        // El evento clave: qué hacer cuando se hace clic en una carta
+        cartaHTML.onclick = () => jugarCarta(carta);
+        
+        divManoHumano.appendChild(cartaHTML);
+      });
+    }
     
-    // 2. Creamos los jugadores.
-    const jugador1 = { nombre: 'Jugador 1', mano: [] };
-    const jugador2 = { nombre: 'Jugador 2', mano: [] };
+    function jugarCarta(cartaJugada) {
+      // 1. Mover la carta del jugador a la mesa
+      const cartaHumanoHTML = document.createElement('div');
+      cartaHumanoHTML.className = `carta palo-${cartaJugada.palo}`;
+      cartaHumanoHTML.innerHTML = `<span>${cartaJugada.numero}</span><span>${cartaJugada.palo.slice(0,1).toUpperCase()}</span>`;
+      divMesa.appendChild(cartaHumanoHTML);
 
-    // 3. Repartimos 3 cartas a cada uno.
-    for (let i = 0; i < 3; i++) {
-        jugador1.mano.push(miBaraja.pop()); // .pop() saca la última carta del mazo
-        jugador2.mano.push(miBaraja.pop());
+      // 2. Quitar la carta de la mano del jugador y volver a dibujar la mano
+      jugadorHumano.mano = jugadorHumano.mano.filter(c => c.id !== cartaJugada.id);
+      dibujarMano();
+      
+      // 3. Lógica simple de la CPU: juega su primera carta
+      const cartaCPU = jugadorCPU.mano.shift();
+      const cartaCPU_HTML = document.createElement('div');
+      cartaCPU_HTML.className = `carta palo-${cartaCPU.palo}`;
+      cartaCPU_HTML.innerHTML = `<span>${cartaCPU.numero}</span><span>${cartaCPU.palo.slice(0,1).toUpperCase()}</span>`;
+      divMesa.appendChild(cartaCPU_HTML);
+
+      // 4. Comparar y mostrar resultado
+      const ganador = compararCartas(cartaJugada, cartaCPU);
+      let mensaje = `Jugaste ${cartaJugada.nombre}. La CPU jugó ${cartaCPU.nombre}. `;
+      if (ganador === 'humano') mensaje += "¡Ganaste la mano!";
+      else if (ganador === 'cpu') mensaje += "La CPU gana la mano.";
+      else mensaje += "¡Es parda!";
+      
+      divInfoJuego.textContent = mensaje;
+      
+      // Por ahora, la lógica se detiene aquí. En el futuro, continuaría la ronda.
     }
 
-    console.log("\n--- MANOS REPARTIDAS ---");
-    console.log(`${jugador1.nombre}:`, jugador1.mano);
-    console.log(`${jugador2.nombre}:`, jugador2.mano);
-    
-    // 4. Calculamos y mostramos el envido de cada jugador.
-    const envidoJ1 = calcularEnvido(jugador1.mano);
-    const envidoJ2 = calcularEnvido(jugador2.mano);
+    // Iniciar el juego cuando carga la página
+    iniciarJuego();
 
-    console.log("\n--- CÁLCULO DE ENVIDO ---");
-    console.log(`El puntaje de envido del ${jugador1.nombre} es: ${envidoJ1}`);
-    console.log(`El puntaje de envido del ${jugador2.nombre} es: ${envidoJ2}`);
   </script>
 </body>
 </html>
