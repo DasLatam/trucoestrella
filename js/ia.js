@@ -1,62 +1,72 @@
 // ia.js
 
-import { getValorEnvido, getValorTruco } from "./config.js";
-import { logHistorial } from "./ui.js";
+function calcularEnvido(mano) {
+  const palos = {};
+  mano.forEach(carta => {
+    if (!palos[carta.palo]) palos[carta.palo] = [];
+    palos[carta.palo].push(carta.numero <= 7 ? carta.numero : 0);
+  });
 
-export function iaElegirCantoEnvido(mano) {
-  const puntos = getValorEnvido(mano);
+  let max = 0;
+  for (const palo in palos) {
+    const nums = palos[palo].sort((a, b) => b - a);
+    if (nums.length >= 2) {
+      max = Math.max(max, 20 + nums[0] + nums[1]);
+    } else if (nums.length === 1) {
+      max = Math.max(max, nums[0]);
+    }
+  }
+  return max;
+}
+
+function iaElegirCantoEnvido(mano, esMano) {
+  const puntos = calcularEnvido(mano);
   if (puntos >= 30) return "falta envido";
-  if (puntos >= 27) return "real envido";
+  if (puntos >= 27 && esMano) return "real envido";
   if (puntos >= 25) return "envido";
   return null;
 }
 
-export function iaResponderEnvido(mano, cantoJugador) {
-  const puntos = getValorEnvido(mano);
-
-  if (cantoJugador === "envido" && puntos >= 26) return "quiero";
-  if (cantoJugador === "real envido" && puntos >= 28) return "quiero";
-  if (cantoJugador === "falta envido" && puntos >= 30) return "quiero";
-
+function iaResponderEnvido(mano, tipo) {
+  const puntos = calcularEnvido(mano);
+  if (tipo === "envido" && puntos >= 26) return "quiero";
+  if (tipo === "real envido" && puntos >= 28) return "quiero";
+  if (tipo === "falta envido" && puntos >= 30) return "quiero";
   return "no quiero";
 }
 
-export function iaDecidirTruco(mano, esMano) {
-  const valores = mano.map(getValorTruco);
-  const promedio = valores.reduce((a, b) => a + b, 0) / valores.length;
-  if (esMano && promedio < 6) return "truco";
+function iaElegirCantoTruco(mano, ganoPrimera) {
+  const fuerza = mano.reduce((acc, carta) => acc + carta.rank, 0) / mano.length;
+  if (fuerza >= 15 || ganoPrimera) return "truco";
   return null;
 }
 
-export function iaResponderTruco(mano, cantoActual) {
-  const valores = mano.map(getValorTruco);
-  const tieneBuenas = valores.filter(v => v < 5).length >= 2;
-
-  if (tieneBuenas && cantoActual === "truco") return "quiero";
-  if (tieneBuenas && cantoActual === "retruco") return "quiero";
-  if (!tieneBuenas) return "no quiero";
-
-  return "quiero";
+function iaResponderTruco(mano, tipo) {
+  const fuerza = mano.reduce((acc, carta) => acc + carta.rank, 0) / mano.length;
+  if (tipo === "truco" && fuerza > 13) return "quiero";
+  if (tipo === "retruco" && fuerza > 15) return "quiero";
+  if (tipo === "vale cuatro" && fuerza > 16) return "quiero";
+  return "no quiero";
 }
 
-export function iaJugarCarta(manoIA, cartaJugador) {
-  let elegida;
-
+function iaElegirCarta(mano, cartaJugador) {
   if (!cartaJugador) {
-    // IA juega primero: carta más débil
-    elegida = manoIA.reduce((min, c) => getValorTruco(c) > getValorTruco(min) ? min : c);
-  } else {
-    // IA reacciona
-    const ganadoras = manoIA.filter(c => getValorTruco(c) < getValorTruco(cartaJugador));
-    if (ganadoras.length > 0) {
-      // Jugar la más débil que le gana
-      elegida = ganadoras.reduce((min, c) => getValorTruco(c) > getValorTruco(min) ? min : c);
-    } else {
-      // Perder con la peor
-      elegida = manoIA.reduce((max, c) => getValorTruco(c) > getValorTruco(max) ? max : c);
-    }
+    return mano.indexOf(mano.reduce((c, m) => c.rank < m.rank ? c : m));
   }
-
-  logHistorial(`TrucoEstrella juega ${elegida.numero} ${elegida.palo}`);
-  return elegida;
+  const ganadoras = mano.filter(c => c.rank > cartaJugador.rank);
+  if (ganadoras.length > 0) {
+    const menorGanadora = ganadoras.reduce((a, b) => a.rank < b.rank ? a : b);
+    return mano.indexOf(menorGanadora);
+  }
+  const perdedora = mano.reduce((a, b) => a.rank < b.rank ? a : b);
+  return mano.indexOf(perdedora);
 }
+
+export {
+  calcularEnvido,
+  iaElegirCantoEnvido,
+  iaResponderEnvido,
+  iaElegirCantoTruco,
+  iaResponderTruco,
+  iaElegirCarta
+};
