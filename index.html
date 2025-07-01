@@ -6,15 +6,18 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <span id="version-display">v3.0</span>
+  <span id="version-display">v4.3</span>
   <h1>TrucoEstrella</h1>
+
   <div id="pantalla-config">
     <h3>Configurar Partida</h3>
     <div class="opcion-config"><label for="nombre-jugador">Tu Nombre:</label><br><input type="text" id="nombre-jugador" placeholder="Jugador" maxlength="12"></div>
     <div class="opcion-config"><span>Jugar a:</span><input type="radio" id="puntos15" name="puntos-partida" value="15" checked><label for="puntos15">15 Puntos</label><input type="radio" id="puntos30" name="puntos-partida" value="30"><label for="puntos30">30 Puntos</label></div>
     <div class="opcion-config"><input type="checkbox" id="con-flor" name="con-flor" checked><label for="con-flor">Jugar con Flor</label></div>
+    <div class="opcion-config"><span>Diseño:</span><input type="radio" id="layout-pc" name="layout" value="pc" checked><label for="layout-pc">PC</label><input type="radio" id="layout-celular" name="layout" value="celular"><label for="layout-celular">Celular</label></div>
     <button id="btn-comenzar">Comenzar Partida</button>
   </div>
+
   <div id="area-juego-wrapper">
     <div class="contenedor-principal">
         <div id="columna-controles">
@@ -24,6 +27,7 @@
             </div>
         </div>
         <div id="columna-juego">
+            <div id="marcador-digital"></div>
             <h2 id="cpu-titulo"></h2>
             <div class="mano-cpu fila-jugador" id="mano-cpu"></div>
             <div id="info-juego"></div>
@@ -51,9 +55,9 @@
     </div>
   </div>
 
-  <script src="js/config.js" defer></script>
-  <script src="js/ui.js" defer></script>
-  <script src="js/ia.js" defer></script>
-  <script src="js/main.js" defer></script>
+  <script src="js/config.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/ia.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>
