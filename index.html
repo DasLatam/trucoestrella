@@ -66,6 +66,15 @@
             transform: none;
             box-shadow: 3px 3px 7px rgba(0,0,0,0.3);
         }
+        .slot-carta {
+            width: 100px;
+            height: 150px;
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
         #historial {
             height: 500px; /* Altura fija */
             overflow-y: auto; /* Scroll vertical */
@@ -184,11 +193,21 @@
                 </div>
 
                 <!-- Mesa -->
-                <div id="mesa" class="w-3/4 h-64 bg-green-800 rounded-lg shadow-inner flex justify-center items-center space-x-8 p-4 border-2 border-yellow-800">
-                    <div id="slot-ia" class="w-28 h-44 flex justify-center items-center"></div>
-                    <div id="slot-jugador" class="w-28 h-44 flex justify-center items-center"></div>
+                <div id="mesa" class="w-full h-auto bg-green-800 rounded-lg shadow-inner flex flex-col justify-around items-center p-4 border-2 border-yellow-800 min-h-[380px]">
+                    <!-- Cartas Jugadas IA -->
+                    <div id="cartas-jugadas-ia" class="flex justify-center space-x-4 mb-4">
+                        <div id="slot-ia-1" class="slot-carta"></div>
+                        <div id="slot-ia-2" class="slot-carta"></div>
+                        <div id="slot-ia-3" class="slot-carta"></div>
+                    </div>
+                    <!-- Cartas Jugadas Jugador -->
+                    <div id="cartas-jugadas-jugador" class="flex justify-center space-x-4 mt-4">
+                        <div id="slot-jugador-1" class="slot-carta"></div>
+                        <div id="slot-jugador-2" class="slot-carta"></div>
+                        <div id="slot-jugador-3" class="slot-carta"></div>
+                    </div>
                 </div>
-                <div id="mensaje-flotante" class="text-2xl font-bold text-white bg-black bg-opacity-50 px-4 py-2 rounded-lg absolute hidden"></div>
+                <div id="mensaje-flotante" class="text-2xl font-bold text-white bg-black bg-opacity-50 px-4 py-2 rounded-lg absolute hidden z-20"></div>
 
                 <!-- Mano Jugador -->
                 <div class="w-full">
@@ -271,8 +290,6 @@
             const nombreIADisplay = document.getElementById('nombre-ia');
             const manoJugadorContainer = document.getElementById('mano-jugador');
             const manoIAContainer = document.getElementById('mano-ia');
-            const slotJugador = document.getElementById('slot-jugador');
-            const slotIA = document.getElementById('slot-ia');
             const marcadorJugadorContainer = document.getElementById('marcador-jugador');
             const marcadorIAContainer = document.getElementById('marcador-ia');
             const lineaMitad = document.getElementById('linea-mitad');
@@ -345,19 +362,24 @@
                     });
                     manoIA.forEach(carta => manoIAContainer.appendChild(crearElementoCarta(carta, true)));
                 },
-                jugarCarta: (idCarta, jugador, carta) => {
-                    const slot = jugador === 'jugador' ? slotJugador : slotIA;
+                jugarCarta: (jugador, carta, ronda) => {
+                    const slot = document.getElementById(`slot-${jugador}-${ronda}`);
+                    if (!slot) return;
+                    
                     const manoContainer = jugador === 'jugador' ? manoJugadorContainer : manoIAContainer;
-                    const cartaEnMano = manoContainer.querySelector(`[data-id="${idCarta}"]`);
+                    const cartaEnMano = manoContainer.querySelector(`[data-id="${carta.id}"]`);
                     if (cartaEnMano) manoContainer.removeChild(cartaEnMano);
+                    
                     slot.innerHTML = '';
                     const cartaEnMesa = crearElementoCarta(carta, false);
                     cartaEnMesa.classList.remove('jugable');
                     slot.appendChild(cartaEnMesa);
                 },
                 limpiarMesa: () => {
-                    slotJugador.innerHTML = '';
-                    slotIA.innerHTML = '';
+                    for(let i = 1; i <= 3; i++) {
+                        document.getElementById(`slot-jugador-${i}`).innerHTML = '';
+                        document.getElementById(`slot-ia-${i}`).innerHTML = '';
+                    }
                 },
                 actualizarMarcador: (puntosJugador, puntosIA, metaPuntos) => {
                     marcadorJugadorContainer.innerHTML = generarPorotos(puntosJugador);
@@ -373,29 +395,33 @@
                 },
                 limpiarHistorial: () => { historialContainer.innerHTML = ''; },
                 actualizarBotones: (estadoJuego, esTurnoJugador) => {
-                    const { ronda, truco, envido, conFlor, jugador } = estadoJuego;
-                    const puedeCantarEnvido = ronda === 1 && !envido.cantado && !truco.cantado;
-                    botonesCanto.envido.classList.toggle('hidden', !puedeCantarEnvido || !esTurnoJugador);
-                    botonesCanto.realEnvido.classList.toggle('hidden', !puedeCantarEnvido || !esTurnoJugador);
-                    botonesCanto.faltaEnvido.classList.toggle('hidden', !puedeCantarEnvido || !esTurnoJugador);
-                    const puedeCantarFlor = conFlor && ronda === 1 && !envido.cantado && !truco.cantado;
-                    botonesCanto.flor.classList.toggle('hidden', !puedeCantarFlor || !esTurnoJugador || !jugador.tieneFlor);
-                    botonesCanto.truco.textContent = truco.estado === 'TRUCO' ? 'Retruco' : truco.estado === 'RETRUCO' ? 'Vale Cuatro' : 'Truco';
-                    const puedeSubirTruco = esTurnoJugador && truco.puedeSubirElJugador && truco.estado !== 'VALE_CUATRO';
-                    botonesCanto.truco.classList.toggle('hidden', !puedeSubirTruco);
-                    botonesCanto.irAlMazo.disabled = !esTurnoJugador;
-                    const esperandoRespuesta = envido.esperandoRespuesta || truco.esperandoRespuesta || (conFlor && estadoJuego.flor.esperandoRespuesta);
-                    quieroContainer.classList.toggle('hidden', !esperandoRespuesta || !esTurnoJugador);
-                    Object.values(botonesCanto).forEach(btn => {
-                        if (btn.id.startsWith('cantar-') && btn.id !== 'cantar-truco-btn') {
-                           btn.classList.toggle('hidden', !esTurnoJugador || esperandoRespuesta || !puedeCantarEnvido);
-                        }
-                    });
-                    if (botonesCanto.flor) botonesCanto.flor.classList.toggle('hidden', !esTurnoJugador || esperandoRespuesta || !puedeCantarFlor || !jugador.tieneFlor);
+                    const { ronda, truco, envido, conFlor, jugador, accion } = estadoJuego;
+                    
+                    const esperandoRespuesta = accion === 'esperando_respuesta';
+                    const puedeJugarCarta = esTurnoJugador && !esperandoRespuesta;
 
+                    // Lógica para mostrar/ocultar botones de canto
+                    const puedeCantarEnvido = esTurnoJugador && ronda === 1 && !envido.cantado && !truco.cantado;
+                    botonesCanto.envido.classList.toggle('hidden', !puedeCantarEnvido);
+                    botonesCanto.realEnvido.classList.toggle('hidden', !puedeCantarEnvido);
+                    botonesCanto.faltaEnvido.classList.toggle('hidden', !puedeCantarEnvido);
+
+                    const puedeCantarFlor = conFlor && puedeCantarEnvido && jugador.tieneFlor;
+                    botonesCanto.flor.classList.toggle('hidden', !puedeCantarFlor);
+                    
+                    const puedeSubirTruco = esTurnoJugador && truco.puedeSubirElJugador && truco.estado !== 'VALE_CUATRO' && !esperandoRespuesta;
+                    botonesCanto.truco.classList.toggle('hidden', !puedeSubirTruco);
+                    botonesCanto.truco.textContent = truco.estado === 'TRUCO' ? 'Retruco' : truco.estado === 'RETRUCO' ? 'Vale Cuatro' : 'Truco';
+                    
+                    botonesCanto.irAlMazo.disabled = !esTurnoJugador;
+                    
+                    // Contenedor de respuesta (Quiero/No Quiero)
+                    quieroContainer.classList.toggle('hidden', !esperandoRespuesta || !esTurnoJugador);
+
+                    // Deshabilitar cartas si no es turno o se espera respuesta
                     manoJugadorContainer.querySelectorAll('.carta').forEach(carta => {
-                        carta.classList.toggle('deshabilitada', !esTurnoJugador || esperandoRespuesta);
-                        carta.classList.toggle('jugable', esTurnoJugador && !esperandoRespuesta);
+                        carta.classList.toggle('deshabilitada', !puedeJugarCarta);
+                        carta.classList.toggle('jugable', puedeJugarCarta);
                     });
                 },
                 mostrarFinPartida: (nombreGanador) => {
@@ -426,7 +452,7 @@
             constructor() { this.nombre = "TrucoEstrella"; }
             decidirJugada(mano, estadoJuego) {
                 const { mesa } = estadoJuego;
-                const cartaJugador = mesa.jugador;
+                const cartaJugador = mesa.jugador[estadoJuego.ronda - 1];
                 if (!cartaJugador) return this.getCartaMasBaja(mano);
                 const valorCartaJugador = getValorTruco(cartaJugador);
                 const cartasQueGanan = mano.filter(c => getValorTruco(c) < valorCartaJugador);
@@ -467,6 +493,7 @@
         const IA = new TrucoEstrella();
 
         function getValorTruco(carta) {
+            if (!carta) return 999;
             for (let i = 0; i < HIERARQUIA_TRUCO.length; i++) {
                 const regla = HIERARQUIA_TRUCO[i];
                 if (regla.numero === carta.numero && (regla.palo === 'cualquiera' || regla.palo === carta.palo.nombre)) return i;
@@ -504,11 +531,15 @@
                 config: { puntosMeta, conFlor, nombreJugador, nombreIA: 'TrucoEstrella' },
                 puntos: { jugador: 0, ia: 0 },
                 jugadorEsMano: Math.random() < 0.5,
-                turnoDelJugador: null, mazo: [],
+                turnoDelJugador: null, 
+                quienJuegaRonda: null,
+                mazo: [],
                 jugador: { mano: [], tieneFlor: false },
                 ia: { mano: [], tieneFlor: false },
-                ronda: 0, rondasGanadas: { jugador: 0, ia: 0 },
-                mesa: { jugador: null, ia: null },
+                ronda: 0, 
+                rondasGanadas: { jugador: 0, ia: 0 },
+                mesa: { jugador: [], ia: [] },
+                accion: 'jugando', // 'jugando', 'esperando_respuesta'
                 envido: null, flor: null, truco: null,
                 juegoTerminado: false,
             };
@@ -544,8 +575,9 @@
             if (estadoJuego.juegoTerminado) return;
             estadoJuego.ronda = 1;
             estadoJuego.rondasGanadas = { jugador: 0, ia: 0 };
-            estadoJuego.mesa = { jugador: null, ia: null };
+            estadoJuego.mesa = { jugador: [], ia: [] };
             estadoJuego.jugadorEsMano = !estadoJuego.jugadorEsMano;
+            estadoJuego.accion = 'jugando';
             resetearCantos();
             crearMazo();
             repartirCartas();
@@ -558,9 +590,12 @@
             UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia, estadoJuego.config.puntosMeta);
             UI.agregarAlHistorial('--- Nueva Mano ---', 'sistema');
             UI.agregarAlHistorial(`${estadoJuego.jugadorEsMano ? estadoJuego.config.nombreJugador : estadoJuego.config.nombreIA} es mano.`, 'sistema');
-            estadoJuego.turnoDelJugador = estadoJuego.jugadorEsMano;
-            if (!estadoJuego.turnoDelJugador && estadoJuego.ia.tieneFlor) {
-                setTimeout(() => manejarCanto(CANTOS.FLOR, 'ia'), 1000);
+            
+            estadoJuego.quienJuegaRonda = estadoJuego.jugadorEsMano ? 'jugador' : 'ia';
+            estadoJuego.turnoDelJugador = estadoJuego.quienJuegaRonda === 'jugador';
+
+            if (estadoJuego.ia.tieneFlor && estadoJuego.turnoDelJugador === false) {
+                 setTimeout(() => manejarCanto(CANTOS.FLOR, 'ia'), 1000);
             } else {
                 actualizarTurno();
             }
@@ -578,16 +613,20 @@
         function actualizarTurno() {
             if (estadoJuego.juegoTerminado) return;
             UI.actualizarBotones(estadoJuego, estadoJuego.turnoDelJugador);
-            if (!estadoJuego.turnoDelJugador) setTimeout(turnoIA, 1500);
+            if (!estadoJuego.turnoDelJugador && estadoJuego.accion === 'jugando') {
+                setTimeout(turnoIA, 1500);
+            }
         }
 
         function turnoIA() {
-            if (estadoJuego.juegoTerminado || estadoJuego.turnoDelJugador) return;
+            if (estadoJuego.juegoTerminado || estadoJuego.turnoDelJugador || estadoJuego.accion === 'esperando_respuesta') return;
+            
+            // 1. Decidir si cantar
             if (estadoJuego.ronda === 1 && !estadoJuego.envido.cantado && !estadoJuego.truco.cantado) {
                 const cantoEnvido = IA.decidirCantoEnvido(estadoJuego.ia.mano, estadoJuego);
                 if (cantoEnvido) {
                     manejarCanto(cantoEnvido, 'ia');
-                    return;
+                    return; 
                 }
             }
             const cantoTruco = IA.decidirCantoTruco(estadoJuego.ia.mano, estadoJuego);
@@ -595,21 +634,28 @@
                 manejarCanto(cantoTruco, 'ia');
                 return;
             }
+
+            // 2. Si no canta, juega una carta
             const cartaAJugar = IA.decidirJugada(estadoJuego.ia.mano, estadoJuego);
             manejarJugada(cartaAJugar.id, 'ia');
         }
 
         function manejarJugada(idCarta, quienJugo) {
-            if (quienJugo === 'jugador' && !estadoJuego.turnoDelJugador) return;
+            if ((quienJugo === 'jugador' && !estadoJuego.turnoDelJugador) || estadoJuego.accion === 'esperando_respuesta') return;
+            
             const mano = estadoJuego[quienJugo].mano;
             const cartaIndex = mano.findIndex(c => c.id === idCarta);
             if (cartaIndex === -1) return;
+
             const [cartaJugada] = mano.splice(cartaIndex, 1);
-            estadoJuego.mesa[quienJugo] = cartaJugada;
-            UI.jugarCarta(idCarta, quienJugo, cartaJugada);
+            estadoJuego.mesa[quienJugo][estadoJuego.ronda - 1] = cartaJugada;
+            
+            UI.jugarCarta(quienJugo, cartaJugada, estadoJuego.ronda);
             UI.agregarAlHistorial(`${quienJugo === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} juega ${cartaJugada.numero} de ${cartaJugada.palo.nombre}.`, quienJugo);
+            
             estadoJuego.turnoDelJugador = !estadoJuego.turnoDelJugador;
-            if (estadoJuego.mesa.jugador && estadoJuego.mesa.ia) {
+
+            if (estadoJuego.mesa.jugador[estadoJuego.ronda - 1] && estadoJuego.mesa.ia[estadoJuego.ronda - 1]) {
                 setTimeout(evaluarRonda, 1000);
             } else {
                 actualizarTurno();
@@ -619,8 +665,8 @@
         function checkFinMano() {
             const { jugador, ia } = estadoJuego.rondasGanadas;
             if (jugador >= 2 || ia >= 2) return true;
-            if (estadoJuego.ronda === 2 && jugador === 1 && ia === 1) return true; // Primera parda, define la segunda
-            return estadoJuego.ronda === 3;
+            if (estadoJuego.ronda === 2 && jugador === 1 && ia === 1) return true;
+            return estadoJuego.ronda >= 3;
         }
         
         function finalizarMano(porAbandono = false, quienAbandono = null) {
@@ -633,75 +679,86 @@
                 else if (ia > jugador) ganadorMano = 'ia';
                 else ganadorMano = estadoJuego.jugadorEsMano ? 'jugador' : 'ia';
             }
-            if (!estadoJuego.envido.resuelto) resolverEnvido(false);
-            if (estadoJuego.config.conFlor && !estadoJuego.flor.resuelto) resolverFlor();
+            
+            if (estadoJuego.envido.cantado && !estadoJuego.envido.resuelto) {
+                resolverEnvido(false); // No querido
+            }
+            if (estadoJuego.config.conFlor && estadoJuego.flor.cantado && !estadoJuego.flor.resuelto) {
+                 resolverFlor();
+            }
+
             const puntosTruco = estadoJuego.truco.puntos;
             estadoJuego.puntos[ganadorMano] += puntosTruco;
             UI.agregarAlHistorial(`${ganadorMano === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} gana la mano y ${puntosTruco} punto(s) del truco.`, 'sistema');
+            
             UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia, estadoJuego.config.puntosMeta);
             if (checkFinPartida()) terminarPartida();
-            else setTimeout(iniciarMano, 2500);
+            else setTimeout(iniciarMano, 3000);
         }
 
         function evaluarRonda() {
-            const { jugador: cartaJugador, ia: cartaIA } = estadoJuego.mesa;
+            const cartaJugador = estadoJuego.mesa.jugador[estadoJuego.ronda - 1];
+            const cartaIA = estadoJuego.mesa.ia[estadoJuego.ronda - 1];
             const valorJugador = getValorTruco(cartaJugador);
             const valorIA = getValorTruco(cartaIA);
+
             let ganadorRonda;
             if (valorJugador < valorIA) {
                 ganadorRonda = 'jugador';
                 estadoJuego.rondasGanadas.jugador++;
-                estadoJuego.turnoDelJugador = true;
+                estadoJuego.quienJuegaRonda = 'jugador';
             } else if (valorIA < valorJugador) {
                 ganadorRonda = 'ia';
                 estadoJuego.rondasGanadas.ia++;
-                estadoJuego.turnoDelJugador = false;
+                estadoJuego.quienJuegaRonda = 'ia';
             } else {
                 ganadorRonda = 'empate';
                 if (estadoJuego.ronda === 1) {
                     estadoJuego.rondasGanadas.jugador++;
                     estadoJuego.rondasGanadas.ia++;
                 }
-                estadoJuego.turnoDelJugador = estadoJuego.jugadorEsMano;
+                estadoJuego.quienJuegaRonda = estadoJuego.jugadorEsMano ? 'jugador' : 'ia';
             }
+            
             const nombreGanador = ganadorRonda === 'jugador' ? estadoJuego.config.nombreJugador : ganadorRonda === 'ia' ? IA.nombre : 'Parda';
             UI.mostrarMensajeF(`Ronda para: ${nombreGanador}`);
             UI.agregarAlHistorial(`Gana la ronda ${nombreGanador}.`, 'sistema');
-            setTimeout(() => {
-                UI.limpiarMesa();
-                estadoJuego.mesa = { jugador: null, ia: null };
-                if (checkFinMano()) finalizarMano();
-                else {
-                    estadoJuego.ronda++;
-                    actualizarTurno();
-                }
-            }, 2000);
+            
+            if (checkFinMano()) {
+                finalizarMano();
+            } else {
+                estadoJuego.ronda++;
+                estadoJuego.turnoDelJugador = estadoJuego.quienJuegaRonda === 'jugador';
+                actualizarTurno();
+            }
         }
 
         function manejarCanto(canto, quienCanta) {
             UI.agregarAlHistorial(`${quienCanta === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} canta: ${canto}`, quienCanta);
             UI.mostrarMensajeF(`${canto}!`);
+            
+            estadoJuego.accion = 'esperando_respuesta';
             const esCantoEnvido = [CANTOS.ENVIDO, CANTOS.REAL_ENVIDO, CANTOS.FALTA_ENVIDO].includes(canto);
             const esCantoTruco = [CANTOS.TRUCO, CANTOS.RETRUCO, CANTOS.VALE_CUATRO].includes(canto);
+            
             if (esCantoEnvido) {
                 estadoJuego.envido.cantado = true;
-                estadoJuego.envido.esperandoRespuesta = true;
                 estadoJuego.envido.quienCanto = quienCanta;
                 estadoJuego.envido.historial.push(canto);
             } else if (esCantoTruco) {
                 estadoJuego.truco.cantado = true;
-                estadoJuego.truco.esperandoRespuesta = true;
                 estadoJuego.truco.quienCanto = quienCanta;
                 estadoJuego.truco.estado = canto;
                 estadoJuego.truco.puedeSubirElJugador = quienCanta === 'ia';
                 estadoJuego.truco.puedeSubirLaIA = quienCanta === 'jugador';
             } else if (canto === CANTOS.FLOR) {
                 estadoJuego.flor.cantado = true;
-                estadoJuego.flor.esperandoRespuesta = true;
                 estadoJuego.flor.quienCanto = quienCanta;
             }
+            
             estadoJuego.turnoDelJugador = (quienCanta === 'ia');
-            actualizarTurno();
+            UI.actualizarBotones(estadoJuego, estadoJuego.turnoDelJugador);
+
             if (!estadoJuego.turnoDelJugador) {
                 setTimeout(() => {
                     const respuesta = IA.responderCanto(canto, estadoJuego.ia.mano, estadoJuego);
@@ -724,12 +781,14 @@
         }
 
         function calcularPuntosEnvidoNoQuerido() {
-            let puntos = 0;
+            let puntos = 1;
             const historial = estadoJuego.envido.historial;
             if (historial.includes(CANTOS.FALTA_ENVIDO)) return 1;
-            if (historial.includes(CANTOS.REAL_ENVIDO)) puntos += 2;
-            puntos += historial.filter(c => c === CANTOS.ENVIDO).length;
-            return puntos || 1;
+            if (historial.includes(CANTOS.REAL_ENVIDO)) puntos = 2;
+            if (historial.filter(c => c === CANTOS.ENVIDO).length > 1) {
+                puntos = 2;
+            }
+            return puntos;
         }
 
         function resolverEnvido(querido) {
@@ -775,12 +834,13 @@
             const esRespuestaJugador = quienResponde === 'jugador';
             UI.agregarAlHistorial(`${esRespuestaJugador ? estadoJuego.config.nombreJugador : IA.nombre} dice: ${respuesta}`, quienResponde);
             UI.mostrarMensajeF(respuesta);
-            const cantoPendiente = estadoJuego.envido.esperandoRespuesta ? 'envido' : 'truco';
+            
+            estadoJuego.accion = 'jugando';
+            const cantoPendiente = estadoJuego.envido.cantado && !estadoJuego.envido.resuelto ? 'envido' : 'truco';
+
             if (cantoPendiente === 'envido') {
-                estadoJuego.envido.esperandoRespuesta = false;
                 resolverEnvido(respuesta === CANTOS.QUIERO);
             } else if (cantoPendiente === 'truco') {
-                estadoJuego.truco.esperandoRespuesta = false;
                 if (respuesta === CANTOS.QUIERO) {
                     estadoJuego.truco.puntos = estadoJuego.truco.estado === 'TRUCO' ? 2 : estadoJuego.truco.estado === 'RETRUCO' ? 3 : 4;
                     estadoJuego.truco.puedeSubirElJugador = esRespuestaJugador;
@@ -794,7 +854,8 @@
                     return;
                 }
             }
-            estadoJuego.turnoDelJugador = !estadoJuego.turnoDelJugador;
+            
+            estadoJuego.turnoDelJugador = estadoJuego.quienJuegaRonda === 'jugador';
             actualizarTurno();
         }
 
@@ -831,7 +892,7 @@
             UI.UIElements.quieroBtn.addEventListener('click', () => manejarRespuesta(CANTOS.QUIERO, 'jugador'));
             UI.UIElements.noQuieroBtn.addEventListener('click', () => manejarRespuesta(CANTOS.NO_QUIERO, 'jugador'));
             UI.UIElements.botonesCanto.irAlMazo.addEventListener('click', () => {
-                UI.agregarAlHistorial(`${estadoJuego.config.nombreJugador} se va al mazo.`, 'jugador');
+                UI.agregarAlHistorial(`${estadoJuego.config.nombreJugador} se va al mazo.`, 'sistema');
                 finalizarMano(true, 'jugador');
             });
         }
