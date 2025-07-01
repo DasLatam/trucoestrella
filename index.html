@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <link rel="icon" type="image/png" href="favicon_circular.png">
     <style>
         /* Estilos personalizados adicionales */
         body {
@@ -76,8 +76,13 @@
             justify-content: center;
             align-items: center;
         }
+        #chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
         #chat {
-            height: 90%; 
+            flex-grow: 1;
             overflow-y: auto;
             background-color: rgba(0,0,0,0.2);
             border-radius: 8px;
@@ -85,6 +90,7 @@
             user-select: text;
             display: flex;
             flex-direction: column;
+            max-height: calc(100vh - 250px); /* Ajusta esta altura según sea necesario */
         }
         #chat p {
             margin-bottom: 5px;
@@ -107,10 +113,10 @@
             position: absolute;
             box-shadow: 1px 1px 3px rgba(0,0,0,0.5);
         }
-        .poroto1 { width: 3px; height: 40px; top: 5px; left: 5px; }
-        .poroto2 { width: 3px; height: 40px; top: 5px; left: 42px; }
-        .poroto3 { width: 40px; height: 3px; top: 5px; left: 5px; }
-        .poroto4 { width: 40px; height: 3px; top: 42px; left: 5px; }
+        .poroto1 { width: 40px; height: 3px; top: 5px; left: 5px; } /* Arriba */
+        .poroto2 { width: 3px; height: 40px; top: 5px; left: 42px; } /* Derecha */
+        .poroto3 { width: 40px; height: 3px; top: 42px; left: 5px; } /* Abajo */
+        .poroto4 { width: 3px; height: 40px; top: 5px; left: 5px; } /* Izquierda */
         .poroto5 { width: 54px; height: 3px; top: 23px; left: -2px; transform: rotate(45deg); }
 
         #marcador-container {
@@ -135,6 +141,7 @@
             z-index: 100;
             text-transform: uppercase;
             border: 2px solid #FFD700;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -183,11 +190,15 @@
             <!-- Columna 1: Opciones -->
             <div class="col-span-2 flex flex-col justify-center items-center space-y-2 p-1">
                 <h2 class="text-xl font-bold mb-4 text-yellow-300">Opciones</h2>
-                <button id="cantar-truco-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg">Truco</button>
-                <button id="cantar-envido-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg">Envido</button>
-                <button id="cantar-real-envido-btn" class="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-3 rounded-lg">Real Envido</button>
-                <button id="cantar-falta-envido-btn" class="w-full bg-green-800 hover:bg-green-900 text-white font-bold py-2 px-3 rounded-lg">Falta Envido</button>
-                <button id="cantar-flor-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-lg hidden">Flor</button>
+                <div id="opciones-envido" class="w-full space-y-2">
+                    <button id="cantar-envido-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg">Envido</button>
+                    <button id="cantar-real-envido-btn" class="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-3 rounded-lg">Real Envido</button>
+                    <button id="cantar-falta-envido-btn" class="w-full bg-green-800 hover:bg-green-900 text-white font-bold py-2 px-3 rounded-lg">Falta Envido</button>
+                    <button id="cantar-flor-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-lg hidden">Flor</button>
+                </div>
+                 <div id="opciones-truco" class="w-full space-y-2">
+                    <button id="cantar-truco-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg">Truco</button>
+                </div>
                 <div id="quiero-container" class="w-full space-y-2 hidden">
                     <button id="quiero-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-3 rounded-lg">Quiero</button>
                     <button id="no-quiero-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg">No Quiero</button>
@@ -239,7 +250,7 @@
                         <div id="marcador-ia" class="flex flex-wrap justify-center"></div>
                     </div>
                 </div>
-                <div class="flex flex-col flex-grow">
+                <div id="chat-container" class="flex flex-col flex-grow">
                     <h2 class="text-xl font-bold text-center mb-2 text-yellow-300">Chat</h2>
                     <div id="chat" class="flex-grow"></div>
                     <div class="mt-2 flex">
@@ -265,7 +276,7 @@
     <!-- Modal Resultado Envido -->
     <div id="modal-envido" class="hidden fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
         <div class="bg-green-900 p-8 rounded-lg text-center shadow-2xl border-2 border-yellow-400">
-            <h2 class="text-3xl font-bold mb-4 text-yellow-300">Envido</h2>
+            <h2 id="envido-titulo" class="text-3xl font-bold mb-4 text-yellow-300"></h2>
             <div id="envido-resultado-texto" class="text-xl space-y-2">
             </div>
             <h3 id="envido-ganador-texto" class="text-2xl font-bold mt-4 text-white"></h3>
@@ -294,10 +305,10 @@
         const VALOR_ENVIDO = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 10: 0, 11: 0, 12: 0 };
         const PUNTOS_META = { QUINCE: 15, TREINTA: 30 };
         const CANTOS = {
-            ENVIDO: 'ENVIDO', REAL_ENVIDO: 'REAL_ENVIDO', FALTA_ENVIDO: 'FALTA_ENVIDO',
-            FLOR: 'FLOR', CONTRAFLOR: 'CONTRAFLOR', CONTRAFLOR_AL_RESTO: 'CONTRAFLOR_AL_RESTO',
-            TRUCO: 'TRUCO', RETRUCO: 'RETRUCO', VALE_CUATRO: 'VALE_CUATRO',
-            QUIERO: 'QUIERO', NO_QUIERO: 'NO_QUIERO',
+            ENVIDO: 'ENVIDO', REAL_ENVIDO: 'REAL ENVIDO', FALTA_ENVIDO: 'FALTA ENVIDO',
+            FLOR: 'FLOR', CONTRAFLOR: 'CONTRAFLOR', CONTRAFLOR_AL_RESTO: 'CONTRAFLOR AL RESTO',
+            TRUCO: 'TRUCO', RETRUCO: 'RETRUCO', VALE_CUATRO: 'VALE CUATRO',
+            QUIERO: 'QUIERO', NO_QUIERO: 'NO QUIERO',
         };
 
         // --- Módulo: js/ui.js ---
@@ -326,6 +337,7 @@
             const ganadorTexto = document.getElementById('ganador-texto');
             const mensajeFlotante = document.getElementById('mensaje-flotante');
             const modalEnvido = document.getElementById('modal-envido');
+            const envidoTitulo = document.getElementById('envido-titulo');
             const envidoResultadoTexto = document.getElementById('envido-resultado-texto');
             const envidoGanadorTexto = document.getElementById('envido-ganador-texto');
             const cantoDisplayIA = document.getElementById('canto-display-ia');
@@ -352,12 +364,13 @@
                 const gruposCompletos = Math.floor(puntos / 5);
                 const resto = puntos % 5;
                 for (let i = 0; i < gruposCompletos; i++) {
-                    html += `<div class="marcador-grupo"><div class="poroto poroto1"></div><div class="poroto poroto2"></div><div class="poroto poroto3"></div><div class="poroto poroto4"></div><div class="poroto poroto5"></div></div>`;
+                    html += `<div class="marcador-grupo"><div class="poroto poroto4"></div><div class="poroto poroto1"></div><div class="poroto poroto2"></div><div class="poroto poroto3"></div><div class="poroto poroto5"></div></div>`;
                 }
                 if (resto > 0) {
                     html += '<div class="marcador-grupo">';
-                    for (let i = 1; i <= resto; i++) {
-                        html += `<div class="poroto poroto${i}"></div>`;
+                    const ordenPorotos = [4, 1, 2, 3, 5];
+                    for (let i = 0; i < resto; i++) {
+                        html += `<div class="poroto poroto${ordenPorotos[i]}"></div>`;
                     }
                     html += '</div>';
                 }
@@ -416,26 +429,50 @@
                 },
                 limpiarChat: () => { chatContainer.innerHTML = ''; },
                 actualizarBotones: (estadoJuego, esTurnoJugador) => {
-                    const { ronda, truco, envido, conFlor, jugador, accion } = estadoJuego;
+                    const { ronda, truco, envido, conFlor, jugador, accion, cantoActual } = estadoJuego;
                     
                     const esperandoRespuesta = accion === 'esperando_respuesta';
                     const puedeJugarCarta = esTurnoJugador && !esperandoRespuesta;
 
-                    const puedeCantarEnvido = esTurnoJugador && ronda === 1 && !envido.cantado && !truco.cantado && !esperandoRespuesta;
-                    botonesCanto.envido.classList.toggle('hidden', !puedeCantarEnvido);
-                    botonesCanto.realEnvido.classList.toggle('hidden', !puedeCantarEnvido);
-                    botonesCanto.faltaEnvido.classList.toggle('hidden', !puedeCantarEnvido);
+                    // Ocultar todos los botones de canto por defecto
+                    Object.values(botonesCanto).forEach(btn => btn.classList.add('hidden'));
+                    
+                    if (esTurnoJugador && !esperandoRespuesta) {
+                        // Lógica de Envido
+                        if (ronda === 1 && !envido.cantado && !truco.cantado) {
+                            botonesCanto.envido.classList.remove('hidden');
+                            botonesCanto.realEnvido.classList.remove('hidden');
+                            botonesCanto.faltaEnvido.classList.remove('hidden');
+                            if (conFlor && jugador.tieneFlor) {
+                                botonesCanto.flor.classList.remove('hidden');
+                            }
+                        }
+                        // Lógica de Truco
+                        if (truco.puedeSubirElJugador && truco.estado !== CANTOS.VALE_CUATRO) {
+                            botonesCanto.truco.textContent = truco.estado === 'no_cantado' ? 'TRUCO' : (truco.estado === CANTOS.TRUCO ? 'RETRUCO' : 'VALE CUATRO');
+                            botonesCanto.truco.classList.remove('hidden');
+                        }
+                    }
 
-                    const puedeCantarFlor = conFlor && puedeCantarEnvido && jugador.tieneFlor;
-                    botonesCanto.flor.classList.toggle('hidden', !puedeCantarFlor);
-                    
-                    const puedeSubirTruco = esTurnoJugador && truco.puedeSubirElJugador && truco.estado !== 'VALE_CUATRO' && !esperandoRespuesta;
-                    botonesCanto.truco.classList.toggle('hidden', !puedeSubirTruco);
-                    botonesCanto.truco.textContent = truco.estado === 'TRUCO' ? 'Retruco' : truco.estado === 'RETRUCO' ? 'Vale Cuatro' : 'Truco';
-                    
+                    if (esTurnoJugador && esperandoRespuesta) {
+                        quieroContainer.classList.remove('hidden');
+                        // Lógica para subir la apuesta del envido
+                        if (cantoActual.tipo === 'envido') {
+                            const ultimoCanto = cantoActual.valor;
+                            if (ultimoCanto === CANTOS.ENVIDO) {
+                                botonesCanto.realEnvido.classList.remove('hidden');
+                                botonesCanto.faltaEnvido.classList.remove('hidden');
+                            }
+                            if (ultimoCanto === CANTOS.REAL_ENVIDO) {
+                                botonesCanto.faltaEnvido.classList.remove('hidden');
+                            }
+                        }
+                    } else {
+                        quieroContainer.classList.add('hidden');
+                    }
+
+                    botonesCanto.irAlMazo.classList.remove('hidden');
                     botonesCanto.irAlMazo.disabled = !esTurnoJugador;
-                    
-                    quieroContainer.classList.toggle('hidden', !esperandoRespuesta || !esTurnoJugador);
 
                     manoJugadorContainer.querySelectorAll('.carta').forEach(carta => {
                         carta.classList.toggle('deshabilitada', !puedeJugarCarta);
@@ -444,7 +481,7 @@
                 },
                 mostrarCanto: (jugador, canto) => {
                     const displayEl = jugador === 'jugador' ? cantoDisplayJugador : cantoDisplayIA;
-                    displayEl.textContent = canto;
+                    displayEl.textContent = canto.replace(/_/g, ' ');
                     displayEl.classList.remove('hidden');
                     setTimeout(() => {
                         displayEl.classList.add('hidden');
@@ -460,7 +497,8 @@
                     mensajeFlotante.classList.remove('hidden');
                     setTimeout(() => mensajeFlotante.classList.add('hidden'), duracion);
                 },
-                mostrarResultadoEnvido: (puntosJugador, nombreJugador, puntosIA, nombreIA, ganador, puntosGanados) => {
+                mostrarResultadoEnvido: (titulo, puntosJugador, nombreJugador, puntosIA, nombreIA, ganador, puntosGanados) => {
+                    envidoTitulo.textContent = titulo;
                     envidoResultadoTexto.innerHTML = `
                         <p>${nombreJugador}: <span class="font-bold text-white">${puntosJugador}</span></p>
                         <p>${nombreIA}: <span class="font-bold text-white">${puntosIA}</span></p>
@@ -502,10 +540,10 @@
             }
             decidirCantoTruco(mano, estadoJuego) {
                 const { truco } = estadoJuego;
-                if (truco.estado === 'VALE_CUATRO' || !truco.puedeSubirLaIA) return null;
+                if (truco.estado === CANTOS.VALE_CUATRO || !truco.puedeSubirLaIA) return null;
                 const fuerzaMano = mano.reduce((acc, carta) => acc + (HIERARQUIA_TRUCO.length - getValorTruco(carta)), 0);
                 if (fuerzaMano > 28 && truco.estado === 'no_cantado') return CANTOS.TRUCO;
-                if (fuerzaMano > 33 && truco.estado === 'TRUCO') return CANTOS.RETRUCO;
+                if (fuerzaMano > 33 && truco.estado === CANTOS.TRUCO) return CANTOS.RETRUCO;
                 return null;
             }
             responderCanto(canto, mano, estadoJuego) {
@@ -577,6 +615,7 @@
                 ganadorRonda: [],
                 mesa: { jugador: [], ia: [] },
                 accion: 'jugando', // 'jugando', 'esperando_respuesta'
+                cantoActual: null, // { tipo: 'envido'/'truco', valor: 'ENVIDO' }
                 envido: null, flor: null, truco: null,
                 juegoTerminado: false,
             };
@@ -615,6 +654,7 @@
             estadoJuego.mesa = { jugador: [], ia: [] };
             estadoJuego.jugadorEsMano = !estadoJuego.jugadorEsMano;
             estadoJuego.accion = 'jugando';
+            estadoJuego.cantoActual = null;
             resetearCantos();
             crearMazo();
             repartirCartas();
@@ -793,24 +833,28 @@
         }
 
         function manejarCanto(canto, quienCanta) {
-            UI.agregarAlChat(`${quienCanta === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} canta: ${canto}`, quienCanta);
-            UI.mostrarCanto(quienCanta, canto);
+            const cantoFormateado = canto.replace(/_/g, ' ');
+            UI.agregarAlChat(`${quienCanta === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} canta: ${cantoFormateado}`, quienCanta);
+            UI.mostrarCanto(quienCanta, cantoFormateado);
             
             estadoJuego.accion = 'esperando_respuesta';
             const esCantoEnvido = [CANTOS.ENVIDO, CANTOS.REAL_ENVIDO, CANTOS.FALTA_ENVIDO].includes(canto);
             const esCantoTruco = [CANTOS.TRUCO, CANTOS.RETRUCO, CANTOS.VALE_CUATRO].includes(canto);
             
             if (esCantoEnvido) {
+                estadoJuego.cantoActual = { tipo: 'envido', valor: canto };
                 estadoJuego.envido.cantado = true;
                 estadoJuego.envido.quienCanto = quienCanta;
                 estadoJuego.envido.historial.push(canto);
             } else if (esCantoTruco) {
+                estadoJuego.cantoActual = { tipo: 'truco', valor: canto };
                 estadoJuego.truco.cantado = true;
                 estadoJuego.truco.quienCanto = quienCanta;
                 estadoJuego.truco.estado = canto;
                 estadoJuego.truco.puedeSubirElJugador = quienCanta === 'ia';
                 estadoJuego.truco.puedeSubirLaIA = quienCanta === 'jugador';
             } else if (canto === CANTOS.FLOR) {
+                estadoJuego.cantoActual = { tipo: 'flor', valor: canto };
                 estadoJuego.flor.cantado = true;
                 estadoJuego.flor.quienCanto = quienCanta;
             }
@@ -830,8 +874,8 @@
             let puntos = 0;
             for (const canto of estadoJuego.envido.historial) {
                 if (canto === CANTOS.ENVIDO) puntos += 2;
-                if (canto === CANTOS.REAL_ENVIDO) puntos += 3;
-                if (canto === CANTOS.FALTA_ENVIDO) {
+                else if (canto === CANTOS.REAL_ENVIDO) puntos += 3;
+                else if (canto === CANTOS.FALTA_ENVIDO) {
                     const puntosOponente = Math.max(estadoJuego.puntos.jugador, estadoJuego.puntos.ia);
                     return estadoJuego.config.puntosMeta - puntosOponente;
                 }
@@ -842,10 +886,8 @@
         function calcularPuntosEnvidoNoQuerido() {
             let puntos = 1;
             const historial = estadoJuego.envido.historial;
-            if (historial.includes(CANTOS.FALTA_ENVIDO)) return 1;
-            if (historial.includes(CANTOS.REAL_ENVIDO)) puntos = 2;
-            if (historial.filter(c => c === CANTOS.ENVIDO).length > 1) {
-                puntos = 2;
+            if (historial.length > 1) {
+                puntos = calcularPuntosEnvidoQuerido() - 1;
             }
             return puntos;
         }
@@ -878,7 +920,7 @@
                 UI.agregarAlChat(`${IA.nombre} tiene ${puntosIA} de envido.`, 'ia');
                 UI.agregarAlChat(`Gana ${nombreGanador} ${puntosGanados} punto(s) del envido.`, 'sistema');
                 
-                UI.mostrarResultadoEnvido(puntosJugador, estadoJuego.config.nombreJugador, puntosIA, IA.nombre, nombreGanador, puntosGanados);
+                UI.mostrarResultadoEnvido("Envido", puntosJugador, estadoJuego.config.nombreJugador, puntosIA, IA.nombre, nombreGanador, puntosGanados);
                 
                 setTimeout(() => {
                     UI.ocultarResultadoEnvido();
@@ -904,20 +946,17 @@
         
         function manejarRespuesta(respuesta, quienResponde) {
             const esRespuestaJugador = quienResponde === 'jugador';
-            UI.agregarAlChat(`${esRespuestaJugador ? estadoJuego.config.nombreJugador : IA.nombre} dice: ${respuesta}`, quienResponde);
-            UI.mostrarCanto(quienResponde, respuesta);
+            const cantoFormateado = respuesta.replace(/_/g, ' ');
+            UI.agregarAlChat(`${esRespuestaJugador ? estadoJuego.config.nombreJugador : IA.nombre} dice: ${cantoFormateado}`, quienResponde);
+            UI.mostrarCanto(quienResponde, cantoFormateado);
             
-            const cantoPendiente = (estadoJuego.envido.cantado && !estadoJuego.envido.resuelto) || (estadoJuego.flor.cantado && !estadoJuego.flor.resuelto) ? 'envido' : 'truco';
+            const cantoPendiente = estadoJuego.cantoActual.tipo;
 
             if (cantoPendiente === 'envido') {
-                if (estadoJuego.flor.cantado) {
-                    // Lógica de respuesta a flor
-                } else {
-                    resolverEnvido(respuesta === CANTOS.QUIERO);
-                }
+                resolverEnvido(respuesta === CANTOS.QUIERO);
             } else if (cantoPendiente === 'truco') {
                 if (respuesta === CANTOS.QUIERO) {
-                    estadoJuego.truco.puntos = estadoJuego.truco.estado === 'TRUCO' ? 2 : estadoJuego.truco.estado === 'RETRUCO' ? 3 : 4;
+                    estadoJuego.truco.puntos = estadoJuego.truco.estado === CANTOS.TRUCO ? 2 : estadoJuego.truco.estado === CANTOS.RETRUCO ? 3 : 4;
                     estadoJuego.truco.puedeSubirElJugador = esRespuestaJugador;
                     estadoJuego.truco.puedeSubirLaIA = !esRespuestaJugador;
                 } else {
@@ -925,9 +964,13 @@
                     finalizarMano(true, quienResponde);
                     return;
                 }
+            } else if (cantoPendiente === 'flor') {
+                // Lógica de respuesta a flor
             }
             
             estadoJuego.accion = 'jugando';
+            estadoJuego.cantoActual = null;
+            // El turno vuelve a quien inició la ronda o ganó la anterior
             estadoJuego.turnoDelJugador = estadoJuego.quienJuegaRonda === 'jugador';
             actualizarTurno();
         }
@@ -957,13 +1000,18 @@
                     manejarJugada(cartaEl.dataset.id, 'jugador');
                 }
             });
-            UI.UIElements.botonesCanto.truco.addEventListener('click', () => manejarCanto(estadoJuego.truco.estado === 'no_cantado' ? CANTOS.TRUCO : estadoJuego.truco.estado === 'TRUCO' ? CANTOS.RETRUCO : CANTOS.VALE_CUATRO, 'jugador'));
+            
+            // Event Listeners para Cantos
+            UI.UIElements.botonesCanto.truco.addEventListener('click', () => manejarCanto(estadoJuego.truco.estado === 'no_cantado' ? CANTOS.TRUCO : estadoJuego.truco.estado === CANTOS.TRUCO ? CANTOS.RETRUCO : CANTOS.VALE_CUATRO, 'jugador'));
             UI.UIElements.botonesCanto.envido.addEventListener('click', () => manejarCanto(CANTOS.ENVIDO, 'jugador'));
             UI.UIElements.botonesCanto.realEnvido.addEventListener('click', () => manejarCanto(CANTOS.REAL_ENVIDO, 'jugador'));
             UI.UIElements.botonesCanto.faltaEnvido.addEventListener('click', () => manejarCanto(CANTOS.FALTA_ENVIDO, 'jugador'));
             UI.UIElements.botonesCanto.flor.addEventListener('click', () => manejarCanto(CANTOS.FLOR, 'jugador'));
+            
+            // Event Listeners para Respuestas
             UI.UIElements.quieroBtn.addEventListener('click', () => manejarRespuesta(CANTOS.QUIERO, 'jugador'));
             UI.UIElements.noQuieroBtn.addEventListener('click', () => manejarRespuesta(CANTOS.NO_QUIERO, 'jugador'));
+            
             UI.UIElements.botonesCanto.irAlMazo.addEventListener('click', () => {
                 UI.agregarAlChat(`${estadoJuego.config.nombreJugador} se va al mazo.`, 'sistema');
                 finalizarMano(true, 'jugador');
