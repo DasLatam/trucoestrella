@@ -84,6 +84,7 @@ function comenzarPartida() {
     document.getElementById('btn-comenzar').style.display = 'none';
     iniciarPartida();
 }
+window.comenzarPartida = comenzarPartida; // <-- Hace la función global para el DOM
 function iniciarRonda() {
     manoActual = 1; 
     manosGanadas = { humano: 0, cpu: 0 }; 
