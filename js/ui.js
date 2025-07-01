@@ -1,5 +1,22 @@
 // ui.js
 
+export {
+  mostrarMano,
+  mostrarCartaEnMesa,
+  limpiarMesa,
+  actualizarPorotos,
+  logHistorial,
+  mostrarBotonesCanto,
+  ocultarBotonesCanto,
+  mostrarModalVictoria,
+  mostrarOpcionesEnvido,
+  mostrarOpcionesTruco,
+  mostrarRespuestaCanto,
+  bloquearCartas,
+  desbloquearCartas
+};
+
+
 import { SIMBOLOS_PALOS } from "./config.js";
 
 export function renderCarta(carta, bocaAbajo = false) {
@@ -61,4 +78,14 @@ export function logHistorial(texto) {
   const log = document.getElementById("log");
   log.innerText += texto + "\n";
   log.scrollTop = log.scrollHeight;
+}
+// ui.js (agrega al final del archivo o donde agrupas tus exports)
+
+export function bloquearCartas() {
+  const cartas = document.querySelectorAll(".carta.jugador");
+  cartas.forEach(carta => carta.classList.add("bloqueada"));
+}
+export function desbloquearCartas() {
+  const cartas = document.querySelectorAll(".carta.jugador");
+  cartas.forEach(carta => carta.classList.remove("bloqueada"));
 }

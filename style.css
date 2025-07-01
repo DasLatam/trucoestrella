@@ -132,3 +132,8 @@ button {
   margin-top: 1rem;
   align-self: flex-end;
 }
+.carta.bloqueada {
+  pointer-events: none;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
