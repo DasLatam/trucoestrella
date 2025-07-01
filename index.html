@@ -90,7 +90,7 @@
             user-select: text;
             display: flex;
             flex-direction: column;
-            max-height: calc(100vh - 250px); /* Ajusta esta altura según sea necesario */
+            max-height: calc(100vh - 250px);
         }
         #chat p {
             margin-bottom: 5px;
@@ -113,10 +113,10 @@
             position: absolute;
             box-shadow: 1px 1px 3px rgba(0,0,0,0.5);
         }
-        .poroto1 { width: 40px; height: 3px; top: 5px; left: 5px; } /* Arriba */
-        .poroto2 { width: 3px; height: 40px; top: 5px; left: 42px; } /* Derecha */
-        .poroto3 { width: 40px; height: 3px; top: 42px; left: 5px; } /* Abajo */
-        .poroto4 { width: 3px; height: 40px; top: 5px; left: 5px; } /* Izquierda */
+        .poroto1 { width: 3px; height: 40px; top: 5px; left: 5px; } /* Izquierda */
+        .poroto2 { width: 40px; height: 3px; top: 5px; left: 5px; } /* Arriba */
+        .poroto3 { width: 3px; height: 40px; top: 5px; left: 42px; } /* Derecha */
+        .poroto4 { width: 40px; height: 3px; top: 42px; left: 5px; } /* Abajo */
         .poroto5 { width: 54px; height: 3px; top: 23px; left: -2px; transform: rotate(45deg); }
 
         #marcador-container {
@@ -142,6 +142,21 @@
             text-transform: uppercase;
             border: 2px solid #FFD700;
             pointer-events: none;
+        }
+        .player-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+        .player-name {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            margin: 0 1rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #FFD700;
         }
     </style>
 </head>
@@ -211,14 +226,15 @@
             <div class="col-span-7 flex flex-col justify-between items-center py-2 relative">
                 <!-- Canto Display IA -->
                 <div id="canto-display-ia" class="canto-display hidden" style="top: 25%;"></div>
-                <!-- Mano IA -->
-                <div class="w-full">
-                    <h2 id="nombre-ia" class="text-center text-xl font-bold mb-1 text-yellow-300">TrucoEstrella</h2>
+                <!-- Area IA -->
+                <div class="player-area">
                     <div id="mano-ia" class="flex justify-center items-center space-x-2 h-[140px]"></div>
+                    <h2 id="nombre-ia" class="player-name">TrucoEstrella</h2>
                 </div>
 
                 <!-- Mesa -->
                 <div id="mesa" class="w-full h-auto bg-green-800 rounded-lg shadow-inner flex flex-col justify-around items-center p-2 border-2 border-yellow-800 min-h-[320px]">
+                    <div id="turno-indicator" class="text-lg text-white font-bold absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-50"></div>
                     <div id="cartas-jugadas-ia" class="flex justify-center space-x-2 mb-2">
                         <div id="slot-ia-1" class="slot-carta"></div><div id="slot-ia-2" class="slot-carta"></div><div id="slot-ia-3" class="slot-carta"></div>
                     </div>
@@ -230,10 +246,10 @@
 
                 <!-- Canto Display Jugador -->
                 <div id="canto-display-jugador" class="canto-display hidden" style="bottom: 25%;"></div>
-                <!-- Mano Jugador -->
-                <div class="w-full">
+                <!-- Area Jugador -->
+                <div class="player-area">
                     <div id="mano-jugador" class="flex justify-center items-center space-x-2 h-[140px]"></div>
-                    <h2 id="nombre-jugador-display" class="text-center text-xl font-bold mt-1 text-yellow-300">Jugador</h2>
+                    <h2 id="nombre-jugador-display" class="player-name">Jugador</h2>
                 </div>
             </div>
 
@@ -324,6 +340,7 @@
             const marcadorJugadorContainer = document.getElementById('marcador-jugador');
             const marcadorIAContainer = document.getElementById('marcador-ia');
             const chatContainer = document.getElementById('chat');
+            const turnoIndicator = document.getElementById('turno-indicator');
             const botonesCanto = {
                 truco: document.getElementById('cantar-truco-btn'),
                 envido: document.getElementById('cantar-envido-btn'),
@@ -364,11 +381,11 @@
                 const gruposCompletos = Math.floor(puntos / 5);
                 const resto = puntos % 5;
                 for (let i = 0; i < gruposCompletos; i++) {
-                    html += `<div class="marcador-grupo"><div class="poroto poroto4"></div><div class="poroto poroto1"></div><div class="poroto poroto2"></div><div class="poroto poroto3"></div><div class="poroto poroto5"></div></div>`;
+                    html += `<div class="marcador-grupo"><div class="poroto poroto1"></div><div class="poroto poroto2"></div><div class="poroto poroto3"></div><div class="poroto poroto4"></div><div class="poroto poroto5"></div></div>`;
                 }
                 if (resto > 0) {
                     html += '<div class="marcador-grupo">';
-                    const ordenPorotos = [4, 1, 2, 3, 5];
+                    const ordenPorotos = [1, 2, 3, 4, 5];
                     for (let i = 0; i < resto; i++) {
                         html += `<div class="poroto poroto${ordenPorotos[i]}"></div>`;
                     }
@@ -432,39 +449,41 @@
                     const { ronda, truco, envido, conFlor, jugador, accion, cantoActual } = estadoJuego;
                     
                     const esperandoRespuesta = accion === 'esperando_respuesta';
-                    const puedeJugarCarta = esTurnoJugador && !esperandoRespuesta;
-
+                    
                     // Ocultar todos los botones de canto por defecto
                     Object.values(botonesCanto).forEach(btn => btn.classList.add('hidden'));
                     
-                    if (esTurnoJugador && !esperandoRespuesta) {
-                        // Lógica de Envido
-                        if (ronda === 1 && !envido.cantado && !truco.cantado) {
-                            botonesCanto.envido.classList.remove('hidden');
-                            botonesCanto.realEnvido.classList.remove('hidden');
-                            botonesCanto.faltaEnvido.classList.remove('hidden');
-                            if (conFlor && jugador.tieneFlor) {
-                                botonesCanto.flor.classList.remove('hidden');
+                    if (esTurnoJugador) {
+                        if (!esperandoRespuesta) {
+                             // Lógica de Truco
+                            if (truco.puedeSubirElJugador && truco.estado !== CANTOS.VALE_CUATRO) {
+                                botonesCanto.truco.textContent = truco.estado === 'no_cantado' ? 'TRUCO' : (truco.estado === CANTOS.TRUCO ? 'RETRUCO' : 'VALE CUATRO');
+                                botonesCanto.truco.classList.remove('hidden');
                             }
                         }
-                        // Lógica de Truco
-                        if (truco.puedeSubirElJugador && truco.estado !== CANTOS.VALE_CUATRO) {
-                            botonesCanto.truco.textContent = truco.estado === 'no_cantado' ? 'TRUCO' : (truco.estado === CANTOS.TRUCO ? 'RETRUCO' : 'VALE CUATRO');
-                            botonesCanto.truco.classList.remove('hidden');
-                        }
-                    }
 
-                    if (esTurnoJugador && esperandoRespuesta) {
-                        quieroContainer.classList.remove('hidden');
-                        // Lógica para subir la apuesta del envido
-                        if (cantoActual.tipo === 'envido') {
-                            const ultimoCanto = cantoActual.valor;
-                            if (ultimoCanto === CANTOS.ENVIDO) {
-                                botonesCanto.realEnvido.classList.remove('hidden');
-                                botonesCanto.faltaEnvido.classList.remove('hidden');
-                            }
-                            if (ultimoCanto === CANTOS.REAL_ENVIDO) {
-                                botonesCanto.faltaEnvido.classList.remove('hidden');
+                        // Lógica de Envido (siempre primero)
+                        const puedeCantarEnvido = ronda === 1 && !envido.cantado;
+                        if (puedeCantarEnvido) {
+                             botonesCanto.envido.classList.remove('hidden');
+                             botonesCanto.realEnvido.classList.remove('hidden');
+                             botonesCanto.faltaEnvido.classList.remove('hidden');
+                             if (conFlor && jugador.tieneFlor) {
+                                 botonesCanto.flor.classList.remove('hidden');
+                             }
+                        }
+
+                        if (esperandoRespuesta) {
+                            quieroContainer.classList.remove('hidden');
+                            if (cantoActual.tipo === 'envido') {
+                                const ultimoCanto = cantoActual.valor;
+                                if (ultimoCanto === CANTOS.ENVIDO) {
+                                    botonesCanto.realEnvido.classList.remove('hidden');
+                                    botonesCanto.faltaEnvido.classList.remove('hidden');
+                                }
+                                if (ultimoCanto === CANTOS.REAL_ENVIDO) {
+                                    botonesCanto.faltaEnvido.classList.remove('hidden');
+                                }
                             }
                         }
                     } else {
@@ -475,9 +494,17 @@
                     botonesCanto.irAlMazo.disabled = !esTurnoJugador;
 
                     manoJugadorContainer.querySelectorAll('.carta').forEach(carta => {
-                        carta.classList.toggle('deshabilitada', !puedeJugarCarta);
-                        carta.classList.toggle('jugable', puedeJugarCarta);
+                        carta.classList.toggle('deshabilitada', !esTurnoJugador || esperandoRespuesta);
+                        carta.classList.toggle('jugable', esTurnoJugador && !esperandoRespuesta);
                     });
+                },
+                mostrarTurno: (nombre) => {
+                    if (nombre) {
+                        turnoIndicator.textContent = `Esperando a ${nombre}...`;
+                        turnoIndicator.classList.remove('hidden');
+                    } else {
+                        turnoIndicator.classList.add('hidden');
+                    }
                 },
                 mostrarCanto: (jugador, canto) => {
                     const displayEl = jugador === 'jugador' ? cantoDisplayJugador : cantoDisplayIA;
@@ -566,6 +593,7 @@
         // --- Módulo: js/main.js ---
         let estadoJuego;
         const IA = new TrucoEstrella();
+        const NOMBRES_RONDAS = ['', 'Primera', 'Segunda', 'Tercera'];
 
         function getValorTruco(carta) {
             if (!carta) return 999;
@@ -614,8 +642,9 @@
                 ronda: 0, 
                 ganadorRonda: [],
                 mesa: { jugador: [], ia: [] },
-                accion: 'jugando', // 'jugando', 'esperando_respuesta'
+                accion: 'jugando', // 'jugando', 'esperando_respuesta', 'resolviendo_envido'
                 cantoActual: null, // { tipo: 'envido'/'truco', valor: 'ENVIDO' }
+                trucoPendiente: null,
                 envido: null, flor: null, truco: null,
                 juegoTerminado: false,
             };
@@ -655,6 +684,7 @@
             estadoJuego.jugadorEsMano = !estadoJuego.jugadorEsMano;
             estadoJuego.accion = 'jugando';
             estadoJuego.cantoActual = null;
+            estadoJuego.trucoPendiente = null;
             resetearCantos();
             crearMazo();
             repartirCartas();
@@ -689,6 +719,8 @@
 
         function actualizarTurno() {
             if (estadoJuego.juegoTerminado) return;
+            const nombreTurno = estadoJuego.turnoDelJugador ? estadoJuego.config.nombreJugador : IA.nombre;
+            UI.mostrarTurno(nombreTurno);
             UI.actualizarBotones(estadoJuego, estadoJuego.turnoDelJugador);
             if (!estadoJuego.turnoDelJugador && estadoJuego.accion === 'jugando') {
                 setTimeout(turnoIA, 1500);
@@ -786,7 +818,7 @@
             }
             
             if (estadoJuego.envido.cantado && !estadoJuego.envido.resuelto) {
-                resolverEnvido(false);
+                resolverEnvido(false); // No querido
             }
             if (estadoJuego.config.conFlor && estadoJuego.flor.cantado && !estadoJuego.flor.resuelto) {
                  resolverFlor();
@@ -820,8 +852,8 @@
             estadoJuego.ganadorRonda.push(ganadorRonda);
             
             const nombreGanador = ganadorRonda === 'jugador' ? estadoJuego.config.nombreJugador : ganadorRonda === 'ia' ? IA.nombre : 'Parda';
-            UI.mostrarMensajeF(`Ronda para: ${nombreGanador}`);
-            UI.agregarAlChat(`Gana la ronda ${nombreGanador}.`, 'sistema');
+            UI.mostrarMensajeF(`${NOMBRES_RONDAS[estadoJuego.ronda]} para: ${nombreGanador}`);
+            UI.agregarAlChat(`Gana la ${NOMBRES_RONDAS[estadoJuego.ronda].toLowerCase()} ${nombreGanador}.`, 'sistema');
             
             if (checkFinMano()) {
                 finalizarMano();
@@ -842,6 +874,9 @@
             const esCantoTruco = [CANTOS.TRUCO, CANTOS.RETRUCO, CANTOS.VALE_CUATRO].includes(canto);
             
             if (esCantoEnvido) {
+                if(estadoJuego.truco.cantado && !estadoJuego.truco.resuelto) {
+                    estadoJuego.trucoPendiente = estadoJuego.truco.estado;
+                }
                 estadoJuego.cantoActual = { tipo: 'envido', valor: canto };
                 estadoJuego.envido.cantado = true;
                 estadoJuego.envido.quienCanto = quienCanta;
@@ -860,7 +895,7 @@
             }
             
             estadoJuego.turnoDelJugador = (quienCanta === 'ia');
-            UI.actualizarBotones(estadoJuego, estadoJuego.turnoDelJugador);
+            actualizarTurno();
 
             if (!estadoJuego.turnoDelJugador) {
                 setTimeout(() => {
@@ -970,8 +1005,16 @@
             
             estadoJuego.accion = 'jugando';
             estadoJuego.cantoActual = null;
-            // El turno vuelve a quien inició la ronda o ganó la anterior
-            estadoJuego.turnoDelJugador = estadoJuego.quienJuegaRonda === 'jugador';
+            
+            if (estadoJuego.trucoPendiente) {
+                estadoJuego.accion = 'esperando_respuesta';
+                estadoJuego.cantoActual = { tipo: 'truco', valor: estadoJuego.trucoPendiente };
+                estadoJuego.trucoPendiente = null;
+                estadoJuego.turnoDelJugador = !quienResponde;
+            } else {
+                 estadoJuego.turnoDelJugador = estadoJuego.quienJuegaRonda === 'jugador';
+            }
+            
             actualizarTurno();
         }
 
