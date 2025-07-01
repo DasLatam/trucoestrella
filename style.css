@@ -203,6 +203,8 @@ body {
     border-top: 2px dashed rgba(255,255,255,0.2);
     border-bottom: 2px dashed rgba(255,255,255,0.2);
     padding: 8px 0;
+    /* *** FIX: Añadir margen para que no tape el nombre del jugador *** */
+    margin-bottom: 10px;
 }
 .mesa-slots {
     display: flex;
