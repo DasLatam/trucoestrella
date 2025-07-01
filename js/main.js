@@ -74,25 +74,59 @@ function mostrarBotonesDeCantoInicial() { if(juegoPausado || !turnoDelHumano) { 
 // --- Flujo Principal y Lógica de Cantos ---
 function pausarJuego() { juegoPausado = true; }
 function reanudarJuego() { juegoPausado = false; }
-function iniciarPartida() { marcador = { humano: 0, cpu: 0 }; manoDeLaRonda = (manoDeLaRonda === 'humano') ? 'cpu' : 'humano'; if(botones.log) { botones.log.innerHTML = ''; } iniciarRonda(); }
+function iniciarPartida() { 
+    marcador = { humano: 0, cpu: 0 }; 
+    manoDeLaRonda = (manoDeLaRonda === 'humano') ? 'cpu' : 'humano'; 
+    if(botones.log) { botones.log.innerHTML = ''; } 
+    iniciarRonda(); 
+}
 function comenzarPartida() {
     document.getElementById('btn-comenzar').style.display = 'none';
     iniciarPartida();
 }
 function iniciarRonda() {
-  manoActual = 1; manosGanadas = { humano: 0, cpu: 0 }; resultadosManos = [];
-  estadoEnvido = { nivel: 0, respondido: false }; estadoTruco = 0; cantoActual = null; tieneFlor = { humano: false, cpu: false, respondido: false };
-  jugadorMano = manoDeLaRonda; cartaJugadaPorLider = null; reanudarJuego();
-  jugadorHumano.mano = []; jugadorCPU.mano = [];
-  actualizarMarcador(); ocultarTodosLosControles(); botones.nuevoJuego.style.display = 'none';
-  for(let i=1; i<=3; i++) { document.getElementById(`slot-humano-${i}`).innerHTML = ''; document.getElementById(`slot-cpu-${i}`).innerHTML = ''; }
-  const baraja = crearBarajaTruco(); barajar(baraja);
-  for (let i = 0; i < 3; i++) { jugadorHumano.mano.push(baraja.pop()); jugadorCPU.mano.push(baraja.pop()); }
-  if(JUGAR_CON_FLOR) { tieneFlor.humano = detectarFlor(jugadorHumano.mano); tieneFlor.cpu = detectarFlor(jugadorCPU.mano); }
-  dibujarManoCPU(true); dibujarMano();
-  if (tieneFlor.humano) { botones.flor.style.display = 'block'; actualizarInfo(`¡Tienes Flor! Debes cantarla.`); }
-  else if (tieneFlor.cpu) { agregarAlLog(jugadorCPU.nombre, "¡FLOR!"); finalizarRonda(null, {tipo: 'flor', ganador: 'cpu'}); }
-  else { prepararSiguienteMano(); }
+    manoActual = 1; 
+    manosGanadas = { humano: 0, cpu: 0 }; 
+    resultadosManos = [];
+    estadoEnvido = { nivel: 0, respondido: false }; 
+    estadoTruco = 0; 
+    cantoActual = null; 
+    tieneFlor = { humano: false, cpu: false, respondido: false };
+    jugadorMano = manoDeLaRonda; 
+    cartaJugadaPorLider = null; 
+    reanudarJuego();
+    jugadorHumano.mano = []; 
+    jugadorCPU.mano = [];
+    actualizarMarcador(); 
+    ocultarTodosLosControles(); 
+    botones.nuevoJuego.style.display = 'none';
+    for(let i=1; i<=3; i++) { 
+        document.getElementById(`slot-humano-${i}`).innerHTML = ''; 
+        document.getElementById(`slot-cpu-${i}`).innerHTML = ''; 
+    }
+    const baraja = crearBarajaTruco(); 
+    barajar(baraja);
+    for (let i = 0; i < 3; i++) { 
+        jugadorHumano.mano.push(baraja.pop()); 
+        jugadorCPU.mano.push(baraja.pop()); 
+    }
+    if(JUGAR_CON_FLOR) { 
+        tieneFlor.humano = detectarFlor(jugadorHumano.mano); 
+        tieneFlor.cpu = detectarFlor(jugadorCPU.mano); 
+    }
+    dibujarManoCPU(true); 
+    dibujarMano();
+    if (tieneFlor.humano) { 
+        botones.flor.style.display = 'block'; 
+        actualizarInfo(`¡Tienes Flor! Debes cantarla.`); 
+    }
+    else if (tieneFlor.cpu) { 
+        agregarAlLog(jugadorCPU.nombre, "¡FLOR!"); 
+        finalizarRonda(null, {tipo: 'flor', ganador: 'cpu'}); 
+    }
+    else { 
+        prepararSiguienteMano(); 
+    }
 }
 function prepararSiguienteMano() {
     if(juegoPausado) return;
