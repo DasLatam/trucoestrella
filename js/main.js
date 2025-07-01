@@ -429,3 +429,11 @@ document.addEventListener('DOMContentLoaded', () => {
     botones.reTruco.addEventListener('click', () => manejarRespuesta('humano', 're-truco'));
     botones.valeCuatro.addEventListener('click', () => manejarRespuesta('humano', 'vale-cuatro'));
 });
+
+function actualizarMarcador() {
+    if (!botones || !botones.marcadorGrafico) return;
+    botones.marcadorGrafico.innerHTML = `
+        <span>${jugadorHumano.nombre}: ${marcador.humano}</span> |
+        <span>${jugadorCPU.nombre}: ${marcador.cpu}</span>
+    `;
+}
