@@ -1,5 +1,90 @@
 // ui.js
 
+function mostrarMano(jugadorId, mano, ocultar, callback) {
+  const contenedor = document.getElementById(jugadorId === "jugador" ? "mano-jugador" : "mano-ia");
+  contenedor.innerHTML = "";
+  mano.forEach((carta, index) => {
+    const div = document.createElement("div");
+    div.className = "carta";
+    div.innerText = ocultar ? "🂠" : `${carta.numero} ${carta.palo}`;
+    if (!ocultar && jugadorId === "jugador") {
+      div.classList.add("jugador");
+      div.addEventListener("click", () => callback(index));
+    }
+    contenedor.appendChild(div);
+  });
+}
+
+function mostrarCartaEnMesa(jugadorId, carta) {
+  const contenedor = document.getElementById("mesa");
+  const div = document.createElement("div");
+  div.className = "carta mesa";
+  div.innerText = `${carta.numero} ${carta.palo}`;
+  contenedor.appendChild(div);
+}
+
+function limpiarMesa() {
+  document.getElementById("mesa").innerHTML = "";
+}
+
+function actualizarPorotos(jugadorId, puntos) {
+  const contenedor = document.getElementById(`porotos-${jugadorId}`);
+  contenedor.innerHTML = "";
+  for (let i = 0; i < puntos; i++) {
+    const poroto = document.createElement("div");
+    poroto.className = "poroto";
+    contenedor.appendChild(poroto);
+  }
+}
+
+function logHistorial(texto) {
+  const historial = document.getElementById("historial");
+  const p = document.createElement("p");
+  p.textContent = texto;
+  historial.appendChild(p);
+  historial.scrollTop = historial.scrollHeight;
+}
+
+function mostrarBotonesCanto(visible) {
+  document.getElementById("botones-canto").style.display = visible ? "flex" : "none";
+}
+
+function ocultarBotonesCanto() {
+  mostrarBotonesCanto(false);
+}
+
+function mostrarModalVictoria(nombreGanador) {
+  const modal = document.getElementById("modal-victoria");
+  modal.style.display = "block";
+  document.getElementById("ganador").textContent = nombreGanador;
+}
+
+function mostrarOpcionesEnvido(tipo, callback) {
+  // por ahora simplificado
+  callback("quiero");
+}
+
+function mostrarOpcionesTruco(tipo, callback) {
+  // por ahora simplificado
+  callback("quiero");
+}
+
+function mostrarRespuestaCanto(tipo, callback) {
+  // por ahora simplificado
+  const aceptar = confirm(`${tipo.toUpperCase()}: ¿Querés aceptar?`);
+  callback(aceptar ? "quiero" : "no quiero");
+}
+
+function bloquearCartas() {
+  const cartas = document.querySelectorAll(".carta.jugador");
+  cartas.forEach(carta => carta.classList.add("bloqueada"));
+}
+
+function desbloquearCartas() {
+  const cartas = document.querySelectorAll(".carta.jugador");
+  cartas.forEach(carta => carta.classList.remove("bloqueada"));
+}
+
 export {
   mostrarMano,
   mostrarCartaEnMesa,
@@ -15,77 +100,3 @@ export {
   bloquearCartas,
   desbloquearCartas
 };
-
-
-import { SIMBOLOS_PALOS } from "./config.js";
-
-export function renderCarta(carta, bocaAbajo = false) {
-  const div = document.createElement("div");
-  div.className = "carta";
-
-  if (bocaAbajo) {
-    div.textContent = "🂠";
-    div.style.backgroundColor = "#aaa";
-  } else {
-    div.textContent = `${carta.numero} ${SIMBOLOS_PALOS[carta.palo]}`;
-    div.dataset.numero = carta.numero;
-    div.dataset.palo = carta.palo;
-  }
-
-  return div;
-}
-
-export function mostrarMano(jugador, cartas, bocaAbajo = false, clickHandler = null) {
-  const contenedor = document.getElementById(jugador === "ia" ? "mano-ia" : "mano-jugador");
-  contenedor.innerHTML = "";
-
-  cartas.forEach((carta, index) => {
-    const el = renderCarta(carta, bocaAbajo);
-    if (clickHandler && !bocaAbajo) {
-      el.addEventListener("click", () => clickHandler(carta, index));
-      el.classList.add("clickable");
-    }
-    contenedor.appendChild(el);
-  });
-}
-
-export function mostrarCartaEnMesa(jugador, carta) {
-  const div = renderCarta(carta);
-  const slot = document.createElement("div");
-  slot.appendChild(div);
-  slot.className = `slot slot-${jugador}`;
-  document.getElementById("mesa").appendChild(slot);
-}
-
-export function limpiarMesa() {
-  document.getElementById("mesa").innerHTML = "";
-}
-
-export function actualizarPorotos(jugador, puntos) {
-  const contenedor = document.getElementById(
-    jugador === "ia" ? "porotos-ia" : "porotos-jugador"
-  );
-  contenedor.innerHTML = "";
-  for (let i = 0; i < puntos; i++) {
-    const p = document.createElement("div");
-    p.className = "poroto";
-    contenedor.appendChild(p);
-    if ((i + 1) % 5 === 0) contenedor.appendChild(document.createElement("br"));
-  }
-}
-
-export function logHistorial(texto) {
-  const log = document.getElementById("log");
-  log.innerText += texto + "\n";
-  log.scrollTop = log.scrollHeight;
-}
-// ui.js (agrega al final del archivo o donde agrupas tus exports)
-
-export function bloquearCartas() {
-  const cartas = document.querySelectorAll(".carta.jugador");
-  cartas.forEach(carta => carta.classList.add("bloqueada"));
-}
-export function desbloquearCartas() {
-  const cartas = document.querySelectorAll(".carta.jugador");
-  cartas.forEach(carta => carta.classList.remove("bloqueada"));
-}
