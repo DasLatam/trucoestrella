@@ -1,123 +1,226 @@
 // main.js
-import { crearMazo, getValorEnvido, getValorTruco } from "./config.js";
-import { mostrarMano, mostrarCartaEnMesa, limpiarMesa, actualizarPorotos, logHistorial } from "./ui.js";
-import { iaElegirCantoEnvido, iaResponderEnvido, iaJugarCarta } from "./ia.js";
+import { crearMazo, getValorEnvido, getValorTruco, jerarquiaTruco } from "./config.js";
+import {
+  mostrarMano,
+  mostrarCartaEnMesa,
+  limpiarMesa,
+  actualizarPorotos,
+  logHistorial,
+  mostrarBotonesCanto,
+  ocultarBotonesCanto,
+  mostrarModalVictoria,
+  mostrarOpcionesEnvido,
+  mostrarOpcionesTruco,
+  mostrarRespuestaCanto,
+  bloquearCartas,
+  desbloquearCartas
+} from "./ui.js";
+import {
+  iaJugarCarta,
+  iaElegirCantoTruco,
+  iaResponderTruco,
+  iaElegirCantoEnvido,
+  iaResponderEnvido
+} from "./ia.js";
 
-let jugador = {
-  nombre: "Jugador",
-  puntos: 0,
-  mano: [],
-};
-
-let ia = {
-  nombre: "TrucoEstrella",
-  puntos: 0,
-  mano: [],
-};
+let jugador = { nombre: "Jugador", puntos: 0, mano: [], envido: 0 };
+let ia = { nombre: "TrucoEstrella", puntos: 0, mano: [], envido: 0 };
 
 let estado = {
-  turno: "jugador", // o "ia"
+  turno: "jugador",
   cartasJugadas: [],
   enRonda: false,
-  enMano: false,
   ronda: 1,
   partidaA: 15,
   florHabilitada: false,
   quienEsMano: "jugador",
   mazo: [],
+  manoActual: 1,
+  cantos: {
+    envido: null,
+    truco: { nivel: 1, activo: false },
+    flor: null
+  },
+  historialManos: [],
+  cartasJugador: [],
+  cartasIA: [],
+  estadoCanto: null // 'envido', 'truco', etc.
 };
 
 function iniciarJuego() {
-  const nombre = document.getElementById("input-nombre").value || "Jugador";
-  const puntos = document.querySelector('input[name="puntos"]:checked').value;
-  const flor = document.getElementById("check-flor").checked;
-
-  jugador.nombre = nombre;
-  jugador.puntos = 0;
-  ia.puntos = 0;
-  estado.partidaA = parseInt(puntos);
-  estado.florHabilitada = flor;
-  estado.ronda = 1;
-  estado.quienEsMano = Math.random() < 0.5 ? "jugador" : "ia";
+  jugador.nombre = document.getElementById("input-nombre").value || "Jugador";
+  estado.partidaA = parseInt(document.querySelector('input[name="puntos"]:checked').value);
+  estado.florHabilitada = document.getElementById("check-flor").checked;
 
   document.getElementById("pantalla-inicio").style.display = "none";
   document.getElementById("pantalla-juego").style.display = "flex";
-  logHistorial(`🃏 ¡Comienza la partida a ${estado.partidaA} puntos!`);
+
+  logHistorial(`🎯 Comienza la partida a ${estado.partidaA} puntos.`);
   iniciarRonda();
 }
 
 function iniciarRonda() {
   estado.enRonda = true;
   estado.cartasJugadas = [];
+  estado.manoActual = 1;
+  estado.cantos = { envido: null, truco: { nivel: 1, activo: false }, flor: null };
   estado.turno = estado.quienEsMano;
 
   estado.mazo = mezclar(crearMazo());
-
   jugador.mano = estado.mazo.splice(0, 3);
   ia.mano = estado.mazo.splice(0, 3);
 
+  jugador.envido = getValorEnvido(jugador.mano);
+  ia.envido = getValorEnvido(ia.mano);
+
+  mostrarMano("jugador", jugador.mano, false, jugarCarta);
+  mostrarMano("ia", ia.mano, true);
   limpiarMesa();
-  mostrarMano("jugador", jugador.mano, false, jugarCarta);
-  mostrarMano("ia", ia.mano, true);
   actualizarPorotos("jugador", jugador.puntos);
   actualizarPorotos("ia", ia.puntos);
+  mostrarBotonesCanto(true);
 
-  logHistorial(`🎲 Ronda ${estado.ronda}. Mano: ${estado.quienEsMano === "jugador" ? jugador.nombre : "TrucoEstrella"}`);
+  logHistorial(`🃏 Ronda ${estado.ronda}: Mano es ${estado.quienEsMano}`);
 
-  if (estado.florHabilitada) verificarFlor();
-
-  if (estado.turno === "ia") setTimeout(turnoIA, 1000);
-}
-
-function verificarFlor() {
-  const florJugador = contarFlor(jugador.mano);
-  const florIA = contarFlor(ia.mano);
-
-  if (florJugador >= 0 && florIA >= 0) {
-    logHistorial(`🌸 Flor de ambos: Jugador ${florJugador} pts vs IA ${florIA} pts`);
-    if (florJugador > florIA) jugador.puntos += 3;
-    else if (florIA > florJugador) ia.puntos += 3;
-  } else if (florJugador >= 0) {
-    logHistorial(`🌸 ${jugador.nombre} tiene Flor (${florJugador} pts)`);
-    jugador.puntos += 3;
-  } else if (florIA >= 0) {
-    logHistorial("🌸 TrucoEstrella tiene Flor");
-    ia.puntos += 3;
-  }
-  actualizarPorotos("jugador", jugador.puntos);
-  actualizarPorotos("ia", ia.puntos);
-}
-
-function contarFlor(mano) {
-  const palos = mano.map(c => c.palo);
-  const set = new Set(palos);
-  if (set.size === 1) {
-    return getValorEnvido(mano);
-  }
-  return -1;
-}
-
-function turnoIA() {
-  const carta = iaJugarCarta(ia.mano, estado.cartasJugadas[estado.cartasJugadas.length - 1]?.jugador === "jugador" ? estado.cartasJugadas[estado.cartasJugadas.length - 1].carta : null);
-  ia.mano = ia.mano.filter(c => c !== carta);
-  mostrarMano("ia", ia.mano, true);
-  mostrarCartaEnMesa("ia", carta);
-  estado.cartasJugadas.push({ jugador: "ia", carta });
-
-  // Ahora turno del jugador
-  estado.turno = "jugador";
-  mostrarMano("jugador", jugador.mano, false, jugarCarta);
+  if (estado.turno === "ia") turnoIA();
 }
 
 function jugarCarta(carta, index) {
-  if (estado.turno !== "jugador") return;
+  if (estado.turno !== "jugador" || estado.estadoCanto) return;
+
+  bloquearCartas();
   jugador.mano.splice(index, 1);
-  mostrarMano("jugador", jugador.mano, false, jugarCarta);
-  mostrarCartaEnMesa("jugador", carta);
+  estado.cartasJugador.push(carta);
   estado.cartasJugadas.push({ jugador: "jugador", carta });
 
-  estado.turno = "ia";
-  setTimeout(turnoIA, 1000);
+  mostrarMano("jugador", jugador.mano, false, jugarCarta);
+  mostrarCartaEnMesa("jugador", carta);
+  cambiarTurno();
+}
+
+function turnoIA() {
+  if (estado.estadoCanto) return;
+
+  setTimeout(() => {
+    const eleccion = iaElegirCantoTruco(ia.mano);
+    if (!estado.cantos.truco.activo && eleccion === "truco") {
+      cantarTruco("ia");
+      return;
+    }
+
+    const cartaJugador = estado.cartasJugadas.filter(c => c.jugador === "jugador")[estado.manoActual - 1];
+    const cartaIA = iaJugarCarta(ia.mano, cartaJugador?.carta);
+    ia.mano = ia.mano.filter(c => c !== cartaIA);
+    estado.cartasIA.push(cartaIA);
+    estado.cartasJugadas.push({ jugador: "ia", carta: cartaIA });
+    mostrarMano("ia", ia.mano, true);
+    mostrarCartaEnMesa("ia", cartaIA);
+    cambiarTurno();
+  }, 1000);
+}
+
+function cambiarTurno() {
+  if (estado.cartasJugador.length === estado.manoActual && estado.cartasIA.length === estado.manoActual) {
+    const cartaJ = estado.cartasJugador[estado.manoActual - 1];
+    const cartaI = estado.cartasIA[estado.manoActual - 1];
+    const resultado = compararCartas(cartaJ, cartaI);
+
+    if (resultado === 1) logHistorial(`🟢 Mano ${estado.manoActual} la gana ${jugador.nombre}`);
+    else if (resultado === -1) logHistorial(`🔴 Mano ${estado.manoActual} la gana TrucoEstrella`);
+    else logHistorial(`⚪ Mano ${estado.manoActual} es parda`);
+
+    estado.manoActual++;
+
+    if (estado.manoActual > 3) terminarRonda();
+    else estado.turno = estado.quienEsMano === "jugador" ? "ia" : "jugador";
+
+    desbloquearCartas();
+    if (estado.turno === "ia") turnoIA();
+  } else {
+    estado.turno = estado.turno === "jugador" ? "ia" : "jugador";
+    desbloquearCartas();
+    if (estado.turno === "ia") turnoIA();
+  }
+}
+
+function compararCartas(carta1, carta2) {
+  const valor1 = getValorTruco(carta1);
+  const valor2 = getValorTruco(carta2);
+  if (valor1 > valor2) return 1;
+  else if (valor1 < valor2) return -1;
+  else return 0;
+}
+
+function terminarRonda() {
+  const manosGanadas = { jugador: 0, ia: 0 };
+
+  for (let i = 0; i < 3; i++) {
+    const cJ = estado.cartasJugador[i];
+    const cI = estado.cartasIA[i];
+    if (!cJ || !cI) continue;
+    const res = compararCartas(cJ, cI);
+    if (res === 1) manosGanadas.jugador++;
+    else if (res === -1) manosGanadas.ia++;
+  }
+
+  let ganador = null;
+  if (manosGanadas.jugador > manosGanadas.ia) ganador = "jugador";
+  else if (manosGanadas.ia > manosGanadas.jugador) ganador = "ia";
+  else ganador = estado.quienEsMano;
+
+  if (ganador === "jugador") {
+    jugador.puntos += estado.cantos.truco.nivel;
+    logHistorial(`✅ Ronda ganada por ${jugador.nombre}`);
+  } else {
+    ia.puntos += estado.cantos.truco.nivel;
+    logHistorial(`❌ Ronda ganada por TrucoEstrella`);
+  }
+
+  actualizarPorotos("jugador", jugador.puntos);
+  actualizarPorotos("ia", ia.puntos);
+
+  if (jugador.puntos >= estado.partidaA) mostrarModalVictoria(jugador.nombre);
+  else if (ia.puntos >= estado.partidaA) mostrarModalVictoria("TrucoEstrella");
+  else {
+    estado.ronda++;
+    estado.quienEsMano = estado.quienEsMano === "jugador" ? "ia" : "jugador";
+    estado.cartasJugador = [];
+    estado.cartasIA = [];
+    iniciarRonda();
+  }
+}
+
+function cantarTruco(quien) {
+  estado.estadoCanto = "truco";
+  logHistorial(`${quien === "jugador" ? jugador.nombre : "TrucoEstrella"} canta TRUCO!`);
+
+  if (quien === "jugador") {
+    mostrarRespuestaCanto("truco", respuesta => {
+      if (respuesta === "quiero") {
+        estado.cantos.truco.activo = true;
+        logHistorial(`TrucoEstrella dice QUIERO al Truco.`);
+      } else {
+        logHistorial(`TrucoEstrella dice NO QUIERO al Truco. Gana 1 punto ${jugador.nombre}`);
+        jugador.puntos += 1;
+        terminarRonda();
+        return;
+      }
+      estado.estadoCanto = null;
+    });
+  } else {
+    mostrarRespuestaCanto("truco", respuesta => {
+      if (respuesta === "quiero") {
+        estado.cantos.truco.activo = true;
+        logHistorial(`${jugador.nombre} dice QUIERO al Truco.`);
+      } else {
+        logHistorial(`${jugador.nombre} dice NO QUIERO al Truco. Gana 1 punto TrucoEstrella`);
+        ia.puntos += 1;
+        terminarRonda();
+        return;
+      }
+      estado.estadoCanto = null;
+    });
+  }
 }
 
 function mezclar(array) {
@@ -131,3 +234,4 @@ function mezclar(array) {
 document.getElementById("btn-comenzar").addEventListener("click", iniciarJuego);
 document.getElementById("btn-reiniciar").addEventListener("click", () => location.reload());
 document.getElementById("btn-limpiar-cache").addEventListener("click", () => location.reload(true));
+document.getElementById("btn-truco").addEventListener("click", () => cantarTruco("jugador"));
