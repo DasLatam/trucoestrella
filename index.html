@@ -1,125 +1,77 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Truco Argentino</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TrucoEstrella</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <main id="app">
+    <section id="menu-inicial">
+      <h1>🎴 TrucoEstrella</h1>
 
-    <!-- Pantalla de Configuración Inicial -->
-    <div id="setup-screen" class="pantalla activa">
-        <div class="setup-container">
-            <h1>Truco Argentino</h1>
-            <p>Configura tu partida</p>
-            <div class="form-group">
-                <label for="player-name">Tu Nombre:</label>
-                <input type="text" id="player-name" value="Jugador" maxlength="15">
-            </div>
-            <div class="form-group">
-                <label>Jugar a:</label>
-                <div class="radio-group">
-                    <label><input type="radio" name="puntos" value="15"> 15 Puntos</label>
-                    <label><input type="radio" name="puntos" value="30" checked> 30 Puntos</label>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="checkbox-label"><input type="checkbox" id="con-flor"> Jugar con Flor</label>
-            </div>
-            <button id="start-game-btn" class="btn btn-primary">Comenzar Partida</button>
-            <button id="btn-clear-cache" class="btn btn-secondary" title="Fuerza la recarga de la página sin usar la memoria caché del navegador.">Limpiar Cache</button>
-        </div>
-    </div>
+      <label>
+        Nombre del jugador:
+        <input type="text" id="nombre-jugador" maxlength="20" placeholder="Tu nombre" />
+      </label>
 
-    <!-- Pantalla de Juego Principal -->
-    <div id="game-screen" class="pantalla">
-        <button id="btn-menu-principal" class="btn btn-menu">Volver al Menú</button>
+      <fieldset>
+        <legend>Puntos</legend>
+        <label><input type="radio" name="puntos" value="15" checked /> 15 puntos</label>
+        <label><input type="radio" name="puntos" value="30" /> 30 puntos</label>
+      </fieldset>
+
+      <label>
+        <input type="checkbox" id="activar-flor" />
+        Jugar con Flor
+      </label>
+
+      <button id="comenzar-btn">Comenzar Partida</button>
+      <button id="limpiar-cache-btn">Limpiar Cache</button>
+    </section>
+
+    <section id="pantalla-juego" class="oculto">
+      <!-- Juego en curso -->
+      <div id="layout-juego">
         <!-- Columna 1: Botonera de Cantos -->
-        <div id="col-botones" class="columna">
-            <div class="botonera">
-                <button id="btn-envido" class="btn btn-canto">Envido</button>
-                <button id="btn-real-envido" class="btn btn-canto">Real Envido</button>
-                <button id="btn-falta-envido" class="btn btn-canto">Falta Envido</button>
-                <button id="btn-truco" class="btn btn-canto">Truco</button>
-                <button id="btn-retruco" class="btn btn-canto">Re-Truco</button>
-                <button id="btn-vale-cuatro" class="btn btn-canto">Vale Cuatro</button>
-                <button id="btn-flor" class="btn btn-canto btn-flor">Flor</button>
-                <button id="btn-contraflor" class="btn btn-canto btn-flor">Contraflor</button>
-                <button id="btn-contraflor-resto" class="btn btn-canto btn-flor">C. al Resto</button>
-                <button id="btn-quiero" class="btn btn-respuesta">Quiero</button>
-                <button id="btn-no-quiero" class="btn btn-respuesta">No Quiero</button>
-                <button id="btn-ir-al-mazo" class="btn btn-mazo">Ir al Mazo</button>
-            </div>
+        <div id="columna-cantos">
+          <button class="btn-canto" data-canto="truco">Truco</button>
+          <button class="btn-canto" data-canto="envido">Envido</button>
+          <button class="btn-canto" data-canto="quiero-ir-al-mazo">Ir al Mazo</button>
         </div>
 
         <!-- Columna 2: Área de Juego -->
-        <div id="col-juego" class="columna">
-            <div id="cpu-info" class="player-info">
-                <span id="cpu-name-display">TrucoEstrella</span>
-                <div id="cpu-hand" class="mano">
-                    <!-- Cartas de la CPU (boca abajo) -->
-                </div>
-            </div>
-            <div id="mesa">
-                <div class="mesa-slots" id="cpu-slots">
-                    <div class="slot-mesa" id="cpu-slot-1"></div>
-                    <div class="slot-mesa" id="cpu-slot-2"></div>
-                    <div class="slot-mesa" id="cpu-slot-3"></div>
-                </div>
-                <div class="mesa-slots" id="player-slots">
-                    <div class="slot-mesa" id="player-slot-1"></div>
-                    <div class="slot-mesa" id="player-slot-2"></div>
-                    <div class="slot-mesa" id="player-slot-3"></div>
-                </div>
-            </div>
-            <div id="player-info" class="player-info">
-                 <span id="player-name-display">Jugador</span>
-                <div id="player-hand" class="mano">
-                    <!-- Cartas del Jugador (boca arriba) -->
-                </div>
-            </div>
+        <div id="area-juego">
+          <div id="mano-ia" class="mano ia"></div>
+          <div id="mesa"></div>
+          <div id="mano-jugador" class="mano jugador"></div>
         </div>
 
-        <!-- Columna 3: Marcador -->
-        <div id="col-marcador" class="columna">
-            <div class="marcador-container">
-                <h3>Puntos</h3>
-                <div class="score-section">
-                    <h4 id="cpu-name-marcador">TrucoEstrella</h4>
-                    <div id="marcador-cpu" class="marcador"></div>
-                </div>
-                <hr>
-                 <div class="score-section">
-                    <h4 id="player-name-marcador">Jugador</h4>
-                    <div id="marcador-player" class="marcador"></div>
-                </div>
-            </div>
+        <!-- Columna 3: Puntos -->
+        <div id="columna-puntos">
+          <div>
+            <span id="nombre-jugador-marcador"></span>
+            <div id="porotos-jugador" class="porotos"></div>
+          </div>
+          <hr />
+          <div>
+            <span>TrucoEstrella</span>
+            <div id="porotos-ia" class="porotos"></div>
+          </div>
         </div>
 
         <!-- Columna 4: Historial -->
-        <div id="col-historial" class="columna">
-            <h3>Historial</h3>
-            <div id="historial-log">
-                <!-- Registro de jugadas y cantos -->
-            </div>
+        <div id="historial">
+          <h3>Historial</h3>
+          <div id="log" contenteditable="true"></div>
         </div>
-    </div>
-    
-    <!-- Modal para mostrar resultados (envido, flor, fin de partida) -->
-    <div id="modal" class="modal-overlay">
-        <div class="modal-content">
-            <h2 id="modal-title">Resultado del Envido</h2>
-            <div id="modal-body"></div>
-            <button id="modal-close-btn" class="btn btn-primary">Cerrar</button>
-            <button id="btn-revancha" class="btn btn-secondary" style="display: none;">Revancha</button>
-        </div>
-    </div>
+      </div>
 
+      <button id="volver-menu-btn" class="btn-secundario">Volver al Menú</button>
+    </section>
+  </main>
 
-    <script src="js/main.js" type="module"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
