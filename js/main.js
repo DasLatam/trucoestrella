@@ -2,8 +2,10 @@ import * as config from './config.js';
 
 // --- Variables de Estado Globales ---
 let PUNTOS_PARA_GANAR, JUGAR_CON_FLOR;
-let marcador, jugadorHumano, jugadorCPU, manoActual, manosGanadas, resultadosManos, turnoDelHumano, estadoEnvido, estadoTruco, cantoActual, tieneFlor, manoDeLaRonda, jugadorMano, cartaJugadaPorLider, juegoPausado;
+let marcador, manoActual, manosGanadas, resultadosManos, turnoDelHumano, estadoEnvido, estadoTruco, cantoActual, tieneFlor, manoDeLaRonda, jugadorMano, cartaJugadaPorLider, juegoPausado;
 let botones; // Se inicializará cuando el DOM esté listo
+let jugadorHumano;
+let jugadorCPU;
 
 // --- Funciones de Lógica Pura (sin DOM) ---
 function crearBarajaTruco() { const b = []; for (const p of config.PALOS) for (const n of config.NUMEROS) b.push({ numero: n, palo: p, valorEnvido: n < 10 ? n : 0, rankingTruco: config.JERARQUIA_TRUCO[`${n}-${p}`], nombre: `${n} de ${p}`, id: `${n}-${p}` }); return b; }
