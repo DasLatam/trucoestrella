@@ -6,6 +6,9 @@ import * as ia from './ia.js';
 // --- Estado del Juego ---
 let gameState = {};
 
+/**
+ * Resetea el estado del juego a su valor inicial.
+ */
 function resetGameState() {
     gameState = {
         config: {
@@ -15,11 +18,15 @@ function resetGameState() {
         },
         marcador: { player: 0, cpu: 0 },
         partidaTerminada: false,
+        esManoPlayerInicial: true,
         rondaActual: null,
-        historial: []
     };
 }
 
+/**
+ * Resetea el estado de una ronda.
+ * @param {boolean} esManoPlayer - Si el jugador es mano en esta ronda.
+ */
 function resetRondaState(esManoPlayer) {
     gameState.rondaActual = {
         mazo: [],
@@ -31,35 +38,47 @@ function resetRondaState(esManoPlayer) {
         manoActual: 1,
         ganadorMano: [null, null, null], // [mano1, mano2, mano3]
         cantos: {
-            envido: null, // {cantadoPor, nivel, puntos, respondido}
+            envido: null, // {cantadoPor, nivel, puntos, respondido, cadena:[]}
             truco: null,  // {cantadoPor, nivel, respondido}
-            flor: null,
+            flor: null,   // {cantadoPor, nivel, respondido, puntosPlayer, puntosCpu}
         },
         puedeCantarEnvido: true,
-        esperandoRespuesta: null // {de, tipo, nivel}
+        puedeCantarFlor: true,
+        esperandoRespuesta: null, // {de, tipo, nivel, etc.}
+        rondaTerminada: false,
     };
 }
 
 // --- Flujo de la Partida ---
 
+/**
+ * Inicia una nueva partida con la configuración de la pantalla inicial.
+ */
 function iniciarPartida() {
     resetGameState();
     // Leer configuración de la UI
     gameState.config.puntosVictoria = parseInt(document.querySelector('input[name="puntos"]:checked').value);
     gameState.config.conFlor = document.getElementById('con-flor').checked;
-    gameState.config.nombreJugador = document.getElementById('player-name').value;
+    gameState.config.nombreJugador = document.getElementById('player-name').value || 'Jugador';
     
     ui.togglePantallas();
     ui.actualizarNombres(gameState.config.nombreJugador, 'CPU');
     ui.limpiarLog();
     ui.agregarLog(`La partida comienza a ${gameState.config.puntosVictoria} puntos.`, 'sistema');
+    if (gameState.config.conFlor) ui.agregarLog('Se juega con flor.', 'sistema');
     
-    iniciarNuevaRonda(true); // El jugador es mano en la primera ronda
+    iniciarNuevaRonda(gameState.esManoPlayerInicial);
 }
 
+/**
+ * Inicia una nueva ronda, barajando y repartiendo cartas.
+ */
 function iniciarNuevaRonda(esManoPlayer) {
+    if (gameState.partidaTerminada) return;
+
     ui.limpiarMesa();
     resetRondaState(esManoPlayer);
+    ui.actualizarMarcador(gameState.marcador.player, gameState.marcador.cpu, gameState.config.puntosVictoria);
 
     // Crear y barajar mazo
     gameState.rondaActual.mazo = crearMazo();
@@ -77,252 +96,452 @@ function iniciarNuevaRonda(esManoPlayer) {
     ui.agregarLog(`--- Nueva Ronda ---`, 'sistema');
     ui.agregarLog(`${esManoPlayer ? gameState.config.nombreJugador : 'CPU'} es mano.`, 'sistema');
 
+    // La lógica de la ronda comienza aquí
+    procesarTurno();
+}
+
+/**
+ * Procesa el turno actual, ya sea del jugador o de la IA.
+ */
+function procesarTurno() {
+    if (gameState.rondaActual.rondaTerminada || gameState.partidaTerminada) return;
+    
+    // Lógica de Flor al inicio del turno de cada jugador
+    if (gameState.config.conFlor && gameState.rondaActual.puedeCantarFlor) {
+        const r = gameState.rondaActual;
+        const florPlayer = ia.calcularFlor(r.manoPlayer);
+        const florCpu = ia.calcularFlor(r.manoCpu);
+
+        if (r.turno === 'player' && florPlayer > 0 && !r.cantos.flor) {
+            ui.agregarLog('Tienes flor, debes cantarla.', 'sistema');
+            actualizarEstadoBotones();
+            return; // Espera a que el jugador cante flor
+        }
+        if (r.turno === 'cpu' && florCpu > 0 && !r.cantos.flor) {
+            setTimeout(() => procesarCanto('cpu', 'FLOR', 'FLOR'), 1000);
+            return; // La CPU canta su flor
+        }
+    }
+
     actualizarEstadoBotones();
     
-    if (gameState.rondaActual.turno === 'cpu') {
-        setTimeout(turnoCPU, 1000);
+    if (gameState.rondaActual.turno === 'cpu' && !gameState.rondaActual.esperandoRespuesta) {
+        setTimeout(turnoCPU, 1200);
     }
 }
 
-function jugadorJuegaCarta(carta) {
-    if (gameState.rondaActual.turno !== 'player' || gameState.rondaActual.esperandoRespuesta) return;
+/**
+ * Lógica para el turno de la IA.
+ */
+function turnoCPU() {
+    const r = gameState.rondaActual;
+    if (r.turno !== 'cpu' || r.rondaTerminada || r.esperandoRespuesta) return;
 
-    // Mover carta de la mano a la mesa
-    const index = gameState.rondaActual.manoPlayer.indexOf(carta);
-    gameState.rondaActual.manoPlayer.splice(index, 1);
-    gameState.rondaActual.mesa.player.push(carta);
+    // 1. IA decide si canta algo
+    const canto = ia.decidirCanto(r.manoCpu, r);
+    if (canto) {
+        procesarCanto('cpu', canto.tipo, canto.nivel);
+        return;
+    }
+
+    // 2. Si no canta, juega una carta
+    const cartaAJugar = ia.decidirJugada(r.manoCpu, r);
+    
+    jugarCarta('cpu', cartaAJugar);
+}
+
+/**
+ * Lógica para cuando el jugador juega una carta.
+ */
+function jugadorJuegaCarta(carta) {
+    const r = gameState.rondaActual;
+    if (r.turno !== 'player' || r.esperandoRespuesta || r.rondaTerminada) return;
+
+    // Validar si el jugador DEBE cantar flor y no lo ha hecho
+    if (gameState.config.conFlor && r.puedeCantarFlor && ia.calcularFlor(r.manoPlayer) > 0 && !r.cantos.flor) {
+        ui.agregarLog('¡Error! Debes cantar FLOR antes de jugar.', 'sistema');
+        // Penalización: se considera que se achicó
+        resolverFlor(true); // El jugador se achica
+        return;
+    }
+
+    jugarCarta('player', carta);
+}
+
+/**
+ * Lógica genérica para jugar una carta, usada por el jugador y la IA.
+ * @param {string} jugador - 'player' o 'cpu'.
+ * @param {object} carta - La carta a jugar.
+ */
+function jugarCarta(jugador, carta) {
+    const r = gameState.rondaActual;
+    const mano = jugador === 'player' ? r.manoPlayer : r.manoCpu;
+    const nombreJugador = jugador === 'player' ? gameState.config.nombreJugador : 'CPU';
+
+    const index = mano.indexOf(carta);
+    if (index > -1) {
+        mano.splice(index, 1);
+    }
+    r.mesa[jugador].push(carta);
+
+    // Deshabilitar cantos de envido/flor después de la primera carta
+    if (r.mesa.player.length + r.mesa.cpu.length === 1) {
+        r.puedeCantarEnvido = false;
+        r.puedeCantarFlor = false;
+    }
 
     // Actualizar UI
-    ui.dibujarMano(gameState.rondaActual.manoPlayer, document.getElementById('player-hand'), false, true, jugadorJuegaCarta);
-    ui.moverCartaALaMesa(carta, 'player', gameState.rondaActual.manoActual);
-    ui.agregarLog(`${gameState.config.nombreJugador} juega ${carta.valor} de ${carta.palo}.`, 'player');
-
-    // Cambiar turno
-    cambiarTurno();
-
-    // Si ambos jugaron en esta mano, evaluar
-    if (gameState.rondaActual.mesa.cpu.length === gameState.rondaActual.manoActual) {
+    const manoDiv = document.getElementById(`${jugador}-hand`);
+    ui.dibujarMano(mano, manoDiv, jugador === 'cpu', jugador === 'player', jugadorJuegaCarta);
+    ui.moverCartaALaMesa(carta, jugador, r.manoActual);
+    ui.agregarLog(`${nombreJugador} juega ${carta.valor} de ${carta.palo}.`, jugador);
+    
+    // Evaluar si la mano terminó
+    if (r.mesa.player.length === r.manoActual && r.mesa.cpu.length === r.manoActual) {
         setTimeout(evaluarMano, 1000);
     } else {
-        setTimeout(turnoCPU, 1000);
-    }
-}
-
-function turnoCPU() {
-    if (gameState.rondaActual.turno !== 'cpu' || gameState.partidaTerminada) return;
-
-    // TODO: Lógica de cantos de la IA
-    
-    // Decidir qué carta jugar
-    const cartaAJugar = ia.decidirJugada(gameState.rondaActual.manoCpu, gameState.rondaActual.manoPlayer, gameState.rondaActual.mesa);
-    
-    // Mover carta de la mano a la mesa
-    const index = gameState.rondaActual.manoCpu.indexOf(cartaAJugar);
-    gameState.rondaActual.manoCpu.splice(index, 1);
-    gameState.rondaActual.mesa.cpu.push(cartaAJugar);
-    
-    // Actualizar UI
-    ui.dibujarMano(gameState.rondaActual.manoCpu, document.getElementById('cpu-hand'), true, false, null);
-    ui.moverCartaALaMesa(cartaAJugar, 'cpu', gameState.rondaActual.manoActual);
-    ui.agregarLog(`CPU juega ${cartaAJugar.valor} de ${cartaAJugar.palo}.`, 'cpu');
-
-    // Cambiar turno
-    cambiarTurno();
-
-    // Si ambos jugaron, evaluar
-    if (gameState.rondaActual.mesa.player.length === gameState.rondaActual.manoActual) {
-        setTimeout(evaluarMano, 1000);
+        cambiarTurno();
+        procesarTurno();
     }
 }
 
 
 function cambiarTurno() {
-    const ronda = gameState.rondaActual;
-    // El turno para la siguiente jugada de cartas lo tiene el ganador de la mano anterior
-    // o el que era mano si hubo parda.
-    if (ronda.ganadorMano[ronda.manoActual-1]) {
-         ronda.turno = ronda.ganadorMano[ronda.manoActual-1];
-    } else {
-        // Si aún no se definió la mano, el turno pasa al otro jugador
-         ronda.turno = ronda.turno === 'player' ? 'cpu' : 'player';
-    }
-    actualizarEstadoBotones();
+    gameState.rondaActual.turno = gameState.rondaActual.turno === 'player' ? 'cpu' : 'player';
 }
 
+/**
+ * Evalúa el resultado de una mano jugada.
+ */
 function evaluarMano() {
-    const ronda = gameState.rondaActual;
-    const manoNum = ronda.manoActual;
-    const cartaPlayer = ronda.mesa.player[manoNum - 1];
-    const cartaCpu = ronda.mesa.cpu[manoNum - 1];
+    const r = gameState.rondaActual;
+    const manoNum = r.manoActual;
+    const cartaPlayer = r.mesa.player[manoNum - 1];
+    const cartaCpu = r.mesa.cpu[manoNum - 1];
 
     const rankingPlayer = config.JERARQUIA_TRUCO.find(c => c.valor === cartaPlayer.valor && c.palo === cartaPlayer.palo).ranking;
     const rankingCpu = config.JERARQUIA_TRUCO.find(c => c.valor === cartaCpu.valor && c.palo === cartaCpu.palo).ranking;
 
     let ganador;
-    if (rankingPlayer > rankingCpu) {
-        ganador = 'player';
-    } else if (rankingCpu > rankingPlayer) {
-        ganador = 'cpu';
-    } else {
-        ganador = 'parda';
-    }
+    if (rankingPlayer > rankingCpu) ganador = 'player';
+    else if (rankingCpu > rankingPlayer) ganador = 'cpu';
+    else ganador = 'parda';
     
-    ronda.ganadorMano[manoNum - 1] = ganador;
+    r.ganadorMano[manoNum - 1] = ganador;
+    ui.resaltarManoGanadora(ganador, manoNum);
     
     if (ganador === 'parda') {
          ui.agregarLog(`Mano ${manoNum} es parda.`, 'sistema');
-         // El que es mano en la ronda sigue siéndolo en la jugada siguiente
-         ronda.turno = ronda.esManoPlayer ? 'player' : 'cpu';
+         r.turno = r.esManoPlayer ? 'player' : 'cpu'; // El que es mano en la ronda sigue siéndolo
     } else {
-        ui.agregarLog(`${ganador === 'player' ? gameState.config.nombreJugador : 'CPU'} gana la mano ${manoNum}.`, 'sistema');
-        // El ganador de la mano es mano en la siguiente jugada
-        ronda.turno = ganador;
+        const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'CPU';
+        ui.agregarLog(`${nombreGanador} gana la mano ${manoNum}.`, 'sistema');
+        r.turno = ganador; // El ganador de la mano es mano en la siguiente jugada
     }
     
-    // El envido solo se puede cantar en la primera mano
-    ronda.puedeCantarEnvido = false;
-
-    // Verificar si la ronda terminó
     const ganadorRonda = determinarGanadorRonda();
     if (ganadorRonda) {
         terminarRonda(ganadorRonda);
     } else {
-        ronda.manoActual++;
-        actualizarEstadoBotones();
-        if (ronda.turno === 'cpu') {
-            setTimeout(turnoCPU, 1000);
-        }
+        r.manoActual++;
+        procesarTurno();
     }
 }
 
+/**
+ * Determina si la ronda ha terminado por el juego de cartas y quién es el ganador.
+ */
 function determinarGanadorRonda() {
+    const g = gameState.rondaActual.ganadorMano;
     const manosGanadas = { player: 0, cpu: 0, parda: 0 };
-    const ganadores = gameState.rondaActual.ganadorMano;
-
-    for (const ganador of ganadores) {
-        if (ganador) manosGanadas[ganador]++;
-    }
+    g.forEach(ganador => { if(ganador) manosGanadas[ganador]++; });
 
     if (manosGanadas.player >= 2) return 'player';
     if (manosGanadas.cpu >= 2) return 'cpu';
     
-    // Ganar primera y empatar segunda
-    if (ganadores[0] === 'player' && ganadores[1] === 'parda') return 'player';
-    if (ganadores[0] === 'cpu' && ganadores[1] === 'parda') return 'cpu';
+    if (g[0] === 'player' && g[1] === 'parda') return 'player';
+    if (g[0] === 'cpu' && g[1] === 'parda') return 'cpu';
 
-    // Empatar las tres manos -> gana el que era mano en la ronda
-    if (manosGanadas.parda === 3) return gameState.rondaActual.esManoPlayer ? 'player' : 'cpu';
-    
-    // 1-1 y la tercera parda -> Gana quien ganó la primera
-    if (ganadores[2] === 'parda' && manosGanadas.player === 1 && manosGanadas.cpu === 1) {
-        return ganadores[0];
+    if (g[0] === 'parda') {
+        if (g[1] === 'player') return 'player';
+        if (g[1] === 'cpu') return 'cpu';
+        if (g[1] === 'parda' && g[2] !== null) return g[2] === 'parda' ? (gameState.rondaActual.esManoPlayer ? 'player' : 'cpu') : g[2];
     }
-
-    if (gameState.rondaActual.manoActual === 3) {
-        // Si se jugaron las 3 manos y no hay definición, algo anda mal, pero por las dudas...
-        if (manosGanadas.player > manosGanadas.cpu) return 'player';
-        if (manosGanadas.cpu > manosGanadas.player) return 'cpu';
+    
+    if (gameState.rondaActual.manoActual === 3 && g[2] !== null) {
+        if (g[2] === 'parda') return g[0];
     }
 
     return null; // La ronda no ha terminado
 }
 
-
+/**
+ * Finaliza la ronda por el juego de cartas (Truco) y otorga los puntos.
+ */
 function terminarRonda(ganador) {
-    let puntos = 1; // Por defecto, la ronda vale 1 punto (si no se cantó truco)
+    if (gameState.rondaActual.rondaTerminada) return;
+    gameState.rondaActual.rondaTerminada = true;
+
+    let puntos = 1; 
     const cantoTruco = gameState.rondaActual.cantos.truco;
     if (cantoTruco && cantoTruco.respondido === 'QUIERO') {
-        if (cantoTruco.nivel === 'TRUCO') puntos = config.PUNTOS.TRUCO.QUERIDO;
-        if (cantoTruco.nivel === 'RETRUCO') puntos = config.PUNTOS.RETRUCO.QUERIDO;
         if (cantoTruco.nivel === 'VALE_CUATRO') puntos = config.PUNTOS.VALE_CUATRO.QUERIDO;
+        else if (cantoTruco.nivel === 'RETRUCO') puntos = config.PUNTOS.RETRUCO.QUERIDO;
+        else if (cantoTruco.nivel === 'TRUCO') puntos = config.PUNTOS.TRUCO.QUERIDO;
     }
     
-    sumarPuntos(ganador, puntos);
-    ui.agregarLog(`${ganador === 'player' ? gameState.config.nombreJugador : 'CPU'} gana la ronda y ${puntos} punto(s).`, 'sistema');
+    const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'CPU';
+    ui.agregarLog(`${nombreGanador} gana la ronda.`, 'sistema');
+    sumarPuntos(ganador, puntos, 'del truco');
 
-    if (!gameState.partidaTerminada) {
-        setTimeout(() => iniciarNuevaRonda(!gameState.rondaActual.esManoPlayer), 3000);
+    setTimeout(() => iniciarNuevaRonda(!gameState.rondaActual.esManoPlayer), 3000);
+}
+
+// --- Lógica de Cantos ---
+
+/**
+ * Procesa un canto realizado por el jugador o la IA.
+ */
+function procesarCanto(cantador, tipo, nivel) {
+    const r = gameState.rondaActual;
+    const oponente = cantador === 'player' ? 'cpu' : 'player';
+    const nombreCantador = cantador === 'player' ? gameState.config.nombreJugador : 'CPU';
+    const cantoActual = r.cantos[tipo.toLowerCase()] || { cadena: [] };
+
+    ui.agregarLog(`${nombreCantador} canta: ¡${nivel.replace(/_/g, ' ')}!`, cantador);
+
+    cantoActual.cantadoPor = cantador;
+    cantoActual.nivel = nivel;
+    cantoActual.cadena.push(nivel);
+    r.cantos[tipo.toLowerCase()] = cantoActual;
+
+    r.esperandoRespuesta = { de: oponente, tipo: tipo, nivel: nivel };
+    
+    // Si se canta flor, se calculan los puntos para la posible respuesta de la IA
+    if (tipo === 'FLOR') {
+        r.cantos.flor.puntosJugador = ia.calcularFlor(r.manoPlayer);
+    }
+
+    actualizarEstadoBotones();
+
+    if (oponente === 'cpu') {
+        setTimeout(cpuRespondeCanto, 1500);
     }
 }
 
-function sumarPuntos(jugador, cantidad) {
+/**
+ * Lógica para la respuesta de la IA a un canto del jugador.
+ */
+function cpuRespondeCanto() {
+    const r = gameState.rondaActual;
+    const canto = r.esperandoRespuesta;
+    const respuesta = ia.decidirRespuesta(r.manoCpu, canto, r);
+
+    // Si la respuesta es otro canto (subir la apuesta)
+    if (respuesta.decision === 'RETRUCO' || respuesta.decision === 'REAL_ENVIDO' || respuesta.decision === 'CONTRAFLOR') {
+        procesarCanto('cpu', canto.tipo, respuesta.decision);
+    } else { // Si es Quiero o No Quiero
+        procesarRespuesta('cpu', respuesta.decision);
+    }
+}
+
+/**
+ * Procesa una respuesta (Quiero, No Quiero, etc.) de cualquier jugador.
+ */
+function procesarRespuesta(respondedor, decision) {
+    const r = gameState.rondaActual;
+    if (!r.esperandoRespuesta) return;
+
+    const canto = r.esperandoRespuesta;
+    const nombreRespondedor = respondedor === 'player' ? gameState.config.nombreJugador : 'CPU';
+    const oponente = respondedor === 'player' ? 'cpu' : 'player';
+
+    ui.agregarLog(`${nombreRespondedor} dice: ¡${decision.replace(/_/g, ' ')}!`, respondedor);
+    
+    r.esperandoRespuesta = null;
+    r.cantos[canto.tipo.toLowerCase()].respondido = decision;
+
+    if (decision === 'NO_QUIERO') {
+        let puntos = 1;
+        if (canto.tipo === 'TRUCO') puntos = config.PUNTOS[canto.nivel].NO_QUERIDO;
+        if (canto.tipo === 'ENVIDO') puntos = calcularPuntosEnvidoNoQuerido();
+        if (canto.tipo === 'FLOR') puntos = config.PUNTOS.CONTRAFLOR.NO_QUERIDO;
+        
+        sumarPuntos(oponente, puntos, `por ${canto.nivel} no querido`);
+        finalizarManoDeJuego();
+    } else { // QUISO
+        if (canto.tipo === 'ENVIDO') {
+            resolverEnvido();
+        } else if (canto.tipo === 'FLOR') {
+            resolverFlor();
+        } else { // TRUCO
+            // El juego continúa, el turno vuelve a quien era mano de la ronda
+            r.turno = r.esManoPlayer ? 'player' : 'player'; // Corrección: debe ser el que jugó la última carta o el mano
+            procesarTurno();
+        }
+    }
+}
+
+function resolverEnvido() {
+    const r = gameState.rondaActual;
+    const puntosPlayer = ia.calcularPuntosEnvido(r.manoPlayer);
+    const puntosCpu = ia.calcularPuntosEnvido(r.manoCpu);
+    
+    let ganador;
+    if (puntosPlayer > puntosCpu) ganador = 'player';
+    else if (puntosCpu > puntosPlayer) ganador = 'cpu';
+    else ganador = r.esManoPlayer ? 'player' : 'cpu';
+    
+    const puntosGanados = calcularPuntosEnvidoQuerido();
+    sumarPuntos(ganador, puntosGanados, 'del envido');
+    
+    const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'CPU';
+    ui.mostrarModal(`Gana el Envido: ${nombreGanador}`, `${gameState.config.nombreJugador}: ${puntosPlayer} puntos.<br>CPU: ${puntosCpu} puntos.`);
+    
+    r.cantos.envido.resuelto = true;
+    r.turno = r.esManoPlayer ? 'player' : 'cpu';
+    procesarTurno();
+}
+
+function resolverFlor(jugadorSeAchica = false) {
+    const r = gameState.rondaActual;
+    if (r.rondaTerminada) return;
+    r.rondaTerminada = true;
+
+    const puntosPlayer = ia.calcularFlor(r.manoPlayer);
+    const puntosCpu = ia.calcularFlor(r.manoCpu);
+    let ganador, perdedor, puntosGanados, motivo;
+
+    if (jugadorSeAchica) {
+        ganador = 'cpu';
+        puntosGanados = 3;
+        motivo = "por flor no cantada";
+    } else if (puntosPlayer > 0 && puntosCpu === 0) {
+        ganador = 'player';
+        puntosGanados = 3;
+        motivo = "de flor";
+    } else if (puntosCpu > 0 && puntosPlayer === 0) {
+        ganador = 'cpu';
+        puntosGanados = 3;
+        motivo = "de flor";
+    } else { // Ambos tienen flor
+        ganador = (puntosPlayer > puntosCpu) ? 'player' : (puntosCpu > puntosPlayer ? 'cpu' : (r.esManoPlayer ? 'player' : 'cpu'));
+        perdedor = (ganador === 'player') ? 'cpu' : 'player';
+        
+        const cantoFlor = r.cantos.flor;
+        if (cantoFlor.nivel === 'CONTRAFLOR_AL_RESTO') {
+            const puntosOponente = gameState.marcador[perdedor];
+            puntosGanados = gameState.config.puntosVictoria - puntosOponente;
+        } else if (cantoFlor.nivel === 'CONTRAFLOR') {
+            puntosGanados = 6;
+        } else {
+            puntosGanados = 4; // 3 por la flor + 1 por la segunda flor
+        }
+        motivo = `de ${cantoFlor.nivel}`;
+    }
+
+    const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'CPU';
+    ui.mostrarModal(`Resultado de la Flor`, `${nombreGanador} gana ${puntosGanados} puntos.<br>${gameState.config.nombreJugador}: ${puntosPlayer} pts. | CPU: ${puntosCpu} pts.`);
+    sumarPuntos(ganador, puntosGanados, motivo);
+    setTimeout(() => iniciarNuevaRonda(!r.esManoPlayer), 4000);
+}
+
+
+// --- Utilidades ---
+
+function calcularPuntosEnvidoQuerido() {
+    const cadena = gameState.rondaActual.cantos.envido.cadena;
+    if (cadena.includes('FALTA_ENVIDO')) {
+        const oponente = gameState.rondaActual.cantos.envido.cantadoPor === 'player' ? 'cpu' : 'player';
+        return gameState.config.puntosVictoria - gameState.marcador[oponente];
+    }
+    let puntos = 0;
+    if (cadena.includes('REAL_ENVIDO')) puntos += 3;
+    puntos += cadena.filter(c => c === 'ENVIDO').length * 2;
+    return puntos || 2; // Mínimo 2 si es solo un envido querido
+}
+
+function calcularPuntosEnvidoNoQuerido() {
+    const cadena = gameState.rondaActual.cantos.envido.cadena;
+    let puntos = 0;
+    for(let i = 0; i < cadena.length -1; i++) {
+        if (cadena[i] === 'ENVIDO') puntos += 2;
+        if (cadena[i] === 'REAL_ENVIDO') puntos += 3;
+    }
+    return puntos + 1;
+}
+
+function jugadorVaAlMazo() {
+    const r = gameState.rondaActual;
+    if (r.rondaTerminada) return;
+    r.rondaTerminada = true;
+
+    ui.agregarLog(`${gameState.config.nombreJugador} se va al mazo.`, 'player');
+    let puntos = 1;
+    if (r.cantos.truco) {
+        puntos = config.PUNTOS[r.cantos.truco.nivel].NO_QUERIDO;
+    }
+    sumarPuntos('cpu', puntos, 'por abandono');
+    setTimeout(() => iniciarNuevaRonda(!r.esManoPlayer), 2000);
+}
+
+function finalizarManoDeJuego() {
+    const r = gameState.rondaActual;
+    if (r.rondaTerminada) return;
+    r.rondaTerminada = true;
+    setTimeout(() => iniciarNuevaRonda(!r.esManoPlayer), 3000);
+}
+
+function sumarPuntos(jugador, cantidad, motivo) {
+    if (gameState.partidaTerminada) return;
     gameState.marcador[jugador] += cantidad;
-    ui.actualizarMarcador(gameState.marcador.player, gameState.marcador.cpu);
+    ui.agregarLog(`${jugador === 'player' ? gameState.config.nombreJugador : 'CPU'} suma ${cantidad} punto(s) ${motivo || ''}.`, 'punto');
+    ui.actualizarMarcador(gameState.marcador.player, gameState.marcador.cpu, gameState.config.puntosVictoria);
     verificarFinPartida();
 }
 
 function verificarFinPartida() {
-    if (gameState.marcador.player >= gameState.config.puntosVictoria) {
-        finalizarPartida('player');
-    } else if (gameState.marcador.cpu >= gameState.config.puntosVictoria) {
-        finalizarPartida('cpu');
+    if (gameState.marcador.player >= gameState.config.puntosVictoria || gameState.marcador.cpu >= gameState.config.puntosVictoria) {
+        finalizarPartida(gameState.marcador.player > gameState.marcador.cpu ? 'player' : 'cpu');
     }
 }
 
 function finalizarPartida(ganador) {
     gameState.partidaTerminada = true;
     const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'CPU';
-    ui.agregarLog(`¡PARTIDA TERMINADA! Ganador: ${nombreGanador}`, 'sistema');
-    // TODO: Mostrar un modal de fin de partida y opción de revancha.
+    ui.mostrarModal('¡Partida Terminada!', `El ganador es ${nombreGanador} con ${gameState.marcador[ganador]} puntos.`);
+    ui.agregarLog(`--- FIN DE LA PARTIDA ---`, 'sistema');
+    actualizarEstadoBotones();
 }
-
-
-// --- Lógica de Cantos (simplificada) ---
-function jugadorCanta(canto) {
-    if (canto.includes('ENVIDO')) {
-        // Lógica de envido
-    } else { // TRUCO, RETRUCO, VALE_CUATRO
-        gameState.rondaActual.cantos.truco = { cantadoPor: 'player', nivel: canto, respondido: null };
-        gameState.rondaActual.esperandoRespuesta = { de: 'cpu', tipo: 'TRUCO' };
-        ui.agregarLog(`${gameState.config.nombreJugador} canta: ¡${canto}!`, 'player');
-        actualizarEstadoBotones();
-        setTimeout(cpuRespondeCanto, 1500);
-    }
-}
-
-function cpuRespondeCanto() {
-    const cantoPendiente = gameState.rondaActual.esperandoRespuesta;
-    let respuesta;
-    
-    if (cantoPendiente.tipo === 'TRUCO') {
-        respuesta = ia.responderTruco(gameState.rondaActual.manoCpu);
-    } // Añadir lógica para otros cantos aquí
-    
-    ui.agregarLog(`CPU responde: ¡${respuesta}!`, 'cpu');
-    gameState.rondaActual.esperandoRespuesta = null;
-    gameState.rondaActual.cantos.truco.respondido = respuesta;
-
-    if (respuesta === 'NO_QUIERO') {
-        // El jugador que cantó gana los puntos del no querido
-        const puntosNoQuerido = config.PUNTOS[gameState.rondaActual.cantos.truco.nivel].NO_QUERIDO;
-        sumarPuntos('player', puntosNoQuerido);
-        ui.agregarLog(`${gameState.config.nombreJugador} gana ${puntosNoQuerido} punto(s).`, 'sistema');
-        // La ronda termina para el truco, pero puede seguir por el envido
-        // Por simplicidad, iniciamos nueva ronda
-        setTimeout(() => iniciarNuevaRonda(!gameState.rondaActual.esManoPlayer), 3000);
-    } else { // QUISO
-        // El juego continúa
-        actualizarEstadoBotones();
-        if (gameState.rondaActual.turno === 'cpu') {
-            turnoCPU();
-        }
-    }
-}
-
 
 function actualizarEstadoBotones() {
+    if (gameState.partidaTerminada) {
+        ui.actualizarBotones({}); // Deshabilita todos
+        return;
+    }
     const r = gameState.rondaActual;
+    const esTurnoPlayer = r.turno === 'player';
+    const esperandoRespuestaPlayer = r.esperandoRespuesta && r.esperandoRespuesta.de === 'player';
+    
+    const florPlayer = gameState.config.conFlor ? ia.calcularFlor(r.manoPlayer) : 0;
+
     const estado = {
-        turno: r.turno,
-        esperandoRespuesta: r.esperandoRespuesta && r.esperandoRespuesta.de === 'player',
-        puedeCantarEnvido: r.puedeCantarEnvido && !r.cantos.envido && r.turno === 'player',
-        puedeCantarTruco: !r.cantos.truco || (r.cantos.truco.cantadoPor === 'cpu' && r.cantos.truco.respondido === 'QUIERO'),
-        nivelTruco: r.cantos.truco ? (r.cantos.truco.nivel === 'TRUCO' ? 1 : (r.cantos.truco.nivel === 'RETRUCO' ? 2 : 3)) : 0
+        esTurnoPlayer: esTurnoPlayer,
+        esperandoRespuesta: esperandoRespuestaPlayer,
+        
+        puedeCantarEnvido: esTurnoPlayer && r.puedeCantarEnvido && !r.cantos.flor,
+        puedeSubirEnvido: esperandoRespuestaPlayer && r.esperandoRespuesta.tipo === 'ENVIDO',
+        nivelEnvidoActual: r.cantos.envido ? config.NIVELES_ENVIDO[r.cantos.envido.nivel] : 0,
+
+        puedeCantarTruco: esTurnoPlayer && (!r.cantos.truco || (r.cantos.truco.cantadoPor !== 'player' && r.cantos.truco.respondido === 'QUIERO')),
+        nivelTrucoActual: r.cantos.truco ? config.NIVELES_TRUCO[r.cantos.truco.nivel] : 0,
+        
+        puedeCantarFlor: esTurnoPlayer && gameState.config.conFlor && r.puedeCantarFlor && florPlayer > 0 && !r.cantos.flor,
+        puedeSubirFlor: esperandoRespuestaPlayer && r.esperandoRespuesta.tipo === 'FLOR' && florPlayer > 0,
+        nivelFlorActual: r.cantos.flor ? config.NIVELES_FLOR[r.cantos.flor.nivel] : 0,
     };
     ui.actualizarBotones(estado);
 }
-
-// --- Helpers del Mazo ---
 
 function crearMazo() {
     const mazo = [];
@@ -341,12 +560,29 @@ function barajarMazo(mazo) {
     }
 }
 
-
 // --- Inicialización y Event Listeners ---
 function init() {
     document.getElementById('start-game-btn').addEventListener('click', iniciarPartida);
-    document.getElementById('btn-truco').addEventListener('click', () => jugadorCanta('TRUCO'));
-    // TODO: Añadir listeners para los demás botones de cantos
+    document.getElementById('modal-close-btn').addEventListener('click', ui.ocultarModal);
+
+    // Listeners de cantos del jugador
+    document.getElementById('btn-truco').addEventListener('click', () => procesarCanto('player', 'TRUCO', 'TRUCO'));
+    document.getElementById('btn-retruco').addEventListener('click', () => procesarCanto('player', 'TRUCO', 'RETRUCO'));
+    document.getElementById('btn-vale-cuatro').addEventListener('click', () => procesarCanto('player', 'TRUCO', 'VALE_CUATRO'));
+    
+    document.getElementById('btn-envido').addEventListener('click', () => procesarCanto('player', 'ENVIDO', 'ENVIDO'));
+    document.getElementById('btn-real-envido').addEventListener('click', () => procesarCanto('player', 'ENVIDO', 'REAL_ENVIDO'));
+    document.getElementById('btn-falta-envido').addEventListener('click', () => procesarCanto('player', 'ENVIDO', 'FALTA_ENVIDO'));
+    
+    document.getElementById('btn-flor').addEventListener('click', () => procesarCanto('player', 'FLOR', 'FLOR'));
+    document.getElementById('btn-contraflor').addEventListener('click', () => procesarCanto('player', 'FLOR', 'CONTRAFLOR'));
+    document.getElementById('btn-contraflor-resto').addEventListener('click', () => procesarCanto('player', 'FLOR', 'CONTRAFLOR_AL_RESTO'));
+    
+    // Listeners de respuestas del jugador
+    document.getElementById('btn-quiero').addEventListener('click', () => procesarRespuesta('player', 'QUIERO'));
+    document.getElementById('btn-no-quiero').addEventListener('click', () => procesarRespuesta('player', 'NO_QUIERO'));
+    
+    document.getElementById('btn-ir-al-mazo').addEventListener('click', jugadorVaAlMazo);
 }
 
 init();

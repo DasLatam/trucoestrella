@@ -4,15 +4,23 @@
     --color-texto: #f0f0f0;
     --color-carta-dorso: #b42a2a;
     --color-borde: #222;
+    --color-primary: #daa520;
+    --color-secondary: #c0c0c0;
+    --font-family: 'Roboto', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
     background-color: var(--color-fondo);
     color: var(--color-texto);
     margin: 0;
     overflow: hidden;
     height: 100vh;
+    user-select: none;
 }
 
 .pantalla {
@@ -34,45 +42,79 @@ body {
 
 .setup-container {
     background-color: var(--color-mesa);
-    padding: 40px;
-    border-radius: 10px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    padding: 40px 50px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border: 2px solid var(--color-primary);
 }
 
 .setup-container h1 {
     margin-top: 0;
+    color: var(--color-primary);
+    font-size: 2.5em;
+}
+.setup-container p {
+    margin-bottom: 30px;
+    font-size: 1.2em;
 }
 
 .form-group {
     margin: 20px 0;
     text-align: left;
+    font-size: 1.1em;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+}
+.form-group input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid var(--color-secondary);
+    background-color: #f0f0f0;
+}
+.radio-group label, .checkbox-label {
+    margin-right: 20px;
+    display: inline-flex;
+    align-items: center;
 }
 
-#start-game-btn {
-    padding: 10px 20px;
-    font-size: 1.2em;
+.btn {
+    padding: 12px 25px;
+    font-size: 1.1em;
     cursor: pointer;
     border: none;
-    border-radius: 5px;
-    background-color: var(--color-carta-dorso);
-    color: white;
+    border-radius: 8px;
+    font-weight: bold;
+    transition: all 0.2s ease;
 }
+.btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-borde);
+}
+.btn-primary:hover {
+    background-color: #f0c040;
+    box-shadow: 0 0 15px var(--color-primary);
+}
+
 
 /* --- Pantalla de Juego --- */
 #game-screen {
     display: grid;
-    grid-template-columns: 150px 1fr 200px 250px;
+    grid-template-columns: 160px 1fr 220px 280px;
     height: 100vh;
-    gap: 10px;
-    padding: 10px;
+    gap: 15px;
+    padding: 15px;
 }
 
 .columna {
     background-color: rgba(0,0,0,0.2);
-    border-radius: 8px;
-    padding: 10px;
+    border-radius: 10px;
+    padding: 15px;
     display: flex;
     flex-direction: column;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.4);
 }
 
 /* Columna 1: Botonera */
@@ -80,66 +122,85 @@ body {
     justify-content: flex-end;
 }
 
-.botonera button {
+.botonera .btn {
     display: block;
     width: 100%;
-    padding: 12px;
     margin-top: 8px;
-    font-size: 1em;
     border: 2px solid var(--color-borde);
-    border-radius: 5px;
-    cursor: pointer;
     background-color: #3e6b5a;
     color: white;
 }
-
-.botonera button:disabled {
+.botonera .btn:not(:disabled):hover {
+    background-color: #4e8571;
+    transform: translateY(-2px);
+}
+.botonera .btn:disabled {
     background-color: #555;
     cursor: not-allowed;
-    opacity: 0.6;
+    opacity: 0.5;
 }
-
-.botonera .btn-respuesta {
-    background-color: #9c4a23;
-}
+.botonera .btn-respuesta { background-color: #9c4a23; }
+.botonera .btn-respuesta:not(:disabled):hover { background-color: #b85f36; }
+.botonera .btn-mazo { background-color: #a12a2a; }
+.botonera .btn-mazo:not(:disabled):hover { background-color: #c03939; }
+.botonera .btn-flor { background-color: #4a239c; }
+.botonera .btn-flor:not(:disabled):hover { background-color: #6036b8; }
 
 
 /* Columna 2: Área de Juego */
 #col-juego {
     background-color: var(--color-mesa);
     justify-content: space-between;
+    padding: 20px;
 }
-
+.player-info {
+    text-align: center;
+}
+.player-info span {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 10px;
+    display: block;
+}
 .mano {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 30%;
+    min-height: 160px;
     gap: 10px;
 }
-
 #mesa {
-    height: 35%;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 10px;
-    padding: 10px;
+    height: 40%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
     border-top: 2px dashed rgba(255,255,255,0.2);
     border-bottom: 2px dashed rgba(255,255,255,0.2);
+    padding: 10px 0;
 }
-
+.mesa-slots {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
 .slot-mesa {
-    border: 1px solid rgba(255,255,255,0.1);
+    width: 100px;
+    height: 150px;
+    border: 2px solid rgba(255,255,255,0.1);
     border-radius: 8px;
     display: flex;
     justify-content: center;
     align-items: center;
+    transition: background-color 0.3s;
+}
+.slot-mesa.ganador {
+    background-color: rgba(218, 165, 32, 0.3);
+    border-color: var(--color-primary);
 }
 
 .carta {
-    width: 90px;
-    height: 140px;
+    width: 100px;
+    height: 150px;
     border: 1px solid var(--color-borde);
     border-radius: 8px;
     background-color: white;
@@ -148,65 +209,57 @@ body {
     flex-direction: column;
     justify-content: space-between;
     padding: 5px;
-    box-shadow: 3px 3px 5px rgba(0,0,0,0.3);
+    box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
     position: relative;
-    font-size: 1.5em;
+    font-size: 1.8em;
     font-weight: bold;
 }
-
 .carta.jugador-carta {
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
 }
-
 .carta.jugador-carta:hover {
-    transform: translateY(-10px);
-    box-shadow: 5px 15px 10px rgba(0,0,0,0.3);
+    transform: translateY(-15px) scale(1.05);
+    box-shadow: 5px 20px 15px rgba(0,0,0,0.3);
 }
-
 .carta.oculta {
     background-color: var(--color-carta-dorso);
     background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.1) 5px, rgba(255,255,255,0.1) 10px);
 }
-
 .valor-carta {
     position: absolute;
     top: 5px;
     left: 8px;
 }
-
 .palo-carta {
-    font-size: 3em;
+    font-size: 3.5em;
     text-align: center;
     line-height: 1;
+    align-self: center;
 }
 
 /* Columna 3: Marcador */
-#col-marcador {
-    align-items: center;
-}
-.marcador-container {
-    width: 100%;
-}
-.marcador-container h3 {
+#col-marcador { align-items: center; }
+.marcador-container { width: 100%; }
+.marcador-container h3, .marcador-container h4 {
     text-align: center;
     margin-bottom: 10px;
+    color: var(--color-primary);
 }
-
+.marcador-container h4 { margin-top: 15px; color: var(--color-texto); }
+.score-section hr { border-color: rgba(255,255,255,0.2); }
 .marcador {
     background-color: rgba(0,0,0,0.3);
     padding: 10px;
     border-radius: 5px;
-    min-height: 150px;
+    min-height: 200px;
 }
-
 .poroto-grupo {
     display: flex;
     align-items: center;
     margin-bottom: 5px;
     position: relative;
 }
-
 .poroto {
     width: 8px;
     height: 35px;
@@ -215,7 +268,6 @@ body {
     margin: 0 3px;
     border-radius: 2px;
 }
-
 .cruzado {
     position: absolute;
     width: 55px;
@@ -228,26 +280,57 @@ body {
     left: -2px;
 }
 .linea-malas {
-    border-bottom: 2px solid red;
+    border-bottom: 3px solid #e13d3d;
     margin-top: 10px;
     padding-bottom: 10px;
 }
 
-
 /* Columna 4: Historial */
+#col-historial h3 { color: var(--color-primary); text-align: center; }
 #historial-log {
     flex-grow: 1;
     overflow-y: auto;
-    font-size: 0.9em;
+    font-size: 0.95em;
     background-color: rgba(0,0,0,0.3);
-    padding: 8px;
+    padding: 10px;
     border-radius: 5px;
 }
 #historial-log p {
-    margin: 0 0 5px 0;
-    padding-bottom: 3px;
+    margin: 0 0 8px 0;
+    padding-bottom: 5px;
     border-bottom: 1px solid rgba(255,255,255,0.1);
 }
-.log-player { color: #87ceeb; }
-.log-cpu { color: #f08080; }
+.log-player { color: #87ceeb; font-weight: bold; }
+.log-cpu { color: #f08080; font-weight: bold; }
 .log-sistema { color: #fafad2; font-style: italic; }
+.log-punto { color: var(--color-primary); font-weight: bold; }
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.modal-overlay.activa {
+    display: flex;
+}
+.modal-content {
+    background-color: var(--color-mesa);
+    padding: 30px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 0 25px rgba(0,0,0,0.5);
+    border: 2px solid var(--color-primary);
+    min-width: 300px;
+}
+#modal-body {
+    margin: 20px 0;
+    font-size: 1.2em;
+}
