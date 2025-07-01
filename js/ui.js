@@ -201,6 +201,11 @@ export function actualizarBotones(estadoBotones) {
             document.getElementById('btn-flor').disabled = false;
         }
     }
+
+    // El botón de irse al mazo siempre debe estar disponible si es el turno del jugador
+    if (estadoBotones.esTurnoPlayer) {
+        document.getElementById('btn-ir-al-mazo').disabled = false;
+    }
 }
 
 /**

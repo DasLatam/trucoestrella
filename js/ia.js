@@ -51,34 +51,26 @@ export function calcularFlor(mano) {
  * @returns {object|null} La carta que la IA ha decidido jugar, o null si no puede.
  */
 export function decidirJugada(manoCpu, rondaState) {
-    // *** FIX ***
-    // Guarda defensiva: si la mano está vacía, es un estado de error.
-    // Devolvemos null para que la función que llama maneje este caso.
     if (!manoCpu || manoCpu.length === 0) {
         console.error("IA: decidirJugada fue llamada con una mano vacía.");
         return null;
     }
-    // *** END FIX ***
 
     const cartaJugador = rondaState.mesa.player[rondaState.manoActual - 1];
     const rankingJugador = cartaJugador ? getRanking(cartaJugador) : -1;
 
-    // Ordenar la mano de la CPU de la más débil a la más fuerte
     const manoOrdenada = [...manoCpu].sort((a, b) => getRanking(a) - getRanking(b));
 
-    if (rankingJugador === -1) { // La CPU es mano en esta jugada
-        // Estrategia: si ganó la primera, juega la más alta para asegurar. Si no, la más baja.
+    if (rankingJugador === -1) { 
         if (rondaState.ganadorMano[0] === 'cpu') {
             return manoOrdenada[manoOrdenada.length - 1];
         }
         return manoOrdenada[0];
-    } else { // La CPU está respondiendo
-        // Intentar ganar con la carta más baja posible que supere a la del oponente
+    } else { 
         const ganadoras = manoOrdenada.filter(c => getRanking(c) > rankingJugador);
         if (ganadoras.length > 0) {
-            return ganadoras[0]; // Juega la más débil de las que ganan
+            return ganadoras[0];
         } else {
-            // Si no puede ganar, juega su carta más débil
             return manoOrdenada[0];
         }
     }
@@ -92,14 +84,15 @@ export function decidirCanto(manoCpu, rondaState) {
     const puntosFlor = calcularFlor(manoCpu);
 
     // 1. Decisión de Flor (prioridad máxima)
-    if (rondaState.puedeCantarFlor && puntosFlor > 0) {
+    if (rondaState.etapa === 'inicio' && gameState.config.conFlor && puntosFlor > 0) {
         return { tipo: 'FLOR', nivel: 'FLOR' };
     }
 
     // 2. Decisión de Envido (solo si no hay flor)
-    if (rondaState.puedeCantarEnvido && !rondaState.cantos.flor) {
+    // *** FIX: Lógica de envido más agresiva ***
+    if (rondaState.etapa === 'inicio' && !rondaState.cantos.flor && !rondaState.cantos.envido) {
         if (puntosEnvido >= 30) return { tipo: 'ENVIDO', nivel: 'REAL_ENVIDO' };
-        if (puntosEnvido >= 28) return { tipo: 'ENVIDO', nivel: 'ENVIDO' };
+        if (puntosEnvido >= 27) return { tipo: 'ENVIDO', nivel: 'ENVIDO' };
     }
 
     // 3. Decisión de Truco
@@ -129,32 +122,25 @@ export function decidirRespuesta(manoCpu, canto, rondaState) {
     
     switch (canto.tipo) {
         case 'ENVIDO':
-            // Si la IA tiene buenos puntos, sube la apuesta o acepta.
-            if (puntosEnvido >= 31 && NIVELES_ENVIDO[canto.nivel] < NIVELES_ENVIDO.REAL_ENVIDO) return { decision: 'REAL_ENVIDO' };
-            if (puntosEnvido >= 29) return { decision: 'QUIERO' };
-            if (canto.nivel === 'FALTA_ENVIDO') {
-                 return { decision: puntosEnvido > 30 ? 'QUIERO' : 'NO_QUIERO' };
-            }
+            // *** FIX: Lógica de respuesta de envido más agresiva ***
+            if (puntosEnvido >= 30 && NIVELES_ENVIDO[canto.nivel] < NIVELES_ENVIDO.FALTA_ENVIDO) return { decision: 'FALTA_ENVIDO' };
+            if (puntosEnvido >= 27 && NIVELES_ENVIDO[canto.nivel] < NIVELES_ENVIDO.REAL_ENVIDO) return { decision: 'REAL_ENVIDO' };
+            if (puntosEnvido >= 26) return { decision: 'QUIERO' };
             return { decision: 'NO_QUIERO' };
 
         case 'TRUCO':
             const rankingMedio = manoCpu.reduce((acc, c) => acc + getRanking(c), 0) / manoCpu.length;
-            // Si la IA tiene muy buenas cartas, sube la apuesta.
             if (canto.nivel === 'TRUCO' && rankingMedio > 10) return { decision: 'RETRUCO' };
             if (rankingMedio > 8) return { decision: 'QUIERO' };
             return { decision: 'NO_QUIERO' };
             
         case 'FLOR':
             if (puntosFlor > 0) {
-                 // Si la IA tiene mejor flor, canta contraflor.
                 if (puntosFlor > canto.puntosJugador && NIVELES_FLOR[canto.nivel] < NIVELES_FLOR.CONTRAFLOR) {
                     return { decision: 'CONTRAFLOR' };
                 }
-                // Si no, simplemente acepta.
                 return { decision: 'QUIERO' };
             }
-            // Si el jugador canta flor y la IA no tiene, no puede hacer nada.
-            // La lógica de "achicarse" se maneja en main.js
             return { decision: 'PASO' }; 
     }
     return { decision: 'NO_QUIERO' };

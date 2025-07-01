@@ -264,6 +264,11 @@ body {
     text-align: center;
     line-height: 1;
     align-self: center;
+    /* FIX: Centrar el símbolo del palo */
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 /* Columna 3: Marcador */
