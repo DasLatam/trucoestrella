@@ -209,9 +209,13 @@ body {
     border-radius: 8px;
     background-color: white;
     color: black;
-    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 5px;
     box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
     position: relative;
+    font-size: 1.8em;
     font-weight: bold;
 }
 .carta.jugador-carta {
@@ -226,24 +230,19 @@ body {
     background-color: var(--color-carta-dorso);
     background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.1) 5px, rgba(255,255,255,0.1) 10px);
 }
-.valor-carta-esquina {
-    font-size: 1.1em;
+.valor-carta {
     position: absolute;
-}
-.top-left { top: 4px; left: 6px; }
-.bottom-right { bottom: 4px; right: 6px; transform: rotate(180deg); }
-
-.carta-svg-container {
-    width: 100%;
-    height: 100%;
+    top: 5px;
+    left: 8px;
+    font-size: 0.8em;
 }
 
-/* Estilos para los SVGs de los palos */
-.palo-oro { fill: #ffd700; stroke: #b8860b; stroke-width: 2px; }
-.palo-copa { fill: #dc143c; stroke: #8b0000; stroke-width: 1px; }
-.palo-espada { fill: #87ceeb; stroke: #4682b4; stroke-width: 1.5px; }
-.palo-basto { fill: #228b22; stroke: #006400; stroke-width: 1.5px; }
-.figura-letra { font-family: 'Times New Roman', serif; font-size: 45px; font-weight: bold; fill: #333; }
+.palo-carta {
+    font-size: 2.5em;
+    text-align: center;
+    line-height: 1;
+    align-self: center;
+}
 
 
 /* Columna 3: Marcador */
@@ -295,7 +294,7 @@ body {
 
 /* Columna 4: Historial */
 #col-historial {
-    min-height: 0; /* Fix para flexbox en algunos navegadores */
+    min-height: 0;
 }
 #col-historial h3 { color: var(--color-primary); text-align: center; flex-shrink: 0; }
 #historial-log {
@@ -306,8 +305,6 @@ body {
     padding: 10px;
     border-radius: 5px;
     min-height: 0;
-    /* max-height se puede ajustar, 50vh es un buen punto de partida */
-    max-height: 70vh; 
 }
 #historial-log p {
     margin: 0 0 6px 0;

@@ -95,7 +95,7 @@ function iniciarNuevaRonda(esManoPlayer) {
     ui.dibujarMano(gameState.rondaActual.manoCpu, document.getElementById('cpu-hand'), true, false, null);
     
     ui.agregarLog(`--- Nueva Ronda ---`, 'sistema');
-    ui.agregarLog(`${esManoPlayer ? gameState.config.nombreJugador : 'CPU'} es mano.`, 'sistema');
+    ui.agregarLog(`${esManoPlayer ? gameState.config.nombreJugador : 'TrucoEstrella'} es mano.`, 'sistema');
 
     // La lógica de la ronda comienza aquí
     procesarTurno();
@@ -185,7 +185,7 @@ function jugarCarta(jugador, carta) {
 
     const r = gameState.rondaActual;
     const mano = jugador === 'player' ? r.manoPlayer : r.manoCpu;
-    const nombreJugador = jugador === 'player' ? gameState.config.nombreJugador : 'CPU';
+    const nombreJugador = jugador === 'player' ? gameState.config.nombreJugador : 'TrucoEstrella';
 
     const index = mano.indexOf(carta);
     if (index > -1) mano.splice(index, 1);
@@ -237,7 +237,7 @@ function evaluarMano() {
          ui.agregarLog(`Mano ${manoNum} es parda.`, 'sistema');
          r.turno = r.esManoPlayer ? 'player' : 'cpu';
     } else {
-        const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'CPU';
+        const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'TrucoEstrella';
         ui.agregarLog(`${nombreGanador} gana la mano ${manoNum}.`, 'sistema');
         r.turno = ganador;
     }
@@ -259,23 +259,29 @@ function determinarGanadorRonda() {
     const manosGanadas = { player: 0, cpu: 0, parda: 0 };
     g.forEach(ganador => { if(ganador) manosGanadas[ganador]++; });
 
+    // 1. Gana 2 de 3
     if (manosGanadas.player >= 2) return 'player';
     if (manosGanadas.cpu >= 2) return 'cpu';
-    
-    if (g[0] === 'player' && g[1] === 'parda') return 'player';
-    if (g[0] === 'cpu' && g[1] === 'parda') return 'cpu';
 
-    if (g[0] === 'parda') {
-        if (g[1] === 'player') return 'player';
-        if (g[1] === 'cpu') return 'cpu';
-        if (g[1] === 'parda' && g[2] !== null) return g[2] === 'parda' ? (gameState.rondaActual.esManoPlayer ? 'player' : 'cpu') : g[2];
+    // 2. Si se jugaron 2 manos
+    if (g[1] !== null) {
+        // Gana la primera y empata la segunda
+        if (g[0] !== 'parda' && g[1] === 'parda') return g[0];
+        // Empata la primera y gana la segunda
+        if (g[0] === 'parda' && g[1] !== 'parda') return g[1];
     }
-    
-    if (gameState.rondaActual.manoActual === 3 && g[2] !== null) {
+
+    // 3. Si se jugaron las 3 manos
+    if (g[2] !== null) {
+        // Empata la primera y la segunda, gana la tercera
+        if (g[0] === 'parda' && g[1] === 'parda') {
+            return g[2] === 'parda' ? (gameState.rondaActual.esManoPlayer ? 'player' : 'cpu') : g[2];
+        }
+        // Gana-Pierde-Empata o Pierde-Gana-Empata
         if (g[2] === 'parda') return g[0];
     }
 
-    return null;
+    return null; // La ronda no ha terminado
 }
 
 /**
@@ -293,7 +299,7 @@ function terminarRondaPorJuego(ganador) {
         else if (cantoTruco.nivel === 'TRUCO') puntos = config.PUNTOS.TRUCO.QUERIDO;
     }
     
-    const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'CPU';
+    const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'TrucoEstrella';
     ui.agregarLog(`${nombreGanador} gana la ronda.`, 'sistema');
     sumarPuntos(ganador, puntos, 'del truco');
 
@@ -308,7 +314,7 @@ function terminarRondaPorJuego(ganador) {
 function procesarCanto(cantador, tipo, nivel) {
     const r = gameState.rondaActual;
     const oponente = cantador === 'player' ? 'cpu' : 'player';
-    const nombreCantador = cantador === 'player' ? gameState.config.nombreJugador : 'CPU';
+    const nombreCantador = cantador === 'player' ? gameState.config.nombreJugador : 'TrucoEstrella';
     
     // *** FIX: Lógica para permitir Envido después de Truco ***
     // Si se canta Envido mientras se espera respuesta del Truco, se pausa el Truco.
@@ -363,7 +369,7 @@ function procesarRespuesta(respondedor, decision) {
     if (!r.esperandoRespuesta) return;
 
     const canto = r.esperandoRespuesta;
-    const nombreRespondedor = respondedor === 'player' ? gameState.config.nombreJugador : 'CPU';
+    const nombreRespondedor = respondedor === 'player' ? gameState.config.nombreJugador : 'TrucoEstrella';
     const oponente = respondedor === 'player' ? 'cpu' : 'player';
 
     ui.agregarLog(`${nombreRespondedor} dice: ¡${decision.replace(/_/g, ' ')}!`, respondedor);
@@ -388,6 +394,7 @@ function procesarRespuesta(respondedor, decision) {
         if (canto.tipo === 'ENVIDO') {
             resolverEnvido();
         } else { // TRUCO
+            // Al querer el truco, simplemente se continúa la ronda para jugar las cartas.
             continuarRondaParaTruco();
         }
     }
@@ -407,8 +414,8 @@ function resolverEnvido() {
     const puntosGanados = calcularPuntosEnvidoQuerido();
     sumarPuntos(ganador, puntosGanados, 'del envido');
     
-    const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'CPU';
-    ui.mostrarModal(`Gana el Envido: ${nombreGanador}`, `${gameState.config.nombreJugador}: ${puntosPlayer} puntos.<br>CPU: ${puntosCpu} puntos.`);
+    const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'TrucoEstrella';
+    ui.mostrarModal(`Gana el Envido: ${nombreGanador}`, `${gameState.config.nombreJugador}: ${puntosPlayer} puntos.<br>TrucoEstrella: ${puntosCpu} puntos.`);
     
     continuarRondaParaTruco();
 }
@@ -446,8 +453,8 @@ function resolverFlor() {
         motivo = `de ${cantoFlor.nivel}`;
     }
 
-    const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'CPU';
-    ui.mostrarModal(`Resultado de la Flor`, `${nombreGanador} gana ${puntosGanados} puntos.<br>${gameState.config.nombreJugador}: ${puntosPlayer} pts. | CPU: ${puntosCpu} pts.`);
+    const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'TrucoEstrella';
+    ui.mostrarModal(`Resultado de la Flor`, `${nombreGanador} gana ${puntosGanados} puntos.<br>${gameState.config.nombreJugador}: ${puntosPlayer} pts. | TrucoEstrella: ${puntosCpu} pts.`);
     sumarPuntos(ganador, puntosGanados, motivo);
     setTimeout(() => iniciarNuevaRonda(!r.esManoPlayer), 4000);
 }
@@ -470,7 +477,8 @@ function continuarRondaParaTruco() {
             procesarTurno();
         }
     } else {
-        r.turno = r.esManoPlayer ? 'player' : 'cpu';
+        // El turno lo tiene quien ganó la última mano, o el mano de la ronda si fue parda.
+        // Esta lógica ya está en evaluarMano, aquí solo continuamos el flujo.
         procesarTurno();
     }
 }
@@ -524,7 +532,8 @@ function jugadorVaAlMazo() {
 function sumarPuntos(jugador, cantidad, motivo) {
     if (gameState.partidaTerminada) return;
     gameState.marcador[jugador] += cantidad;
-    ui.agregarLog(`${jugador === 'player' ? gameState.config.nombreJugador : 'CPU'} suma ${cantidad} punto(s) ${motivo || ''}.`, 'punto');
+    const nombreJugador = jugador === 'player' ? gameState.config.nombreJugador : 'TrucoEstrella';
+    ui.agregarLog(`${nombreJugador} suma ${cantidad} punto(s) ${motivo || ''}.`, 'punto');
     ui.actualizarMarcador(gameState.marcador.player, gameState.marcador.cpu, gameState.config.puntosVictoria);
     verificarFinPartida();
 }
@@ -537,7 +546,7 @@ function verificarFinPartida() {
 
 function finalizarPartida(ganador) {
     gameState.partidaTerminada = true;
-    const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'CPU';
+    const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'TrucoEstrella';
     ui.mostrarModal('¡Partida Terminada!', `El ganador es ${nombreGanador} con ${gameState.marcador[ganador]} puntos.`);
     ui.agregarLog(`--- FIN DE LA PARTIDA ---`, 'sistema');
     actualizarEstadoBotones();
@@ -559,7 +568,7 @@ function actualizarEstadoBotones() {
         esperandoRespuesta: esperandoRespuestaPlayer,
         
         // *** FIX: Lógica para permitir Envido después de Truco ***
-        puedeCantarEnvido: esTurnoPlayer && r.manoActual === 1 && !r.cantos.flor && !(r.cantos.envido?.resuelto),
+        puedeCantarEnvido: esTurnoPlayer && r.etapa === 'inicio' && !r.cantos.flor && !(r.cantos.envido?.resuelto),
         puedeSubirEnvido: esperandoRespuestaPlayer && r.esperandoRespuesta.tipo === 'ENVIDO',
         nivelEnvidoActual: r.cantos.envido ? config.NIVELES_ENVIDO[r.cantos.envido.nivel] : 0,
 

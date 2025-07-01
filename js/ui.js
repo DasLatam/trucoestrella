@@ -9,7 +9,7 @@ const modalBody = document.getElementById('modal-body');
 // --- Funciones de renderizado ---
 
 /**
- * Crea y dibuja una carta en el DOM con gráficos SVG.
+ * Crea y dibuja una carta en el DOM.
  * @param {object} carta - El objeto carta a dibujar.
  * @param {HTMLElement} elementoPadre - El elemento donde se añadirá la carta.
  * @param {boolean} esOculta - Si la carta debe mostrarse boca abajo.
@@ -22,11 +22,10 @@ export function dibujarCarta(carta, elementoPadre, esOculta, esJugable, alClick)
     if (esOculta) {
         cartaDiv.classList.add('oculta');
     } else {
-        // Contenedor para el SVG y los números de las esquinas
+        // *** FIX: Revertir al estilo de cartas con texto/emojis ***
         cartaDiv.innerHTML = `
-            <div class="valor-carta-esquina top-left">${carta.valor}</div>
-            <div class="carta-svg-container">${crearSvgCarta(carta)}</div>
-            <div class="valor-carta-esquina bottom-right">${carta.valor}</div>
+            <span class="valor-carta">${carta.valor}</span>
+            <span class="palo-carta">${obtenerSimboloPalo(carta.palo)}</span>
         `;
     }
     if (esJugable) {
@@ -179,6 +178,12 @@ export function actualizarBotones(estadoBotones) {
              document.getElementById('btn-contraflor').disabled = estadoBotones.nivelFlorActual >= 2;
              document.getElementById('btn-contraflor-resto').disabled = false;
         }
+        // Permitir cantar envido si se está respondiendo al truco
+        if (estadoBotones.esperandoRespuestaTruco && estadoBotones.puedeCantarEnvido) {
+            document.getElementById('btn-envido').disabled = false;
+            document.getElementById('btn-real-envido').disabled = false;
+            document.getElementById('btn-falta-envido').disabled = false;
+        }
 
     } else if(estadoBotones.esTurnoPlayer) {
         document.getElementById('btn-ir-al-mazo').disabled = false;
@@ -226,53 +231,13 @@ export function resaltarManoGanadora(ganador, manoNum) {
     }
 }
 
-// --- Helpers de SVG ---
-
-/**
- * Genera el contenido SVG para una carta específica.
- * @param {object} carta - La carta para la que se generará el SVG.
- * @returns {string} - El string HTML del SVG.
- */
-function crearSvgCarta(carta) {
-    const { valor, palo } = carta;
-    let contenidoCentral = '';
-
-    const paloInfo = {
-        oro: { class: 'palo-oro', path: '<path d="M50 85 C 20 95, 10 60, 25 40 S 30 5, 50 5 S 70 5, 75 40 S 80 95, 50 85 Z M 40 25 C 40 20, 60 20, 60 25 S 40 30, 40 25 Z" />' },
-        copa: { class: 'palo-copa', path: '<path d="M20 5 H 80 V 25 C 80 45, 65 50, 50 50 S 20 45, 20 25 Z M 40 55 H 60 V 85 H 75 V 95 H 25 V 85 H 40 Z" />' },
-        espada: { class: 'palo-espada', path: '<path d="M50 5 L 65 40 C 75 60, 70 75, 50 95 S 25 60, 35 40 Z M 40 85 H 60 V 95 H 40 Z" />' },
-        basto: { class: 'palo-basto', path: '<path d="M50 5 C 60 15, 65 30, 60 50 S 55 80, 50 95 S 45 80, 40 50 S 40 15, 50 5 Z M 45 20 L 35 30 M 65 40 L 55 50 M 40 65 L 30 75" />' }
-    };
-
-    const figuraInfo = {
-        10: 'S', // Sota
-        11: 'C', // Caballo
-        12: 'R'  // Rey
-    };
-
-    if (valor >= 10) {
-        // Para figuras, mostrar la letra y un palo grande
-        contenidoCentral = `
-            <text x="50" y="65" text-anchor="middle" class="figura-letra">${figuraInfo[valor]}</text>
-            <g transform="translate(48, 70) scale(0.3)">
-                ${paloInfo[palo].path}
-            </g>
-        `;
-    } else {
-        // Para números, mostrar un palo grande en el centro
-        // (Una implementación más compleja podría mostrar N palos)
-        contenidoCentral = `
-             <g transform="translate(0, 5) scale(0.8)">
-                ${paloInfo[palo].path}
-            </g>
-        `;
+// --- Helpers ---
+function obtenerSimboloPalo(palo) {
+    switch (palo) {
+        case 'espada': return '⚔️';
+        case 'basto': return '🌲';
+        case 'oro': return '💰';
+        case 'copa': return '🍷';
+        default: return '';
     }
-
-    return `
-        <svg class="carta-svg-container" viewBox="0 0 100 150" >
-            <g class="${paloInfo[palo].class}">
-                ${contenidoCentral}
-            </g>
-        </svg>
-    `;
 }
