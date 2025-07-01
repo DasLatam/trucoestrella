@@ -21,6 +21,7 @@ body {
     overflow: hidden;
     height: 100vh;
     user-select: none;
+    font-size: 14px; /* Reducir tamaño de fuente base para escalar todo */
 }
 
 .pantalla {
@@ -42,7 +43,7 @@ body {
 
 .setup-container {
     background-color: var(--color-mesa);
-    padding: 40px 50px;
+    padding: 30px 40px;
     border-radius: 15px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     border: 2px solid var(--color-primary);
@@ -51,17 +52,17 @@ body {
 .setup-container h1 {
     margin-top: 0;
     color: var(--color-primary);
-    font-size: 2.5em;
+    font-size: 2.2em;
 }
 .setup-container p {
-    margin-bottom: 30px;
-    font-size: 1.2em;
+    margin-bottom: 25px;
+    font-size: 1.1em;
 }
 
 .form-group {
-    margin: 20px 0;
+    margin: 18px 0;
     text-align: left;
-    font-size: 1.1em;
+    font-size: 1em;
 }
 .form-group label {
     display: block;
@@ -69,7 +70,7 @@ body {
 }
 .form-group input[type="text"] {
     width: 100%;
-    padding: 10px;
+    padding: 8px;
     border-radius: 5px;
     border: 1px solid var(--color-secondary);
     background-color: #f0f0f0;
@@ -81,8 +82,8 @@ body {
 }
 
 .btn {
-    padding: 12px 25px;
-    font-size: 1.1em;
+    padding: 10px 20px;
+    font-size: 1em;
     cursor: pointer;
     border: none;
     border-radius: 8px;
@@ -102,16 +103,17 @@ body {
 /* --- Pantalla de Juego --- */
 #game-screen {
     display: grid;
-    grid-template-columns: 160px 1fr 220px 280px;
+    /* Columnas ajustadas para ser más compactas */
+    grid-template-columns: 140px 1fr 200px 250px;
     height: 100vh;
-    gap: 15px;
-    padding: 15px;
+    gap: 10px;
+    padding: 10px;
 }
 
 .columna {
     background-color: rgba(0,0,0,0.2);
     border-radius: 10px;
-    padding: 15px;
+    padding: 10px;
     display: flex;
     flex-direction: column;
     box-shadow: inset 0 0 10px rgba(0,0,0,0.4);
@@ -125,10 +127,12 @@ body {
 .botonera .btn {
     display: block;
     width: 100%;
-    margin-top: 8px;
+    margin-top: 6px;
     border: 2px solid var(--color-borde);
     background-color: #3e6b5a;
     color: white;
+    font-size: 0.95em;
+    padding: 10px;
 }
 .botonera .btn:not(:disabled):hover {
     background-color: #4e8571;
@@ -151,23 +155,23 @@ body {
 #col-juego {
     background-color: var(--color-mesa);
     justify-content: space-between;
-    padding: 20px;
+    padding: 15px;
 }
 .player-info {
     text-align: center;
 }
 .player-info span {
-    font-size: 1.2em;
+    font-size: 1.1em;
     font-weight: bold;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     display: block;
 }
 .mano {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 160px;
-    gap: 10px;
+    min-height: 140px; /* Reducido */
+    gap: 8px;
 }
 #mesa {
     height: 40%;
@@ -176,16 +180,16 @@ body {
     justify-content: space-around;
     border-top: 2px dashed rgba(255,255,255,0.2);
     border-bottom: 2px dashed rgba(255,255,255,0.2);
-    padding: 10px 0;
+    padding: 8px 0;
 }
 .mesa-slots {
     display: flex;
     justify-content: center;
-    gap: 20px;
+    gap: 15px;
 }
 .slot-mesa {
-    width: 100px;
-    height: 150px;
+    width: 90px; /* Reducido */
+    height: 135px; /* Reducido */
     border: 2px solid rgba(255,255,255,0.1);
     border-radius: 8px;
     display: flex;
@@ -199,13 +203,13 @@ body {
 }
 
 .carta {
-    width: 100px;
-    height: 150px;
+    width: 90px; /* Reducido */
+    height: 135px; /* Reducido */
     border: 1px solid var(--color-borde);
     border-radius: 8px;
     background-color: white;
     color: black;
-    padding: 5px;
+    padding: 4px;
     box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
     position: relative;
     font-weight: bold;
@@ -215,19 +219,19 @@ body {
     transition: transform 0.2s, box-shadow 0.2s;
 }
 .carta.jugador-carta:hover {
-    transform: translateY(-15px) scale(1.05);
-    box-shadow: 5px 20px 15px rgba(0,0,0,0.3);
+    transform: translateY(-12px) scale(1.05);
+    box-shadow: 5px 15px 15px rgba(0,0,0,0.3);
 }
 .carta.oculta {
     background-color: var(--color-carta-dorso);
     background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.1) 5px, rgba(255,255,255,0.1) 10px);
 }
 .valor-carta-esquina {
-    font-size: 1.2em;
+    font-size: 1.1em;
     position: absolute;
 }
-.top-left { top: 5px; left: 8px; }
-.bottom-right { bottom: 5px; right: 8px; transform: rotate(180deg); }
+.top-left { top: 4px; left: 6px; }
+.bottom-right { bottom: 4px; right: 6px; transform: rotate(180deg); }
 
 .carta-svg-container {
     width: 100%;
@@ -239,7 +243,7 @@ body {
 .palo-copa { fill: #dc143c; stroke: #8b0000; stroke-width: 1px; }
 .palo-espada { fill: #87ceeb; stroke: #4682b4; stroke-width: 1.5px; }
 .palo-basto { fill: #228b22; stroke: #006400; stroke-width: 1.5px; }
-.figura-letra { font-family: 'Times New Roman', serif; font-size: 50px; font-weight: bold; fill: #333; }
+.figura-letra { font-family: 'Times New Roman', serif; font-size: 45px; font-weight: bold; fill: #333; }
 
 
 /* Columna 3: Marcador */
@@ -247,46 +251,46 @@ body {
 .marcador-container { width: 100%; }
 .marcador-container h3, .marcador-container h4 {
     text-align: center;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     color: var(--color-primary);
 }
-.marcador-container h4 { margin-top: 15px; color: var(--color-texto); }
+.marcador-container h4 { margin-top: 12px; color: var(--color-texto); }
 .score-section hr { border-color: rgba(255,255,255,0.2); }
 .marcador {
     background-color: rgba(0,0,0,0.3);
-    padding: 10px;
+    padding: 8px;
     border-radius: 5px;
-    min-height: 200px;
+    min-height: 180px;
 }
 .poroto-grupo {
     display: flex;
     align-items: center;
-    margin-bottom: 5px;
+    margin-bottom: 4px;
     position: relative;
 }
 .poroto {
-    width: 8px;
-    height: 35px;
+    width: 7px;
+    height: 30px;
     background-color: #f0e68c;
     border: 1px solid #aaa;
-    margin: 0 3px;
+    margin: 0 2px;
     border-radius: 2px;
 }
 .cruzado {
     position: absolute;
-    width: 55px;
-    height: 8px;
+    width: 48px;
+    height: 7px;
     background-color: #f0e68c;
     border: 1px solid #aaa;
     border-radius: 2px;
     transform: rotate(-20deg);
-    top: 14px;
+    top: 12px;
     left: -2px;
 }
 .linea-malas {
     border-bottom: 3px solid #e13d3d;
-    margin-top: 10px;
-    padding-bottom: 10px;
+    margin-top: 8px;
+    padding-bottom: 8px;
 }
 
 /* Columna 4: Historial */
@@ -295,17 +299,19 @@ body {
 }
 #col-historial h3 { color: var(--color-primary); text-align: center; flex-shrink: 0; }
 #historial-log {
-    flex-grow: 1; /* Hace que el log ocupe el espacio disponible */
-    overflow-y: auto; /* Habilita el scroll vertical cuando sea necesario */
-    font-size: 0.95em;
+    flex-grow: 1;
+    overflow-y: auto;
+    font-size: 0.9em;
     background-color: rgba(0,0,0,0.3);
     padding: 10px;
     border-radius: 5px;
-    min-height: 0; /* Importante para que el flex-grow funcione correctamente */
+    min-height: 0;
+    /* max-height se puede ajustar, 50vh es un buen punto de partida */
+    max-height: 70vh; 
 }
 #historial-log p {
-    margin: 0 0 8px 0;
-    padding-bottom: 5px;
+    margin: 0 0 6px 0;
+    padding-bottom: 4px;
     border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 .log-player { color: #87ceeb; font-weight: bold; }
