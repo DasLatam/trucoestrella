@@ -42,10 +42,9 @@ function resetRondaState(esManoPlayer) {
             truco: null,  // {cantadoPor, nivel, respondido}
             flor: null,   // {cantadoPor, nivel, respondido, puntosPlayer, puntosCpu}
         },
-        puedeCantarEnvido: true,
-        puedeCantarFlor: true,
-        esperandoRespuesta: null, // {de, tipo, nivel, etc.}
+        etapa: 'inicio', // 'inicio', 'envido', 'truco'
         rondaTerminada: false,
+        esperandoRespuesta: null, // {de, tipo, nivel, etc.}
     };
 }
 
@@ -106,20 +105,24 @@ function iniciarNuevaRonda(esManoPlayer) {
 function procesarTurno() {
     if (gameState.rondaActual.rondaTerminada || gameState.partidaTerminada) return;
     
-    // Lógica de Flor al inicio del turno de cada jugador
-    if (gameState.config.conFlor && gameState.rondaActual.puedeCantarFlor) {
+    // Lógica de Flor (tiene máxima prioridad)
+    if (gameState.config.conFlor && gameState.rondaActual.etapa === 'inicio') {
         const r = gameState.rondaActual;
         const florPlayer = ia.calcularFlor(r.manoPlayer);
         const florCpu = ia.calcularFlor(r.manoCpu);
 
-        if (r.turno === 'player' && florPlayer > 0 && !r.cantos.flor) {
-            ui.agregarLog('Tienes flor, debes cantarla.', 'sistema');
-            actualizarEstadoBotones();
-            return; // Espera a que el jugador cante flor
+        if (florPlayer > 0 && florCpu > 0) {
+            // Ambos tienen flor, se resuelve inmediatamente.
+            setTimeout(() => resolverFlor(), 1000);
+            return;
         }
-        if (r.turno === 'cpu' && florCpu > 0 && !r.cantos.flor) {
+        if (florPlayer > 0) {
+            setTimeout(() => procesarCanto('player', 'FLOR', 'FLOR'), 500);
+            return;
+        }
+        if (florCpu > 0) {
             setTimeout(() => procesarCanto('cpu', 'FLOR', 'FLOR'), 1000);
-            return; // La CPU canta su flor
+            return;
         }
     }
 
@@ -146,7 +149,6 @@ function turnoCPU() {
 
     // 2. Si no canta, juega una carta
     const cartaAJugar = ia.decidirJugada(r.manoCpu, r);
-    
     jugarCarta('cpu', cartaAJugar);
 }
 
@@ -158,11 +160,9 @@ function jugadorJuegaCarta(carta) {
     if (r.turno !== 'player' || r.esperandoRespuesta || r.rondaTerminada) return;
 
     // Validar si el jugador DEBE cantar flor y no lo ha hecho
-    if (gameState.config.conFlor && r.puedeCantarFlor && ia.calcularFlor(r.manoPlayer) > 0 && !r.cantos.flor) {
+    if (gameState.config.conFlor && r.etapa === 'inicio' && ia.calcularFlor(r.manoPlayer) > 0) {
         ui.agregarLog('¡Error! Debes cantar FLOR antes de jugar.', 'sistema');
-        // Penalización: se considera que se achicó
-        resolverFlor(true); // El jugador se achica
-        return;
+        return; // No le permite jugar
     }
 
     jugarCarta('player', carta);
@@ -174,33 +174,25 @@ function jugadorJuegaCarta(carta) {
  * @param {object} carta - La carta a jugar.
  */
 function jugarCarta(jugador, carta) {
-    // *** FIX ***
-    // Guarda defensiva: si la carta es inválida (null/undefined), indica un error de estado.
-    // Se termina la ronda para evitar que el juego se rompa.
     if (!carta) {
-        console.error(`jugarCarta fue llamada con una carta inválida para ${jugador}. Probablemente la mano estaba vacía.`);
-        const perdedor = jugador;
-        const ganador = perdedor === 'player' ? 'cpu' : 'player';
+        console.error(`jugarCarta fue llamada con una carta inválida para ${jugador}.`);
+        const ganador = jugador === 'player' ? 'cpu' : 'player';
         ui.agregarLog(`Error de estado. ${jugador} no pudo jugar.`, 'sistema');
-        terminarRonda(ganador);
+        terminarRondaPorAbandono(ganador);
         return;
     }
-    // *** END FIX ***
 
     const r = gameState.rondaActual;
     const mano = jugador === 'player' ? r.manoPlayer : r.manoCpu;
     const nombreJugador = jugador === 'player' ? gameState.config.nombreJugador : 'CPU';
 
     const index = mano.indexOf(carta);
-    if (index > -1) {
-        mano.splice(index, 1);
-    }
+    if (index > -1) mano.splice(index, 1);
     r.mesa[jugador].push(carta);
 
-    // Deshabilitar cantos de envido/flor después de la primera carta
-    if (r.mesa.player.length + r.mesa.cpu.length === 1) {
-        r.puedeCantarEnvido = false;
-        r.puedeCantarFlor = false;
+    // Al jugar la primera carta, la etapa de envido/flor termina.
+    if (r.etapa === 'inicio') {
+        r.etapa = 'truco';
     }
 
     // Actualizar UI
@@ -245,16 +237,16 @@ function evaluarMano() {
     
     if (ganador === 'parda') {
          ui.agregarLog(`Mano ${manoNum} es parda.`, 'sistema');
-         r.turno = r.esManoPlayer ? 'player' : 'cpu'; // El que es mano en la ronda sigue siéndolo
+         r.turno = r.esManoPlayer ? 'player' : 'cpu';
     } else {
         const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'CPU';
         ui.agregarLog(`${nombreGanador} gana la mano ${manoNum}.`, 'sistema');
-        r.turno = ganador; // El ganador de la mano es mano en la siguiente jugada
+        r.turno = ganador;
     }
     
     const ganadorRonda = determinarGanadorRonda();
     if (ganadorRonda) {
-        terminarRonda(ganadorRonda);
+        terminarRondaPorJuego(ganadorRonda);
     } else {
         r.manoActual++;
         procesarTurno();
@@ -291,7 +283,7 @@ function determinarGanadorRonda() {
 /**
  * Finaliza la ronda por el juego de cartas (Truco) y otorga los puntos.
  */
-function terminarRonda(ganador) {
+function terminarRondaPorJuego(ganador) {
     if (gameState.rondaActual.rondaTerminada) return;
     gameState.rondaActual.rondaTerminada = true;
 
@@ -330,9 +322,10 @@ function procesarCanto(cantador, tipo, nivel) {
 
     r.esperandoRespuesta = { de: oponente, tipo: tipo, nivel: nivel };
     
-    // Si se canta flor, se calculan los puntos para la posible respuesta de la IA
     if (tipo === 'FLOR') {
         r.cantos.flor.puntosJugador = ia.calcularFlor(r.manoPlayer);
+        resolverFlor();
+        return;
     }
 
     actualizarEstadoBotones();
@@ -350,10 +343,9 @@ function cpuRespondeCanto() {
     const canto = r.esperandoRespuesta;
     const respuesta = ia.decidirRespuesta(r.manoCpu, canto, r);
 
-    // Si la respuesta es otro canto (subir la apuesta)
-    if (respuesta.decision === 'RETRUCO' || respuesta.decision === 'REAL_ENVIDO' || respuesta.decision === 'CONTRAFLOR') {
+    if (['RETRUCO', 'REAL_ENVIDO', 'CONTRAFLOR'].includes(respuesta.decision)) {
         procesarCanto('cpu', canto.tipo, respuesta.decision);
-    } else { // Si es Quiero o No Quiero
+    } else {
         procesarRespuesta('cpu', respuesta.decision);
     }
 }
@@ -376,21 +368,21 @@ function procesarRespuesta(respondedor, decision) {
 
     if (decision === 'NO_QUIERO') {
         let puntos = 1;
-        if (canto.tipo === 'TRUCO') puntos = config.PUNTOS[canto.nivel].NO_QUERIDO;
-        if (canto.tipo === 'ENVIDO') puntos = calcularPuntosEnvidoNoQuerido();
-        if (canto.tipo === 'FLOR') puntos = config.PUNTOS.CONTRAFLOR.NO_QUERIDO;
-        
-        sumarPuntos(oponente, puntos, `por ${canto.nivel} no querido`);
-        finalizarManoDeJuego();
+        let motivo = `por ${canto.nivel} no querido`;
+        if (canto.tipo === 'TRUCO') {
+            puntos = config.PUNTOS[canto.nivel].NO_QUERIDO;
+            terminarRondaPorAbandono(oponente, puntos, motivo);
+        }
+        if (canto.tipo === 'ENVIDO') {
+            puntos = calcularPuntosEnvidoNoQuerido();
+            sumarPuntos(oponente, puntos, motivo);
+            continuarRondaParaTruco();
+        }
     } else { // QUISO
         if (canto.tipo === 'ENVIDO') {
             resolverEnvido();
-        } else if (canto.tipo === 'FLOR') {
-            resolverFlor();
         } else { // TRUCO
-            // El juego continúa, el turno vuelve a quien era mano de la ronda
-            r.turno = r.esManoPlayer ? 'player' : 'cpu'; 
-            procesarTurno();
+            continuarRondaParaTruco();
         }
     }
 }
@@ -411,12 +403,10 @@ function resolverEnvido() {
     const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'CPU';
     ui.mostrarModal(`Gana el Envido: ${nombreGanador}`, `${gameState.config.nombreJugador}: ${puntosPlayer} puntos.<br>CPU: ${puntosCpu} puntos.`);
     
-    r.cantos.envido.resuelto = true;
-    r.turno = r.esManoPlayer ? 'player' : 'cpu';
-    procesarTurno();
+    continuarRondaParaTruco();
 }
 
-function resolverFlor(jugadorSeAchica = false) {
+function resolverFlor() {
     const r = gameState.rondaActual;
     if (r.rondaTerminada) return;
     r.rondaTerminada = true;
@@ -425,11 +415,7 @@ function resolverFlor(jugadorSeAchica = false) {
     const puntosCpu = ia.calcularFlor(r.manoCpu);
     let ganador, perdedor, puntosGanados, motivo;
 
-    if (jugadorSeAchica) {
-        ganador = 'cpu';
-        puntosGanados = 3;
-        motivo = "por flor no cantada";
-    } else if (puntosPlayer > 0 && puntosCpu === 0) {
+    if (puntosPlayer > 0 && puntosCpu === 0) {
         ganador = 'player';
         puntosGanados = 3;
         motivo = "de flor";
@@ -448,9 +434,9 @@ function resolverFlor(jugadorSeAchica = false) {
         } else if (cantoFlor.nivel === 'CONTRAFLOR') {
             puntosGanados = 6;
         } else {
-            puntosGanados = 4; // 3 por la flor + 1 por la segunda flor
+            puntosGanados = 4; // 3 por la flor de uno + 1 por la del otro
         }
-        motivo = `de ${cantoFlor.nivel}`;
+        motivo = `de ${cantoFlor.nivel || 'flor'}`;
     }
 
     const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'CPU';
@@ -462,6 +448,13 @@ function resolverFlor(jugadorSeAchica = false) {
 
 // --- Utilidades ---
 
+function continuarRondaParaTruco() {
+    const r = gameState.rondaActual;
+    r.etapa = 'truco';
+    r.turno = r.esManoPlayer ? 'player' : 'cpu'; // El turno vuelve a quien era mano
+    procesarTurno();
+}
+
 function calcularPuntosEnvidoQuerido() {
     const cadena = gameState.rondaActual.cantos.envido.cadena;
     if (cadena.includes('FALTA_ENVIDO')) {
@@ -471,38 +464,41 @@ function calcularPuntosEnvidoQuerido() {
     let puntos = 0;
     if (cadena.includes('REAL_ENVIDO')) puntos += 3;
     puntos += cadena.filter(c => c === 'ENVIDO').length * 2;
-    return puntos || 2; // Mínimo 2 si es solo un envido querido
+    return puntos || 2;
 }
 
 function calcularPuntosEnvidoNoQuerido() {
     const cadena = gameState.rondaActual.cantos.envido.cadena;
     let puntos = 0;
     for(let i = 0; i < cadena.length -1; i++) {
-        if (cadena[i] === 'ENVIDO') puntos += 2;
-        if (cadena[i] === 'REAL_ENVIDO') puntos += 3;
+        const canto = cadena[i];
+        if (canto === 'ENVIDO') puntos += 2;
+        if (canto === 'REAL_ENVIDO') puntos += 3;
     }
     return puntos + 1;
 }
 
-function jugadorVaAlMazo() {
+function terminarRondaPorAbandono(ganador, puntos, motivo) {
     const r = gameState.rondaActual;
     if (r.rondaTerminada) return;
     r.rondaTerminada = true;
 
-    ui.agregarLog(`${gameState.config.nombreJugador} se va al mazo.`, 'player');
-    let puntos = 1;
-    if (r.cantos.truco) {
-        puntos = config.PUNTOS[r.cantos.truco.nivel].NO_QUERIDO;
-    }
-    sumarPuntos('cpu', puntos, 'por abandono');
+    sumarPuntos(ganador, puntos, motivo);
     setTimeout(() => iniciarNuevaRonda(!r.esManoPlayer), 2000);
 }
 
-function finalizarManoDeJuego() {
+function jugadorVaAlMazo() {
     const r = gameState.rondaActual;
-    if (r.rondaTerminada) return;
-    r.rondaTerminada = true;
-    setTimeout(() => iniciarNuevaRonda(!r.esManoPlayer), 3000);
+    ui.agregarLog(`${gameState.config.nombreJugador} se va al mazo.`, 'player');
+    let puntos = 1;
+    let motivo = 'por abandono';
+    if (r.cantos.truco && r.cantos.truco.respondido !== 'NO_QUIERO') {
+        puntos = config.PUNTOS[r.cantos.truco.nivel].QUERIDO -1; // El "no quiero" del truco ya cantado
+    } else if (r.cantos.envido && !r.cantos.envido.resuelto) {
+        puntos = calcularPuntosEnvidoNoQuerido();
+        motivo = 'del envido no querido';
+    }
+    terminarRondaPorAbandono('cpu', puntos, motivo);
 }
 
 function sumarPuntos(jugador, cantidad, motivo) {
@@ -528,7 +524,7 @@ function finalizarPartida(ganador) {
 }
 
 function actualizarEstadoBotones() {
-    if (gameState.partidaTerminada) {
+    if (gameState.partidaTerminada || gameState.rondaActual.rondaTerminada) {
         ui.actualizarBotones({}); // Deshabilita todos
         return;
     }
@@ -542,14 +538,14 @@ function actualizarEstadoBotones() {
         esTurnoPlayer: esTurnoPlayer,
         esperandoRespuesta: esperandoRespuestaPlayer,
         
-        puedeCantarEnvido: esTurnoPlayer && r.puedeCantarEnvido && !r.cantos.flor,
+        puedeCantarEnvido: esTurnoPlayer && r.etapa === 'inicio' && !r.cantos.flor,
         puedeSubirEnvido: esperandoRespuestaPlayer && r.esperandoRespuesta.tipo === 'ENVIDO',
         nivelEnvidoActual: r.cantos.envido ? config.NIVELES_ENVIDO[r.cantos.envido.nivel] : 0,
 
         puedeCantarTruco: esTurnoPlayer && (!r.cantos.truco || (r.cantos.truco.cantadoPor !== 'player' && r.cantos.truco.respondido === 'QUIERO')),
         nivelTrucoActual: r.cantos.truco ? config.NIVELES_TRUCO[r.cantos.truco.nivel] : 0,
         
-        puedeCantarFlor: esTurnoPlayer && gameState.config.conFlor && r.puedeCantarFlor && florPlayer > 0 && !r.cantos.flor,
+        puedeCantarFlor: esTurnoPlayer && gameState.config.conFlor && r.etapa === 'inicio' && florPlayer > 0 && !r.cantos.flor,
         puedeSubirFlor: esperandoRespuestaPlayer && r.esperandoRespuesta.tipo === 'FLOR' && florPlayer > 0,
         nivelFlorActual: r.cantos.flor ? config.NIVELES_FLOR[r.cantos.flor.nivel] : 0,
     };
@@ -578,7 +574,6 @@ function init() {
     document.getElementById('start-game-btn').addEventListener('click', iniciarPartida);
     document.getElementById('modal-close-btn').addEventListener('click', ui.ocultarModal);
 
-    // Listeners de cantos del jugador
     document.getElementById('btn-truco').addEventListener('click', () => procesarCanto('player', 'TRUCO', 'TRUCO'));
     document.getElementById('btn-retruco').addEventListener('click', () => procesarCanto('player', 'TRUCO', 'RETRUCO'));
     document.getElementById('btn-vale-cuatro').addEventListener('click', () => procesarCanto('player', 'TRUCO', 'VALE_CUATRO'));
@@ -591,7 +586,6 @@ function init() {
     document.getElementById('btn-contraflor').addEventListener('click', () => procesarCanto('player', 'FLOR', 'CONTRAFLOR'));
     document.getElementById('btn-contraflor-resto').addEventListener('click', () => procesarCanto('player', 'FLOR', 'CONTRAFLOR_AL_RESTO'));
     
-    // Listeners de respuestas del jugador
     document.getElementById('btn-quiero').addEventListener('click', () => procesarRespuesta('player', 'QUIERO'));
     document.getElementById('btn-no-quiero').addEventListener('click', () => procesarRespuesta('player', 'NO_QUIERO'));
     
