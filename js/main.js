@@ -1,16 +1,20 @@
 // --- LÓGICA PRINCIPAL Y FLUJO DEL JUEGO ---
 
-// --- Variables de Estado del Juego ---
+// --- Variables de Estado Globales ---
 let marcador, jugadorHumano, jugadorCPU, manoActual, manosGanadas, resultadosManos, turnoDelHumano, estadoEnvido, estadoTruco, cantoActual, tieneFlor, manoDeLaRonda, jugadorMano, cartaJugadaPorLider, juegoPausado = false;
 
-// --- Funciones de Lógica de Juego Principal ---
+// --- Objeto de Botones y Elementos (CORREGIDO - AÑADIDO) ---
+// Este objeto es crucial y faltaba en la versión anterior.
+let botones; 
+
+// --- Lógica de Juego Principal ---
 function comenzarPartida() {
     PUNTOS_PARA_GANAR = parseInt(document.querySelector('input[name="puntos-partida"]:checked').value);
     JUGAR_CON_FLOR = document.getElementById('con-flor').checked;
     const nombreJugador = document.getElementById('nombre-jugador').value || 'Jugador';
     
-    jugadorHumano = { nombre: nombreJugador };
-    jugadorCPU = { nombre: 'TrucoEstrella' };
+    jugadorHumano = { nombre: nombreJugador, mano: [] };
+    jugadorCPU = { nombre: 'TrucoEstrella', mano: [] };
 
     document.getElementById('marcador-humano-nombre').textContent = jugadorHumano.nombre;
     document.getElementById('marcador-cpu-nombre').textContent = jugadorCPU.nombre;
@@ -20,13 +24,13 @@ function comenzarPartida() {
     document.getElementById('pantalla-config').style.display = 'none';
     document.getElementById('area-juego-wrapper').style.display = 'block';
     
-    manoDeLaRonda = 'cpu'; // Para que la primera ronda la empiece el humano
+    manoDeLaRonda = 'cpu';
     iniciarPartida();
 }
 
 function iniciarPartida() {
     marcador = { humano: 0, cpu: 0 };
-    manoDeLaRonda = (manoDeLaRonda === 'humano') ? 'cpu' : 'humano'; // Alternar quién empieza
+    manoDeLaRonda = (manoDeLaRonda === 'humano') ? 'cpu' : 'humano';
     if(botones.log) { botones.log.innerHTML = ''; }
     iniciarRonda();
 }
@@ -140,34 +144,3 @@ function finalizarRonda(ganadorPorNoQuerer, configFlor = null) {
         let puntosNoQuerido = { truco: estadoTruco === 0 ? 1 : estadoTruco, envido: [0,1,2,3][estadoEnvido.nivel] };
         puntos = puntosNoQuerido[cantoActual] || 1;
     } else {
-        puntos = [1, 2, 3, 4][estadoTruco] || 1;
-        if (manosGanadas.humano === manosGanadas.cpu) {
-            ganadorFinal = resultadosManos[0] === 'empate' ? manoDeLaRonda : resultadosManos[0];
-        } else {
-            ganadorFinal = manosGanadas.humano > manosGanadas.cpu ? 'humano' : 'cpu';
-        }
-    }
-
-    marcador[ganadorFinal] += puntos;
-    actualizarMarcador();
-    const nombreGanador = (ganadorFinal === 'humano') ? jugadorHumano.nombre : jugadorCPU.nombre;
-    actualizarInfo(`🏆 ¡${nombreGanador} gana la ronda y se lleva ${puntos} ${puntos > 1 ? 'puntos' : 'punto'}! 🏆`);
-    
-    setTimeout(() => {
-        if (marcador.humano >= PUNTOS_PARA_GANAR) {
-            actualizarInfo(`🎉 ¡FELICIDADES, ${jugadorHumano.nombre.toUpperCase()}, HAS GANADO LA PARTIDA! 🎉`);
-            botones.nuevoJuego.style.display = 'block';
-        } else if (marcador.cpu >= PUNTOS_PARA_GANAR) {
-            actualizarInfo(`Gana ${jugadorCPU.nombre}. ¡Mejor suerte la próxima!`);
-            botones.nuevoJuego.style.display = 'block';
-        } else {
-            iniciarPartida();
-        }
-    }, 3000);
-}
-
-// --- Ligar eventos a los botones ---
-document.addEventListener('DOMContentLoaded', () => {
-    // El juego ahora espera a que se haga clic en "Comenzar Partida" para iniciar
-    document.getElementById('btn-comenzar').addEventListener('click', comenzarPartida);
-});
