@@ -76,6 +76,9 @@ function pausarJuego() { juegoPausado = true; }
 function reanudarJuego() { juegoPausado = false; }
 function iniciarPartida() { 
     marcador = { humano: 0, cpu: 0 }; 
+    // Inicializar jugadores si no existen
+    if (!jugadorHumano) jugadorHumano = { nombre: "Vos", mano: [] };
+    if (!jugadorCPU) jugadorCPU = { nombre: "CPU", mano: [] };
     manoDeLaRonda = (manoDeLaRonda === 'humano') ? 'cpu' : 'humano'; 
     if(botones.log) { botones.log.innerHTML = ''; } 
     iniciarRonda(); 
@@ -84,7 +87,6 @@ function comenzarPartida() {
     document.getElementById('btn-comenzar').style.display = 'none';
     iniciarPartida();
 }
-window.comenzarPartida = comenzarPartida; // <-- Hace la función global para el DOM
 function iniciarRonda() {
     manoActual = 1; 
     manosGanadas = { humano: 0, cpu: 0 }; 
