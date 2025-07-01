@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <style>
         /* Estilos personalizados adicionales */
         body {
@@ -223,7 +224,7 @@
     </div>
 
     <!-- Modal Fin de Partida -->
-    <div id="modal-fin-partida" class="hidden fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center">
+    <div id="modal-fin-partida" class="hidden fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
         <div class="bg-green-800 p-8 rounded-lg text-center shadow-2xl">
             <h2 id="ganador-texto" class="text-3xl font-bold mb-6 text-yellow-300"></h2>
             <div class="flex space-x-4">
@@ -233,1130 +234,612 @@
         </div>
     </div>
 
-    <script type="module" src="js/main.js"></script>
-</body>
-</html>
-```javascript
-// js/config.js
+    <script type="module">
+        // --- Módulo: js/config.js ---
+        const PALOS = {
+            ESPADA: { nombre: 'espada', simbolo: '⚔️' },
+            BASTO: { nombre: 'basto', simbolo: '🌲' },
+            ORO: { nombre: 'oro', simbolo: '💰' },
+            COPA: { nombre: 'copa', simbolo: '🍷' },
+        };
+        const HIERARQUIA_TRUCO = [
+            { numero: 1, palo: PALOS.ESPADA.nombre }, { numero: 1, palo: PALOS.BASTO.nombre },
+            { numero: 7, palo: PALOS.ESPADA.nombre }, { numero: 7, palo: PALOS.ORO.nombre },
+            { numero: 3, palo: 'cualquiera' }, { numero: 2, palo: 'cualquiera' },
+            { numero: 1, palo: PALOS.ORO.nombre }, { numero: 1, palo: PALOS.COPA.nombre },
+            { numero: 12, palo: 'cualquiera' }, { numero: 11, palo: 'cualquiera' },
+            { numero: 10, palo: 'cualquiera' }, { numero: 7, palo: PALOS.COPA.nombre },
+            { numero: 7, palo: PALOS.BASTO.nombre }, { numero: 6, palo: 'cualquiera' },
+            { numero: 5, palo: 'cualquiera' }, { numero: 4, palo: 'cualquiera' },
+        ];
+        const VALOR_ENVIDO = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 10: 0, 11: 0, 12: 0 };
+        const PUNTOS_META = { QUINCE: 15, TREINTA: 30 };
+        const CANTOS = {
+            ENVIDO: 'ENVIDO', REAL_ENVIDO: 'REAL_ENVIDO', FALTA_ENVIDO: 'FALTA_ENVIDO',
+            FLOR: 'FLOR', CONTRAFLOR: 'CONTRAFLOR', CONTRAFLOR_AL_RESTO: 'CONTRAFLOR_AL_RESTO',
+            TRUCO: 'TRUCO', RETRUCO: 'RETRUCO', VALE_CUATRO: 'VALE_CUATRO',
+            QUIERO: 'QUIERO', NO_QUIERO: 'NO_QUIERO',
+        };
 
-// Constantes para los palos de la baraja española
-export const PALOS = {
-    ESPADA: { nombre: 'espada', simbolo: '⚔️' },
-    BASTO: { nombre: 'basto', simbolo: '🌲' },
-    ORO: { nombre: 'oro', simbolo: '💰' },
-    COPA: { nombre: 'copa', simbolo: '🍷' },
-};
+        // --- Módulo: js/ui.js ---
+        const UI = (() => {
+            const inicioScreen = document.getElementById('inicio-screen');
+            const juegoScreen = document.getElementById('juego-screen');
+            const nombreJugadorInput = document.getElementById('nombre-jugador');
+            const nombreJugadorDisplay = document.getElementById('nombre-jugador-display');
+            const marcadorNombreJugador = document.getElementById('marcador-nombre-jugador');
+            const nombreIADisplay = document.getElementById('nombre-ia');
+            const manoJugadorContainer = document.getElementById('mano-jugador');
+            const manoIAContainer = document.getElementById('mano-ia');
+            const slotJugador = document.getElementById('slot-jugador');
+            const slotIA = document.getElementById('slot-ia');
+            const marcadorJugadorContainer = document.getElementById('marcador-jugador');
+            const marcadorIAContainer = document.getElementById('marcador-ia');
+            const lineaMitad = document.getElementById('linea-mitad');
+            const historialContainer = document.getElementById('historial');
+            const botonesCanto = {
+                truco: document.getElementById('cantar-truco-btn'),
+                envido: document.getElementById('cantar-envido-btn'),
+                realEnvido: document.getElementById('cantar-real-envido-btn'),
+                faltaEnvido: document.getElementById('cantar-falta-envido-btn'),
+                flor: document.getElementById('cantar-flor-btn'),
+                irAlMazo: document.getElementById('ir-al-mazo-btn'),
+            };
+            const quieroContainer = document.getElementById('quiero-container');
+            const quieroBtn = document.getElementById('quiero-btn');
+            const noQuieroBtn = document.getElementById('no-quiero-btn');
+            const modalFinPartida = document.getElementById('modal-fin-partida');
+            const ganadorTexto = document.getElementById('ganador-texto');
+            const mensajeFlotante = document.getElementById('mensaje-flotante');
 
-// Jerarquía de las cartas para el TRUCO, de mayor a menor valor
-export const HIERARQUIA_TRUCO = [
-    { numero: 1, palo: PALOS.ESPADA.nombre },  // Ancho de Espada
-    { numero: 1, palo: PALOS.BASTO.nombre },   // Ancho de Basto
-    { numero: 7, palo: PALOS.ESPADA.nombre },  // Siete de Espada
-    { numero: 7, palo: PALOS.ORO.nombre },     // Siete de Oro
-    { numero: 3, palo: 'cualquiera' },
-    { numero: 2, palo: 'cualquiera' },
-    { numero: 1, palo: PALOS.ORO.nombre },     // Anchos falsos
-    { numero: 1, palo: PALOS.COPA.nombre },
-    { numero: 12, palo: 'cualquiera' },
-    { numero: 11, palo: 'cualquiera' },
-    { numero: 10, palo: 'cualquiera' },
-    { numero: 7, palo: PALOS.COPA.nombre },    // Sietes falsos
-    { numero: 7, palo: PALOS.BASTO.nombre },
-    { numero: 6, palo: 'cualquiera' },
-    { numero: 5, palo: 'cualquiera' },
-    { numero: 4, palo: 'cualquiera' },
-];
-
-// Valor de las cartas para el ENVIDO
-export const VALOR_ENVIDO = {
-    1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 10: 0, 11: 0, 12: 0
-};
-
-// Puntos de la partida
-export const PUNTOS_META = {
-    QUINCE: 15,
-    TREINTA: 30
-};
-
-// Nombres de los cantos
-export const CANTOS = {
-    ENVIDO: 'ENVIDO',
-    REAL_ENVIDO: 'REAL_ENVIDO',
-    FALTA_ENVIDO: 'FALTA_ENVIDO',
-    FLOR: 'FLOR',
-    CONTRAFLOR: 'CONTRAFLOR',
-    CONTRAFLOR_AL_RESTO: 'CONTRAFLOR_AL_RESTO',
-    TRUCO: 'TRUCO',
-    RETRUCO: 'RETRUCO',
-    VALE_CUATRO: 'VALE_CUATRO',
-    QUIERO: 'QUIERO',
-    NO_QUIERO: 'NO_QUIERO',
-};
-```javascript
-// js/ui.js
-import { PUNTOS_META } from './config.js';
-
-// --- Referencias a Elementos del DOM ---
-const inicioScreen = document.getElementById('inicio-screen');
-const juegoScreen = document.getElementById('juego-screen');
-const nombreJugadorInput = document.getElementById('nombre-jugador');
-const nombreJugadorDisplay = document.getElementById('nombre-jugador-display');
-const marcadorNombreJugador = document.getElementById('marcador-nombre-jugador');
-const nombreIADisplay = document.getElementById('nombre-ia');
-const manoJugadorContainer = document.getElementById('mano-jugador');
-const manoIAContainer = document.getElementById('mano-ia');
-const mesaContainer = document.getElementById('mesa');
-const slotJugador = document.getElementById('slot-jugador');
-const slotIA = document.getElementById('slot-ia');
-const marcadorJugadorContainer = document.getElementById('marcador-jugador');
-const marcadorIAContainer = document.getElementById('marcador-ia');
-const lineaMitad = document.getElementById('linea-mitad');
-const historialContainer = document.getElementById('historial');
-const botonesCanto = {
-    truco: document.getElementById('cantar-truco-btn'),
-    envido: document.getElementById('cantar-envido-btn'),
-    realEnvido: document.getElementById('cantar-real-envido-btn'),
-    faltaEnvido: document.getElementById('cantar-falta-envido-btn'),
-    flor: document.getElementById('cantar-flor-btn'),
-    irAlMazo: document.getElementById('ir-al-mazo-btn'),
-};
-const quieroContainer = document.getElementById('quiero-container');
-const quieroBtn = document.getElementById('quiero-btn');
-const noQuieroBtn = document.getElementById('no-quiero-btn');
-const modalFinPartida = document.getElementById('modal-fin-partida');
-const ganadorTexto = document.getElementById('ganador-texto');
-const mensajeFlotante = document.getElementById('mensaje-flotante');
-
-
-// --- Funciones de Manipulación de la UI ---
-
-/**
- * Muestra una pantalla ('inicio' o 'juego') y oculta la otra.
- * @param {string} nombrePantalla - 'inicio' o 'juego'.
- */
-export function mostrarPantalla(nombrePantalla) {
-    inicioScreen.classList.toggle('hidden', nombrePantalla !== 'inicio');
-    juegoScreen.classList.toggle('hidden', nombrePantalla !== 'juego');
-}
-
-/**
- * Actualiza los nombres de los jugadores en la interfaz.
- * @param {string} nombreJugador 
- * @param {string} nombreIA 
- */
-export function actualizarNombres(nombreJugador, nombreIA) {
-    nombreJugadorDisplay.textContent = nombreJugador;
-    marcadorNombreJugador.textContent = nombreJugador;
-    nombreIADisplay.textContent = nombreIA;
-}
-
-/**
- * Crea el elemento DOM para una carta.
- * @param {object} carta - El objeto carta { numero, palo, id }.
- * @param {boolean} esBocaAbajo - Si la carta debe mostrarse boca abajo.
- * @returns {HTMLElement} El elemento de la carta.
- */
-function crearElementoCarta(carta, esBocaAbajo = false) {
-    const cartaDiv = document.createElement('div');
-    cartaDiv.classList.add('carta');
-    cartaDiv.dataset.id = carta.id;
-
-    if (esBocaAbajo) {
-        cartaDiv.classList.add('carta-boca-abajo');
-    } else {
-        const valorSpan = document.createElement('span');
-        valorSpan.classList.add('valor');
-        valorSpan.textContent = carta.numero;
-
-        const paloEsquinaSpan = document.createElement('span');
-        paloEsquinaSpan.classList.add('palo-esquina');
-        paloEsquinaSpan.textContent = carta.palo.simbolo;
-
-        const paloGrandeSpan = document.createElement('span');
-        paloGrandeSpan.classList.add('palo-grande');
-        paloGrandeSpan.textContent = carta.palo.simbolo;
-
-        cartaDiv.appendChild(valorSpan);
-        cartaDiv.appendChild(paloEsquinaSpan);
-        cartaDiv.appendChild(paloGrandeSpan);
-    }
-    return cartaDiv;
-}
-
-/**
- * Dibuja las manos de ambos jugadores.
- * @param {Array<object>} manoJugador 
- * @param {Array<object>} manoIA 
- */
-export function dibujarManos(manoJugador, manoIA) {
-    manoJugadorContainer.innerHTML = '';
-    manoIAContainer.innerHTML = '';
-
-    manoJugador.forEach(carta => {
-        const cartaEl = crearElementoCarta(carta);
-        cartaEl.classList.add('jugable');
-        manoJugadorContainer.appendChild(cartaEl);
-    });
-
-    manoIA.forEach(carta => {
-        const cartaEl = crearElementoCarta(carta, true);
-        manoIAContainer.appendChild(cartaEl);
-    });
-}
-
-/**
- * Mueve una carta de la mano a la mesa.
- * @param {string} idCarta - El ID de la carta a mover.
- * @param {string} jugador - 'jugador' o 'ia'.
- * @param {object} carta - El objeto carta.
- */
-export function jugarCarta(idCarta, jugador, carta) {
-    const slot = jugador === 'jugador' ? slotJugador : slotIA;
-    const manoContainer = jugador === 'jugador' ? manoJugadorContainer : manoIAContainer;
-    
-    const cartaEnMano = manoContainer.querySelector(`[data-id="${idCarta}"]`);
-    if (cartaEnMano) {
-        manoContainer.removeChild(cartaEnMano);
-    }
-
-    slot.innerHTML = '';
-    const esBocaAbajo = jugador === 'ia' && !carta.mostrada;
-    const cartaEnMesa = crearElementoCarta(carta, esBocaAbajo);
-    cartaEnMesa.classList.remove('jugable');
-    slot.appendChild(cartaEnMesa);
-}
-
-
-/**
- * Limpia las cartas de la mesa.
- */
-export function limpiarMesa() {
-    slotJugador.innerHTML = '';
-    slotIA.innerHTML = '';
-}
-
-/**
- * Genera el HTML para los porotos del marcador.
- * @param {number} puntos 
- * @returns {string} HTML de los porotos.
- */
-function generarPorotos(puntos) {
-    let html = '';
-    const gruposCompletos = Math.floor(puntos / 5);
-    const resto = puntos % 5;
-
-    for (let i = 0; i < gruposCompletos; i++) {
-        html += `
-            <div class="marcador-grupo">
-                <div class="poroto poroto1"></div>
-                <div class="poroto poroto2"></div>
-                <div class="poroto poroto3"></div>
-                <div class="poroto poroto4"></div>
-                <div class="poroto poroto5"></div>
-            </div>
-        `;
-    }
-
-    if (resto > 0) {
-        html += '<div class="marcador-grupo">';
-        for (let i = 1; i <= resto; i++) {
-            html += `<div class="poroto poroto${i}"></div>`;
-        }
-        html += '</div>';
-    }
-    return html;
-}
-
-/**
- * Actualiza el marcador de puntos en la UI.
- * @param {number} puntosJugador 
- * @param {number} puntosIA 
- * @param {number} metaPuntos 
- */
-export function actualizarMarcador(puntosJugador, puntosIA, metaPuntos) {
-    marcadorJugadorContainer.innerHTML = generarPorotos(puntosJugador);
-    marcadorIAContainer.innerHTML = generarPorotos(puntosIA);
-    lineaMitad.classList.toggle('hidden', metaPuntos !== PUNTOS_META.TREINTA);
-}
-
-/**
- * Agrega un mensaje al historial del juego.
- * @param {string} mensaje 
- * @param {string} tipo - 'jugador', 'ia', o 'sistema'.
- */
-export function agregarAlHistorial(mensaje, tipo) {
-    const p = document.createElement('p');
-    p.textContent = mensaje;
-    p.classList.add(`historial-${tipo}`);
-    historialContainer.appendChild(p);
-    historialContainer.scrollTop = historialContainer.scrollHeight; // Auto-scroll
-}
-
-/**
- * Limpia el contenido del historial.
- */
-export function limpiarHistorial() {
-    historialContainer.innerHTML = '';
-}
-
-/**
- * Actualiza la visibilidad y estado de los botones de canto.
- * @param {object} estadoJuego - El estado actual del juego.
- * @param {boolean} esTurnoJugador - Si es el turno del jugador.
- */
-export function actualizarBotones(estadoJuego, esTurnoJugador) {
-    const { ronda, truco, envido, conFlor } = estadoJuego;
-
-    // Lógica para mostrar/ocultar botones de canto principales
-    const puedeCantarEnvido = ronda === 1 && !envido.cantado && !truco.cantado;
-    botonesCanto.envido.classList.toggle('hidden', !puedeCantarEnvido || !esTurnoJugador);
-    botonesCanto.realEnvido.classList.toggle('hidden', !puedeCantarEnvido || !esTurnoJugador);
-    botonesCanto.faltaEnvido.classList.toggle('hidden', !puedeCantarEnvido || !esTurnoJugador);
-
-    const puedeCantarFlor = conFlor && ronda === 1 && !envido.cantado && !truco.cantado;
-    botonesCanto.flor.classList.toggle('hidden', !puedeCantarFlor || !esTurnoJugador || !estadoJuego.jugador.tieneFlor);
-
-    const puedeCantarTruco = !truco.cantado;
-    botonesCanto.truco.textContent = truco.estado === 'TRUCO' ? 'Retruco' : truco.estado === 'RETRUCO' ? 'Vale Cuatro' : 'Truco';
-    const puedeSubirTruco = esTurnoJugador && truco.puedeSubirElJugador && truco.estado !== 'VALE_CUATRO';
-    botonesCanto.truco.classList.toggle('hidden', !puedeSubirTruco);
-
-    botonesCanto.irAlMazo.disabled = !esTurnoJugador;
-
-    // Lógica para mostrar/ocultar botones de respuesta (Quiero/No Quiero)
-    const esperandoRespuesta = envido.esperandoRespuesta || truco.esperandoRespuesta || (conFlor && estadoJuego.flor.esperandoRespuesta);
-    quieroContainer.classList.toggle('hidden', !esperandoRespuesta || !esTurnoJugador);
-    
-    // Ocultar cantos principales si se espera respuesta
-    Object.values(botonesCanto).forEach(btn => {
-        if (btn.id !== 'cantar-truco-btn' && btn.id !== 'ir-al-mazo-btn') {
-            btn.classList.toggle('hidden', esperandoRespuesta || !esTurnoJugador);
-        }
-    });
-
-    // Deshabilitar cartas si no es turno del jugador o si se espera respuesta a un canto
-    const cartasJugador = manoJugadorContainer.querySelectorAll('.carta');
-    cartasJugador.forEach(carta => {
-        carta.classList.toggle('deshabilitada', !esTurnoJugador || esperandoRespuesta);
-        carta.classList.toggle('jugable', esTurnoJugador && !esperandoRespuesta);
-    });
-}
-
-
-/**
- * Muestra el modal de fin de partida.
- * @param {string} nombreGanador - El nombre del ganador.
- */
-export function mostrarFinPartida(nombreGanador) {
-    ganadorTexto.textContent = `¡Ha ganado ${nombreGanador}!`;
-    modalFinPartida.classList.remove('hidden');
-}
-
-/**
- * Oculta el modal de fin de partida.
- */
-export function ocultarFinPartida() {
-    modalFinPartida.classList.add('hidden');
-}
-
-/**
- * Muestra un mensaje flotante en el centro de la mesa.
- * @param {string} texto - El texto a mostrar.
- * @param {number} duracion - Duración en ms.
- */
-export function mostrarMensajeF(texto, duracion = 2000) {
-    mensajeFlotante.textContent = texto;
-    mensajeFlotante.classList.remove('hidden');
-    setTimeout(() => {
-        mensajeFlotante.classList.add('hidden');
-    }, duracion);
-}
-
-
-// --- Exportación de referencias y funciones ---
-export const UIElements = {
-    inicioScreen,
-    juegoScreen,
-    nombreJugadorInput,
-    comenzarBtn: document.getElementById('comenzar-btn'),
-    limpiarCacheBtn: document.getElementById('limpiar-cache-btn'),
-    puntosMetaRadios: document.getElementsByName('puntos-meta'),
-    conFlorCheckbox: document.getElementById('con-flor'),
-    manoJugadorContainer,
-    botonesCanto,
-    quieroBtn,
-    noQuieroBtn,
-    revanchaBtn: document.getElementById('revancha-btn'),
-    menuPrincipalBtn: document.getElementById('menu-principal-btn'),
-    volverMenuBtn: document.getElementById('volver-menu-btn'),
-};
-```javascript
-// js/ia.js
-import { HIERARQUIA_TRUCO, VALOR_ENVIDO, CANTOS } from './config.js';
-import { calcularEnvido, getValorTruco } from './main.js'; // Importar funciones de ayuda
-
-export class TrucoEstrella {
-    constructor() {
-        this.nombre = "TrucoEstrella";
-    }
-
-    /**
-     * Decide qué carta jugar.
-     * @param {Array<object>} mano - La mano actual de la IA.
-     * @param {object} estadoJuego - El estado completo del juego.
-     * @returns {object} La carta que la IA decide jugar.
-     */
-    decidirJugada(mano, estadoJuego) {
-        const { ronda, mesa, jugadorEsMano } = estadoJuego;
-        const cartaJugador = mesa.jugador;
-
-        // Estrategia simple:
-        // 1. Si el jugador no ha jugado aún en esta ronda, jugar la carta más baja.
-        if (!cartaJugador) {
-            return this.getCartaMasBaja(mano);
-        }
-
-        const valorCartaJugador = getValorTruco(cartaJugador);
-        const cartasQueGanan = mano.filter(c => getValorTruco(c) < valorCartaJugador);
-
-        // 2. Si puedo ganar la ronda, jugar la carta más baja que gane.
-        if (cartasQueGanan.length > 0) {
-            return this.getCartaMasBaja(cartasQueGanan);
-        }
-
-        // 3. Si no puedo ganar, jugar la carta más baja para "achicarse".
-        return this.getCartaMasBaja(mano);
-    }
-
-    /**
-     * Decide si cantar algo relacionado con el Envido.
-     * @param {Array<object>} mano - La mano actual de la IA.
-     * @param {object} estadoJuego - El estado completo del juego.
-     * @returns {string|null} El canto que decide hacer, o null si no canta nada.
-     */
-    decidirCantoEnvido(mano, estadoJuego) {
-        const misPuntosEnvido = calcularEnvido(mano, estadoJuego.conFlor);
-        
-        // Estrategia de Envido:
-        // Si tengo buenos puntos (ej. 28 o más), canto Envido.
-        if (misPuntosEnvido >= 28) {
-             if (misPuntosEnvido >= 30) return CANTOS.REAL_ENVIDO;
-             return CANTOS.ENVIDO;
-        }
-        return null; // No canto nada.
-    }
-
-    /**
-     * Decide si cantar algo relacionado con el Truco.
-     * @param {Array<object>} mano - La mano actual de la IA.
-     * @param {object} estadoJuego - El estado completo del juego.
-     * @returns {string|null} El canto de truco a realizar.
-     */
-    decidirCantoTruco(mano, estadoJuego) {
-        const { truco } = estadoJuego;
-        if (truco.estado === 'VALE_CUATRO' || !truco.puedeSubirLaIA) {
-            return null;
-        }
-
-        const fuerzaMano = mano.reduce((acc, carta) => acc + (HIERARQUIA_TRUCO.length - getValorTruco(carta)), 0);
-        
-        // Estrategia de Truco:
-        // Si tengo buena mano, canto.
-        if (fuerzaMano > 30 && truco.estado === 'no_cantado') {
-            return CANTOS.TRUCO;
-        }
-        if (fuerzaMano > 35 && truco.estado === 'TRUCO') {
-            return CANTOS.RETRUCO;
-        }
-
-        return null;
-    }
-
-
-    /**
-     * Decide cómo responder a un canto del jugador.
-     * @param {string} canto - El canto del jugador.
-     * @param {Array<object>} mano - La mano de la IA.
-     * @param {object} estadoJuego - El estado del juego.
-     * @returns {string} La respuesta de la IA ('QUIERO' o 'NO_QUIERO' o subir la apuesta).
-     */
-    responderCanto(canto, mano, estadoJuego) {
-        // Respuesta al Envido/Flor
-        if ([CANTOS.ENVIDO, CANTOS.REAL_ENVIDO, CANTOS.FALTA_ENVIDO, CANTOS.FLOR].includes(canto)) {
-            const misPuntos = estadoJuego.conFlor && estadoJuego.ia.tieneFlor ? 
-                              calcularEnvido(mano, true, true) :
-                              calcularEnvido(mano, estadoJuego.conFlor);
-
-            // Estrategia de respuesta a Envido:
-            if (misPuntos > 26) {
-                // Si tengo buenos puntos, podría subir la apuesta.
-                if (misPuntos > 30 && canto === CANTOS.ENVIDO) return CANTOS.REAL_ENVIDO;
-                return CANTOS.QUIERO;
+            function crearElementoCarta(carta, esBocaAbajo = false) {
+                const cartaDiv = document.createElement('div');
+                cartaDiv.classList.add('carta');
+                cartaDiv.dataset.id = carta.id;
+                if (esBocaAbajo) {
+                    cartaDiv.classList.add('carta-boca-abajo');
+                } else {
+                    cartaDiv.innerHTML = `
+                        <span class="valor">${carta.numero}</span>
+                        <span class="palo-esquina">${carta.palo.simbolo}</span>
+                        <span class="palo-grande">${carta.palo.simbolo}</span>
+                    `;
+                }
+                return cartaDiv;
             }
-            if (misPuntos < 24) {
-                return CANTOS.NO_QUIERO;
-            }
-            return CANTOS.QUIERO; // Dudo, así que acepto.
-        }
-
-        // Respuesta al Truco
-        if ([CANTOS.TRUCO, CANTOS.RETRUCO, CANTOS.VALE_CUATRO].includes(canto)) {
-            const fuerzaMano = mano.reduce((acc, carta) => acc + (HIERARQUIA_TRUCO.length - getValorTruco(carta)), 0);
             
-            // Estrategia de respuesta a Truco:
-            if (fuerzaMano > 28) {
-                return CANTOS.QUIERO;
+            function generarPorotos(puntos) {
+                let html = '';
+                const gruposCompletos = Math.floor(puntos / 5);
+                const resto = puntos % 5;
+                for (let i = 0; i < gruposCompletos; i++) {
+                    html += `<div class="marcador-grupo"><div class="poroto poroto1"></div><div class="poroto poroto2"></div><div class="poroto poroto3"></div><div class="poroto poroto4"></div><div class="poroto poroto5"></div></div>`;
+                }
+                if (resto > 0) {
+                    html += '<div class="marcador-grupo">';
+                    for (let i = 1; i <= resto; i++) {
+                        html += `<div class="poroto poroto${i}"></div>`;
+                    }
+                    html += '</div>';
+                }
+                return html;
             }
-            if (fuerzaMano < 25) {
+
+            return {
+                mostrarPantalla: (nombrePantalla) => {
+                    inicioScreen.classList.toggle('hidden', nombrePantalla !== 'inicio');
+                    juegoScreen.classList.toggle('hidden', nombrePantalla !== 'juego');
+                },
+                actualizarNombres: (nombreJugador, nombreIA) => {
+                    nombreJugadorDisplay.textContent = nombreJugador;
+                    marcadorNombreJugador.textContent = nombreJugador;
+                    nombreIADisplay.textContent = nombreIA;
+                },
+                dibujarManos: (manoJugador, manoIA) => {
+                    manoJugadorContainer.innerHTML = '';
+                    manoIAContainer.innerHTML = '';
+                    manoJugador.forEach(carta => {
+                        const cartaEl = crearElementoCarta(carta);
+                        cartaEl.classList.add('jugable');
+                        manoJugadorContainer.appendChild(cartaEl);
+                    });
+                    manoIA.forEach(carta => manoIAContainer.appendChild(crearElementoCarta(carta, true)));
+                },
+                jugarCarta: (idCarta, jugador, carta) => {
+                    const slot = jugador === 'jugador' ? slotJugador : slotIA;
+                    const manoContainer = jugador === 'jugador' ? manoJugadorContainer : manoIAContainer;
+                    const cartaEnMano = manoContainer.querySelector(`[data-id="${idCarta}"]`);
+                    if (cartaEnMano) manoContainer.removeChild(cartaEnMano);
+                    slot.innerHTML = '';
+                    const cartaEnMesa = crearElementoCarta(carta, false);
+                    cartaEnMesa.classList.remove('jugable');
+                    slot.appendChild(cartaEnMesa);
+                },
+                limpiarMesa: () => {
+                    slotJugador.innerHTML = '';
+                    slotIA.innerHTML = '';
+                },
+                actualizarMarcador: (puntosJugador, puntosIA, metaPuntos) => {
+                    marcadorJugadorContainer.innerHTML = generarPorotos(puntosJugador);
+                    marcadorIAContainer.innerHTML = generarPorotos(puntosIA);
+                    lineaMitad.classList.toggle('hidden', metaPuntos !== PUNTOS_META.TREINTA);
+                },
+                agregarAlHistorial: (mensaje, tipo) => {
+                    const p = document.createElement('p');
+                    p.textContent = mensaje;
+                    p.className = `historial-${tipo}`;
+                    historialContainer.appendChild(p);
+                    historialContainer.scrollTop = historialContainer.scrollHeight;
+                },
+                limpiarHistorial: () => { historialContainer.innerHTML = ''; },
+                actualizarBotones: (estadoJuego, esTurnoJugador) => {
+                    const { ronda, truco, envido, conFlor, jugador } = estadoJuego;
+                    const puedeCantarEnvido = ronda === 1 && !envido.cantado && !truco.cantado;
+                    botonesCanto.envido.classList.toggle('hidden', !puedeCantarEnvido || !esTurnoJugador);
+                    botonesCanto.realEnvido.classList.toggle('hidden', !puedeCantarEnvido || !esTurnoJugador);
+                    botonesCanto.faltaEnvido.classList.toggle('hidden', !puedeCantarEnvido || !esTurnoJugador);
+                    const puedeCantarFlor = conFlor && ronda === 1 && !envido.cantado && !truco.cantado;
+                    botonesCanto.flor.classList.toggle('hidden', !puedeCantarFlor || !esTurnoJugador || !jugador.tieneFlor);
+                    botonesCanto.truco.textContent = truco.estado === 'TRUCO' ? 'Retruco' : truco.estado === 'RETRUCO' ? 'Vale Cuatro' : 'Truco';
+                    const puedeSubirTruco = esTurnoJugador && truco.puedeSubirElJugador && truco.estado !== 'VALE_CUATRO';
+                    botonesCanto.truco.classList.toggle('hidden', !puedeSubirTruco);
+                    botonesCanto.irAlMazo.disabled = !esTurnoJugador;
+                    const esperandoRespuesta = envido.esperandoRespuesta || truco.esperandoRespuesta || (conFlor && estadoJuego.flor.esperandoRespuesta);
+                    quieroContainer.classList.toggle('hidden', !esperandoRespuesta || !esTurnoJugador);
+                    Object.values(botonesCanto).forEach(btn => {
+                        if (btn.id.startsWith('cantar-') && btn.id !== 'cantar-truco-btn') {
+                           btn.classList.toggle('hidden', !esTurnoJugador || esperandoRespuesta || !puedeCantarEnvido);
+                        }
+                    });
+                    if (botonesCanto.flor) botonesCanto.flor.classList.toggle('hidden', !esTurnoJugador || esperandoRespuesta || !puedeCantarFlor || !jugador.tieneFlor);
+
+                    manoJugadorContainer.querySelectorAll('.carta').forEach(carta => {
+                        carta.classList.toggle('deshabilitada', !esTurnoJugador || esperandoRespuesta);
+                        carta.classList.toggle('jugable', esTurnoJugador && !esperandoRespuesta);
+                    });
+                },
+                mostrarFinPartida: (nombreGanador) => {
+                    ganadorTexto.textContent = `¡Ha ganado ${nombreGanador}!`;
+                    modalFinPartida.classList.remove('hidden');
+                },
+                ocultarFinPartida: () => modalFinPartida.classList.add('hidden'),
+                mostrarMensajeF: (texto, duracion = 2000) => {
+                    mensajeFlotante.textContent = texto;
+                    mensajeFlotante.classList.remove('hidden');
+                    setTimeout(() => mensajeFlotante.classList.add('hidden'), duracion);
+                },
+                UIElements: {
+                    nombreJugadorInput, comenzarBtn: document.getElementById('comenzar-btn'),
+                    limpiarCacheBtn: document.getElementById('limpiar-cache-btn'),
+                    puntosMetaRadios: document.getElementsByName('puntos-meta'),
+                    conFlorCheckbox: document.getElementById('con-flor'),
+                    manoJugadorContainer, botonesCanto, quieroBtn, noQuieroBtn,
+                    revanchaBtn: document.getElementById('revancha-btn'),
+                    menuPrincipalBtn: document.getElementById('menu-principal-btn'),
+                    volverMenuBtn: document.getElementById('volver-menu-btn'),
+                }
+            };
+        })();
+
+        // --- Módulo: js/ia.js ---
+        class TrucoEstrella {
+            constructor() { this.nombre = "TrucoEstrella"; }
+            decidirJugada(mano, estadoJuego) {
+                const { mesa } = estadoJuego;
+                const cartaJugador = mesa.jugador;
+                if (!cartaJugador) return this.getCartaMasBaja(mano);
+                const valorCartaJugador = getValorTruco(cartaJugador);
+                const cartasQueGanan = mano.filter(c => getValorTruco(c) < valorCartaJugador);
+                return cartasQueGanan.length > 0 ? this.getCartaMasBaja(cartasQueGanan) : this.getCartaMasBaja(mano);
+            }
+            decidirCantoEnvido(mano, estadoJuego) {
+                const misPuntosEnvido = calcularEnvido(mano, estadoJuego.conFlor);
+                if (misPuntosEnvido >= 28) return misPuntosEnvido >= 30 ? CANTOS.REAL_ENVIDO : CANTOS.ENVIDO;
+                return null;
+            }
+            decidirCantoTruco(mano, estadoJuego) {
+                const { truco } = estadoJuego;
+                if (truco.estado === 'VALE_CUATRO' || !truco.puedeSubirLaIA) return null;
+                const fuerzaMano = mano.reduce((acc, carta) => acc + (HIERARQUIA_TRUCO.length - getValorTruco(carta)), 0);
+                if (fuerzaMano > 30 && truco.estado === 'no_cantado') return CANTOS.TRUCO;
+                if (fuerzaMano > 35 && truco.estado === 'TRUCO') return CANTOS.RETRUCO;
+                return null;
+            }
+            responderCanto(canto, mano, estadoJuego) {
+                if ([CANTOS.ENVIDO, CANTOS.REAL_ENVIDO, CANTOS.FALTA_ENVIDO, CANTOS.FLOR].includes(canto)) {
+                    const misPuntos = estadoJuego.conFlor && estadoJuego.ia.tieneFlor ? calcularEnvido(mano, true, true) : calcularEnvido(mano, estadoJuego.conFlor);
+                    if (misPuntos > 26) return (misPuntos > 30 && canto === CANTOS.ENVIDO) ? CANTOS.REAL_ENVIDO : CANTOS.QUIERO;
+                    return misPuntos < 24 ? CANTOS.NO_QUIERO : CANTOS.QUIERO;
+                }
+                if ([CANTOS.TRUCO, CANTOS.RETRUCO, CANTOS.VALE_CUATRO].includes(canto)) {
+                    const fuerzaMano = mano.reduce((acc, carta) => acc + (HIERARQUIA_TRUCO.length - getValorTruco(carta)), 0);
+                    if (fuerzaMano > 28) return CANTOS.QUIERO;
+                    return fuerzaMano < 25 ? CANTOS.NO_QUIERO : CANTOS.QUIERO;
+                }
                 return CANTOS.NO_QUIERO;
             }
-            return CANTOS.QUIERO; // Dudo, acepto.
+            getCartaMasBaja(mano) { return [...mano].sort((a, b) => getValorTruco(b) - getValorTruco(a))[0]; }
+            getCartaMasAlta(mano) { return [...mano].sort((a, b) => getValorTruco(a) - getValorTruco(b))[0]; }
         }
 
-        return CANTOS.NO_QUIERO; // Por defecto, si no entiendo el canto.
-    }
+        // --- Módulo: js/main.js ---
+        let estadoJuego;
+        const IA = new TrucoEstrella();
 
-    // --- Funciones de ayuda ---
+        function getValorTruco(carta) {
+            for (let i = 0; i < HIERARQUIA_TRUCO.length; i++) {
+                const regla = HIERARQUIA_TRUCO[i];
+                if (regla.numero === carta.numero && (regla.palo === 'cualquiera' || regla.palo === carta.palo.nombre)) return i;
+            }
+            return 99;
+        }
 
-    /**
-     * Obtiene la carta de menor valor para el truco de una mano.
-     * @param {Array<object>} mano 
-     * @returns {object} La carta de menor valor.
-     */
-    getCartaMasBaja(mano) {
-        return [...mano].sort((a, b) => getValorTruco(b) - getValorTruco(a))[0];
-    }
+        function calcularEnvido(mano, conFlor, esParaFlor = false) {
+            const palosContador = {};
+            mano.forEach(c => { palosContador[c.palo.nombre] = (palosContador[c.palo.nombre] || 0) + 1; });
+            const paloDominante = Object.keys(palosContador).find(p => palosContador[p] >= 2);
+            if (paloDominante) {
+                const cartasDelPalo = mano.filter(c => c.palo.nombre === paloDominante).sort((a,b) => VALOR_ENVIDO[b.numero] - VALOR_ENVIDO[a.numero]);
+                if (cartasDelPalo.length === 3 && !conFlor) {
+                    return 20 + VALOR_ENVIDO[cartasDelPalo[0].numero] + VALOR_ENVIDO[cartasDelPalo[1].numero];
+                }
+                if (cartasDelPalo.length === 3 && esParaFlor) {
+                    return 20 + VALOR_ENVIDO[cartasDelPalo[0].numero] + VALOR_ENVIDO[cartasDelPalo[1].numero] + VALOR_ENVIDO[cartasDelPalo[2].numero];
+                }
+                return 20 + VALOR_ENVIDO[cartasDelPalo[0].numero] + VALOR_ENVIDO[cartasDelPalo[1].numero];
+            }
+            return Math.max(...mano.map(c => VALOR_ENVIDO[c.numero]));
+        }
 
-    /**
-     * Obtiene la carta de mayor valor para el truco de una mano.
-     * @param {Array<object>} mano 
-     * @returns {object} La carta de mayor valor.
-     */
-    getCartaMasAlta(mano) {
-        return [...mano].sort((a, b) => getValorTruco(a) - getValorTruco(b))[0];
-    }
-}
-```javascript
-// js/main.js
-import { PALOS, HIERARQUIA_TRUCO, VALOR_ENVIDO, CANTOS } from './config.js';
-import * as UI from './ui.js';
-import { TrucoEstrella } from './ia.js';
+        function tieneFlor(mano) {
+            if (mano.length < 3) return false;
+            return mano.every(c => c.palo.nombre === mano[0].palo.nombre);
+        }
+        
+        function inicializarEstadoJuego() {
+            const nombreJugador = UI.UIElements.nombreJugadorInput.value || 'Jugador';
+            const puntosMeta = parseInt(document.querySelector('input[name="puntos-meta"]:checked').value);
+            const conFlor = UI.UIElements.conFlorCheckbox.checked;
+            estadoJuego = {
+                config: { puntosMeta, conFlor, nombreJugador, nombreIA: 'TrucoEstrella' },
+                puntos: { jugador: 0, ia: 0 },
+                jugadorEsMano: Math.random() < 0.5,
+                turnoDelJugador: null, mazo: [],
+                jugador: { mano: [], tieneFlor: false },
+                ia: { mano: [], tieneFlor: false },
+                ronda: 0, rondasGanadas: { jugador: 0, ia: 0 },
+                mesa: { jugador: null, ia: null },
+                envido: null, flor: null, truco: null,
+                juegoTerminado: false,
+            };
+            UI.actualizarNombres(estadoJuego.config.nombreJugador, estadoJuego.config.nombreIA);
+        }
 
-// --- Estado del Juego ---
-let estadoJuego;
-const IA = new TrucoEstrella();
+        function crearMazo() {
+            const mazo = [];
+            for (const palo of Object.values(PALOS)) {
+                for (let i = 1; i <= 12; i++) {
+                    if (i !== 8 && i !== 9) mazo.push({ numero: i, palo: palo, id: `${i}-${palo.nombre}` });
+                }
+            }
+            for (let i = mazo.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [mazo[i], mazo[j]] = [mazo[j], mazo[i]];
+            }
+            estadoJuego.mazo = mazo;
+        }
 
-// --- Lógica Principal del Juego ---
+        function repartirCartas() {
+            estadoJuego.jugador.mano = estadoJuego.mazo.splice(0, 3);
+            estadoJuego.ia.mano = estadoJuego.mazo.splice(0, 3);
+        }
 
-/**
- * Inicializa el estado del juego a sus valores por defecto.
- */
-function inicializarEstadoJuego() {
-    const nombreJugador = UI.UIElements.nombreJugadorInput.value || 'Jugador';
-    const puntosMeta = parseInt(document.querySelector('input[name="puntos-meta"]:checked').value);
-    const conFlor = UI.UIElements.conFlorCheckbox.checked;
+        function resetearCantos() {
+            estadoJuego.envido = { cantado: false, resuelto: false, puntos: 0, quienCanto: null, esperandoRespuesta: false, historial: [] };
+            estadoJuego.flor = { cantado: false, resuelto: false, puntos: 0, quienCanto: null, esperandoRespuesta: false };
+            estadoJuego.truco = { cantado: false, resuelto: false, estado: 'no_cantado', puntos: 1, quienCanto: null, esperandoRespuesta: false, puedeSubirElJugador: true, puedeSubirLaIA: true };
+        }
 
-    estadoJuego = {
-        config: {
-            puntosMeta,
-            conFlor,
-            nombreJugador,
-            nombreIA: 'TrucoEstrella'
-        },
-        puntos: { jugador: 0, ia: 0 },
-        jugadorEsMano: Math.random() < 0.5,
-        turnoDelJugador: null, // Se define al inicio de la mano
-        mazo: [],
-        jugador: { mano: [], tieneFlor: false },
-        ia: { mano: [], tieneFlor: false },
-        ronda: 0, // 1, 2, 3
-        rondasGanadas: { jugador: 0, ia: 0 },
-        mesa: { jugador: null, ia: null }, // Cartas jugadas en la ronda actual
-        envido: null,
-        flor: null,
-        truco: null,
-        juegoTerminado: false,
-    };
-    
-    UI.actualizarNombres(estadoJuego.config.nombreJugador, estadoJuego.config.nombreIA);
-}
-
-/**
- * Crea y baraja el mazo de cartas.
- */
-function crearMazo() {
-    const mazo = [];
-    for (const palo of Object.values(PALOS)) {
-        for (let i = 1; i <= 12; i++) {
-            if (i !== 8 && i !== 9) {
-                mazo.push({ numero: i, palo: palo, id: `${i}-${palo.nombre}` });
+        function iniciarMano() {
+            if (estadoJuego.juegoTerminado) return;
+            estadoJuego.ronda = 1;
+            estadoJuego.rondasGanadas = { jugador: 0, ia: 0 };
+            estadoJuego.mesa = { jugador: null, ia: null };
+            estadoJuego.jugadorEsMano = !estadoJuego.jugadorEsMano;
+            resetearCantos();
+            crearMazo();
+            repartirCartas();
+            if (estadoJuego.config.conFlor) {
+                estadoJuego.jugador.tieneFlor = tieneFlor(estadoJuego.jugador.mano);
+                estadoJuego.ia.tieneFlor = tieneFlor(estadoJuego.ia.mano);
+            }
+            UI.limpiarMesa();
+            UI.dibujarManos(estadoJuego.jugador.mano, estadoJuego.ia.mano);
+            UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia, estadoJuego.config.puntosMeta);
+            UI.agregarAlHistorial('--- Nueva Mano ---', 'sistema');
+            UI.agregarAlHistorial(`${estadoJuego.jugadorEsMano ? estadoJuego.config.nombreJugador : estadoJuego.config.nombreIA} es mano.`, 'sistema');
+            estadoJuego.turnoDelJugador = estadoJuego.jugadorEsMano;
+            if (!estadoJuego.turnoDelJugador && estadoJuego.ia.tieneFlor) {
+                setTimeout(() => manejarCanto(CANTOS.FLOR, 'ia'), 1000);
+            } else {
+                actualizarTurno();
             }
         }
-    }
-    // Algoritmo de barajado Fisher-Yates
-    for (let i = mazo.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [mazo[i], mazo[j]] = [mazo[j], mazo[i]];
-    }
-    estadoJuego.mazo = mazo;
-}
 
-/**
- * Reparte 3 cartas a cada jugador.
- */
-function repartirCartas() {
-    estadoJuego.jugador.mano = estadoJuego.mazo.splice(0, 3);
-    estadoJuego.ia.mano = estadoJuego.mazo.splice(0, 3);
-}
-
-/**
- * Inicia una nueva partida.
- */
-function iniciarPartida() {
-    inicializarEstadoJuego();
-    UI.mostrarPantalla('juego');
-    UI.limpiarHistorial();
-    UI.agregarAlHistorial(`Comienza la partida a ${estadoJuego.config.puntosMeta} puntos.`, 'sistema');
-    if (estadoJuego.config.conFlor) {
-        UI.agregarAlHistorial('Se juega con flor.', 'sistema');
-    }
-    iniciarMano();
-}
-
-/**
- * Inicia una nueva mano (ronda de 3 jugadas).
- */
-function iniciarMano() {
-    if (estadoJuego.juegoTerminado) return;
-
-    estadoJuego.ronda = 1;
-    estadoJuego.rondasGanadas = { jugador: 0, ia: 0 };
-    estadoJuego.mesa = { jugador: null, ia: null };
-    estadoJuego.jugadorEsMano = !estadoJuego.jugadorEsMano; // Alterna la mano
-    
-    // Resetear estados de cantos
-    resetearCantos();
-
-    crearMazo();
-    repartirCartas();
-    
-    // Chequear si hay flor
-    if (estadoJuego.config.conFlor) {
-        estadoJuego.jugador.tieneFlor = tieneFlor(estadoJuego.jugador.mano);
-        estadoJuego.ia.tieneFlor = tieneFlor(estadoJuego.ia.mano);
-    }
-    
-    UI.limpiarMesa();
-    UI.dibujarManos(estadoJuego.jugador.mano, estadoJuego.ia.mano);
-    UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia, estadoJuego.config.puntosMeta);
-    
-    UI.agregarAlHistorial('--- Nueva Mano ---', 'sistema');
-    UI.agregarAlHistorial(`${estadoJuego.jugadorEsMano ? estadoJuego.config.nombreJugador : estadoJuego.config.nombreIA} es mano.`, 'sistema');
-
-    estadoJuego.turnoDelJugador = estadoJuego.jugadorEsMano;
-    
-    // Si la IA es mano y tiene flor, la canta.
-    if (!estadoJuego.turnoDelJugador && estadoJuego.ia.tieneFlor) {
-        setTimeout(() => manejarCanto(CANTOS.FLOR, 'ia'), 1000);
-    } else {
-        actualizarTurno();
-    }
-}
-
-function resetearCantos() {
-    estadoJuego.envido = {
-        cantado: false,
-        resuelto: false,
-        puntos: 0,
-        quienCanto: null,
-        esperandoRespuesta: false,
-        historial: [],
-    };
-    estadoJuego.flor = {
-        cantado: false,
-        resuelto: false,
-        puntos: 0,
-        quienCanto: null,
-        esperandoRespuesta: false,
-    };
-    estadoJuego.truco = {
-        cantado: false,
-        resuelto: false,
-        estado: 'no_cantado', // no_cantado, TRUCO, RETRUCO, VALE_CUATRO
-        puntos: 1,
-        quienCanto: null,
-        esperandoRespuesta: false,
-        puedeSubirElJugador: true,
-        puedeSubirLaIA: true,
-    };
-}
-
-
-/**
- * Maneja el flujo de turnos y actualiza la UI.
- */
-function actualizarTurno() {
-    if (estadoJuego.juegoTerminado) return;
-    
-    UI.actualizarBotones(estadoJuego, estadoJuego.turnoDelJugador);
-
-    if (!estadoJuego.turnoDelJugador) {
-        // Turno de la IA
-        setTimeout(turnoIA, 1500);
-    }
-}
-
-/**
- * Lógica para el turno de la IA.
- */
-function turnoIA() {
-    if (estadoJuego.juegoTerminado || estadoJuego.turnoDelJugador) return;
-
-    // 1. Decidir si cantar algo
-    if (estadoJuego.ronda === 1 && !estadoJuego.envido.cantado && !estadoJuego.truco.cantado) {
-        const cantoEnvido = IA.decidirCantoEnvido(estadoJuego.ia.mano, estadoJuego);
-        if (cantoEnvido) {
-            manejarCanto(cantoEnvido, 'ia');
-            return; // Esperar respuesta del jugador
+        function iniciarPartida() {
+            inicializarEstadoJuego();
+            UI.mostrarPantalla('juego');
+            UI.limpiarHistorial();
+            UI.agregarAlHistorial(`Comienza la partida a ${estadoJuego.config.puntosMeta} puntos.`, 'sistema');
+            if (estadoJuego.config.conFlor) UI.agregarAlHistorial('Se juega con flor.', 'sistema');
+            iniciarMano();
         }
-    }
-    
-    const cantoTruco = IA.decidirCantoTruco(estadoJuego.ia.mano, estadoJuego);
-    if (cantoTruco) {
-        manejarCanto(cantoTruco, 'ia');
-        return; // Esperar respuesta del jugador
-    }
 
-    // 2. Si no canta, juega una carta
-    const cartaAJugar = IA.decidirJugada(estadoJuego.ia.mano, estadoJuego);
-    manejarJugada(cartaAJugar.id, 'ia');
-}
-
-/**
- * Maneja la acción de jugar una carta para cualquier jugador.
- * @param {string} idCarta - El ID de la carta jugada.
- * @param {string} quienJugo - 'jugador' o 'ia'.
- */
-function manejarJugada(idCarta, quienJugo) {
-    if (quienJugo === 'jugador' && !estadoJuego.turnoDelJugador) return;
-
-    const mano = estadoJuego[quienJugo].mano;
-    const cartaIndex = mano.findIndex(c => c.id === idCarta);
-    if (cartaIndex === -1) return;
-
-    const [cartaJugada] = mano.splice(cartaIndex, 1);
-    estadoJuego.mesa[quienJugo] = cartaJugada;
-
-    UI.jugarCarta(idCarta, quienJugo, cartaJugada);
-    UI.agregarAlHistorial(`${quienJugo === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} juega ${cartaJugada.numero} de ${cartaJugada.palo.nombre}.`, quienJugo);
-
-    // Cambiar turno
-    estadoJuego.turnoDelJugador = !estadoJuego.turnoDelJugador;
-
-    // Si ambos jugaron, evaluar la ronda
-    if (estadoJuego.mesa.jugador && estadoJuego.mesa.ia) {
-        setTimeout(evaluarRonda, 1000);
-    } else {
-        actualizarTurno();
-    }
-}
-
-/**
- * Evalúa el ganador de la ronda actual.
- */
-function evaluarRonda() {
-    const cartaJugador = estadoJuego.mesa.jugador;
-    const cartaIA = estadoJuego.mesa.ia;
-
-    const valorJugador = getValorTruco(cartaJugador);
-    const valorIA = getValorTruco(cartaIA);
-
-    let ganadorRonda;
-
-    if (valorJugador < valorIA) {
-        ganadorRonda = 'jugador';
-        estadoJuego.rondasGanadas.jugador++;
-    } else if (valorIA < valorJugador) {
-        ganadorRonda = 'ia';
-        estadoJuego.rondasGanadas.ia++;
-    } else {
-        ganadorRonda = 'empate';
-        // En caso de empate en la primera, el que gana la segunda gana la mano.
-        // Si la segunda también es parda, el que gana la tercera gana la mano.
-        // Si las 3 son pardas, gana el mano.
-        if (estadoJuego.ronda === 1) {
-            estadoJuego.rondasGanadas.jugador++;
-            estadoJuego.rondasGanadas.ia++;
+        function actualizarTurno() {
+            if (estadoJuego.juegoTerminado) return;
+            UI.actualizarBotones(estadoJuego, estadoJuego.turnoDelJugador);
+            if (!estadoJuego.turnoDelJugador) setTimeout(turnoIA, 1500);
         }
-    }
-    
-    const nombreGanador = ganadorRonda === 'jugador' ? estadoJuego.config.nombreJugador : ganadorRonda === 'ia' ? IA.nombre : 'Parda';
-    UI.mostrarMensajeF(`Ronda para: ${nombreGanador}`);
-    UI.agregarAlHistorial(`Gana la ronda ${nombreGanador}.`, 'sistema');
 
-    // Determinar quién empieza la siguiente ronda
-    if (ganadorRonda === 'jugador') {
-        estadoJuego.turnoDelJugador = true;
-    } else if (ganadorRonda === 'ia') {
-        estadoJuego.turnoDelJugador = false;
-    } else { // Empate
-        // El que era mano en la mano, empieza la siguiente ronda.
-        estadoJuego.turnoDelJugador = estadoJuego.jugadorEsMano;
-    }
+        function turnoIA() {
+            if (estadoJuego.juegoTerminado || estadoJuego.turnoDelJugador) return;
+            if (estadoJuego.ronda === 1 && !estadoJuego.envido.cantado && !estadoJuego.truco.cantado) {
+                const cantoEnvido = IA.decidirCantoEnvido(estadoJuego.ia.mano, estadoJuego);
+                if (cantoEnvido) {
+                    manejarCanto(cantoEnvido, 'ia');
+                    return;
+                }
+            }
+            const cantoTruco = IA.decidirCantoTruco(estadoJuego.ia.mano, estadoJuego);
+            if (cantoTruco) {
+                manejarCanto(cantoTruco, 'ia');
+                return;
+            }
+            const cartaAJugar = IA.decidirJugada(estadoJuego.ia.mano, estadoJuego);
+            manejarJugada(cartaAJugar.id, 'ia');
+        }
 
-    // Limpiar mesa para la siguiente ronda
-    setTimeout(() => {
-        UI.limpiarMesa();
-        estadoJuego.mesa = { jugador: null, ia: null };
+        function manejarJugada(idCarta, quienJugo) {
+            if (quienJugo === 'jugador' && !estadoJuego.turnoDelJugador) return;
+            const mano = estadoJuego[quienJugo].mano;
+            const cartaIndex = mano.findIndex(c => c.id === idCarta);
+            if (cartaIndex === -1) return;
+            const [cartaJugada] = mano.splice(cartaIndex, 1);
+            estadoJuego.mesa[quienJugo] = cartaJugada;
+            UI.jugarCarta(idCarta, quienJugo, cartaJugada);
+            UI.agregarAlHistorial(`${quienJugo === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} juega ${cartaJugada.numero} de ${cartaJugada.palo.nombre}.`, quienJugo);
+            estadoJuego.turnoDelJugador = !estadoJuego.turnoDelJugador;
+            if (estadoJuego.mesa.jugador && estadoJuego.mesa.ia) {
+                setTimeout(evaluarRonda, 1000);
+            } else {
+                actualizarTurno();
+            }
+        }
+        
+        function checkFinMano() {
+            const { jugador, ia } = estadoJuego.rondasGanadas;
+            if (jugador >= 2 || ia >= 2) return true;
+            if (estadoJuego.ronda === 2 && jugador === 1 && ia === 1) return true; // Primera parda, define la segunda
+            return estadoJuego.ronda === 3;
+        }
+        
+        function finalizarMano(porAbandono = false, quienAbandono = null) {
+            let ganadorMano;
+            if (porAbandono) {
+                ganadorMano = quienAbandono === 'jugador' ? 'ia' : 'jugador';
+            } else {
+                const { jugador, ia } = estadoJuego.rondasGanadas;
+                if (jugador > ia) ganadorMano = 'jugador';
+                else if (ia > jugador) ganadorMano = 'ia';
+                else ganadorMano = estadoJuego.jugadorEsMano ? 'jugador' : 'ia';
+            }
+            if (!estadoJuego.envido.resuelto) resolverEnvido(false);
+            if (estadoJuego.config.conFlor && !estadoJuego.flor.resuelto) resolverFlor();
+            const puntosTruco = estadoJuego.truco.puntos;
+            estadoJuego.puntos[ganadorMano] += puntosTruco;
+            UI.agregarAlHistorial(`${ganadorMano === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} gana la mano y ${puntosTruco} punto(s) del truco.`, 'sistema');
+            UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia, estadoJuego.config.puntosMeta);
+            if (checkFinPartida()) terminarPartida();
+            else setTimeout(iniciarMano, 2500);
+        }
 
-        // Verificar si la mano terminó
-        if (checkFinMano()) {
-            finalizarMano();
-        } else {
-            estadoJuego.ronda++;
+        function evaluarRonda() {
+            const { jugador: cartaJugador, ia: cartaIA } = estadoJuego.mesa;
+            const valorJugador = getValorTruco(cartaJugador);
+            const valorIA = getValorTruco(cartaIA);
+            let ganadorRonda;
+            if (valorJugador < valorIA) {
+                ganadorRonda = 'jugador';
+                estadoJuego.rondasGanadas.jugador++;
+                estadoJuego.turnoDelJugador = true;
+            } else if (valorIA < valorJugador) {
+                ganadorRonda = 'ia';
+                estadoJuego.rondasGanadas.ia++;
+                estadoJuego.turnoDelJugador = false;
+            } else {
+                ganadorRonda = 'empate';
+                if (estadoJuego.ronda === 1) {
+                    estadoJuego.rondasGanadas.jugador++;
+                    estadoJuego.rondasGanadas.ia++;
+                }
+                estadoJuego.turnoDelJugador = estadoJuego.jugadorEsMano;
+            }
+            const nombreGanador = ganadorRonda === 'jugador' ? estadoJuego.config.nombreJugador : ganadorRonda === 'ia' ? IA.nombre : 'Parda';
+            UI.mostrarMensajeF(`Ronda para: ${nombreGanador}`);
+            UI.agregarAlHistorial(`Gana la ronda ${nombreGanador}.`, 'sistema');
+            setTimeout(() => {
+                UI.limpiarMesa();
+                estadoJuego.mesa = { jugador: null, ia: null };
+                if (checkFinMano()) finalizarMano();
+                else {
+                    estadoJuego.ronda++;
+                    actualizarTurno();
+                }
+            }, 2000);
+        }
+
+        function manejarCanto(canto, quienCanta) {
+            UI.agregarAlHistorial(`${quienCanta === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} canta: ${canto}`, quienCanta);
+            UI.mostrarMensajeF(`${canto}!`);
+            const esCantoEnvido = [CANTOS.ENVIDO, CANTOS.REAL_ENVIDO, CANTOS.FALTA_ENVIDO].includes(canto);
+            const esCantoTruco = [CANTOS.TRUCO, CANTOS.RETRUCO, CANTOS.VALE_CUATRO].includes(canto);
+            if (esCantoEnvido) {
+                estadoJuego.envido.cantado = true;
+                estadoJuego.envido.esperandoRespuesta = true;
+                estadoJuego.envido.quienCanto = quienCanta;
+                estadoJuego.envido.historial.push(canto);
+            } else if (esCantoTruco) {
+                estadoJuego.truco.cantado = true;
+                estadoJuego.truco.esperandoRespuesta = true;
+                estadoJuego.truco.quienCanto = quienCanta;
+                estadoJuego.truco.estado = canto;
+                estadoJuego.truco.puedeSubirElJugador = quienCanta === 'ia';
+                estadoJuego.truco.puedeSubirLaIA = quienCanta === 'jugador';
+            } else if (canto === CANTOS.FLOR) {
+                estadoJuego.flor.cantado = true;
+                estadoJuego.flor.esperandoRespuesta = true;
+                estadoJuego.flor.quienCanto = quienCanta;
+            }
+            estadoJuego.turnoDelJugador = (quienCanta === 'ia');
+            actualizarTurno();
+            if (!estadoJuego.turnoDelJugador) {
+                setTimeout(() => {
+                    const respuesta = IA.responderCanto(canto, estadoJuego.ia.mano, estadoJuego);
+                    manejarRespuesta(respuesta, 'ia');
+                }, 1500);
+            }
+        }
+        
+        function calcularPuntosEnvidoQuerido() {
+            let puntos = 0;
+            for (const canto of estadoJuego.envido.historial) {
+                if (canto === CANTOS.ENVIDO) puntos += 2;
+                if (canto === CANTOS.REAL_ENVIDO) puntos += 3;
+                if (canto === CANTOS.FALTA_ENVIDO) {
+                    const puntosOponente = Math.max(estadoJuego.puntos.jugador, estadoJuego.puntos.ia);
+                    return estadoJuego.config.puntosMeta - puntosOponente;
+                }
+            }
+            return puntos || 2;
+        }
+
+        function calcularPuntosEnvidoNoQuerido() {
+            let puntos = 0;
+            const historial = estadoJuego.envido.historial;
+            if (historial.includes(CANTOS.FALTA_ENVIDO)) return 1;
+            if (historial.includes(CANTOS.REAL_ENVIDO)) puntos += 2;
+            puntos += historial.filter(c => c === CANTOS.ENVIDO).length;
+            return puntos || 1;
+        }
+
+        function resolverEnvido(querido) {
+            if (estadoJuego.envido.resuelto) return;
+            estadoJuego.envido.resuelto = true;
+            if (!querido) {
+                const quienGana = estadoJuego.envido.quienCanto;
+                const puntosGanados = calcularPuntosEnvidoNoQuerido();
+                estadoJuego.puntos[quienGana] += puntosGanados;
+                UI.agregarAlHistorial(`${quienGana === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} suma ${puntosGanados} punto(s) de envido no querido.`, 'sistema');
+            } else {
+                const puntosJugador = calcularEnvido(estadoJuego.jugador.mano, estadoJuego.config.conFlor);
+                const puntosIA = calcularEnvido(estadoJuego.ia.mano, estadoJuego.config.conFlor);
+                UI.agregarAlHistorial(`${estadoJuego.config.nombreJugador} tiene ${puntosJugador} de envido.`, 'jugador');
+                UI.agregarAlHistorial(`${IA.nombre} tiene ${puntosIA} de envido.`, 'ia');
+                let ganadorEnvido;
+                if (puntosJugador > puntosIA) ganadorEnvido = 'jugador';
+                else if (puntosIA > puntosJugador) ganadorEnvido = 'ia';
+                else ganadorEnvido = estadoJuego.jugadorEsMano ? 'jugador' : 'ia';
+                const puntosGanados = calcularPuntosEnvidoQuerido();
+                estadoJuego.puntos[ganadorEnvido] += puntosGanados;
+                UI.agregarAlHistorial(`${ganadorEnvido === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} gana ${puntosGanados} punto(s) del envido.`, 'sistema');
+            }
+            UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia, estadoJuego.config.puntosMeta);
+            if(checkFinPartida()) terminarPartida();
+        }
+
+        function resolverFlor() {
+            if (estadoJuego.flor.resuelto) return;
+            estadoJuego.flor.resuelto = true;
+            if (estadoJuego.jugador.tieneFlor && !estadoJuego.ia.tieneFlor) {
+                estadoJuego.puntos.jugador += 3;
+                UI.agregarAlHistorial(`${estadoJuego.config.nombreJugador} suma 3 puntos por Flor.`, 'sistema');
+            } else if (estadoJuego.ia.tieneFlor && !estadoJuego.jugador.tieneFlor) {
+                estadoJuego.puntos.ia += 3;
+                UI.agregarAlHistorial(`${IA.nombre} suma 3 puntos por Flor.`, 'sistema');
+            } // Lógica para flor vs flor pendiente
+            UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia, estadoJuego.config.puntosMeta);
+            if(checkFinPartida()) terminarPartida();
+        }
+        
+        function manejarRespuesta(respuesta, quienResponde) {
+            const esRespuestaJugador = quienResponde === 'jugador';
+            UI.agregarAlHistorial(`${esRespuestaJugador ? estadoJuego.config.nombreJugador : IA.nombre} dice: ${respuesta}`, quienResponde);
+            UI.mostrarMensajeF(respuesta);
+            const cantoPendiente = estadoJuego.envido.esperandoRespuesta ? 'envido' : 'truco';
+            if (cantoPendiente === 'envido') {
+                estadoJuego.envido.esperandoRespuesta = false;
+                resolverEnvido(respuesta === CANTOS.QUIERO);
+            } else if (cantoPendiente === 'truco') {
+                estadoJuego.truco.esperandoRespuesta = false;
+                if (respuesta === CANTOS.QUIERO) {
+                    estadoJuego.truco.puntos = estadoJuego.truco.estado === 'TRUCO' ? 2 : estadoJuego.truco.estado === 'RETRUCO' ? 3 : 4;
+                    estadoJuego.truco.puedeSubirElJugador = esRespuestaJugador;
+                    estadoJuego.truco.puedeSubirLaIA = !esRespuestaJugador;
+                } else {
+                    const quienGana = esRespuestaJugador ? 'ia' : 'jugador';
+                    estadoJuego.puntos[quienGana] += estadoJuego.truco.puntos;
+                    UI.agregarAlHistorial(`${quienGana === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} gana ${estadoJuego.truco.puntos} punto(s) por el truco no querido.`, 'sistema');
+                    estadoJuego.truco.resuelto = true;
+                    finalizarMano(true, quienResponde);
+                    return;
+                }
+            }
+            estadoJuego.turnoDelJugador = !estadoJuego.turnoDelJugador;
             actualizarTurno();
         }
-    }, 2000);
-}
 
-/**
- * Verifica si la mano ha terminado (alguien ganó 2 rondas).
- * @returns {boolean}
- */
-function checkFinMano() {
-    const { jugador, ia } = estadoJuego.rondasGanadas;
-    if (jugador === 2 || ia === 2) return true;
-    // Si la primera fue parda, el que gana la segunda gana la mano.
-    if (estadoJuego.ronda === 2 && (jugador === 1 && ia === 1) && estadoJuego.rondasGanadas_ronda1_parda) {
-        return true;
-    }
-    // Si se jugaron 3 rondas
-    if (estadoJuego.ronda === 3) return true;
-
-    return false;
-}
-
-/**
- * Finaliza la mano, otorga puntos y chequea fin de partida.
- */
-function finalizarMano(porAbandono = false, quienAbandono = null) {
-    let ganadorMano;
-    
-    if (porAbandono) {
-        ganadorMano = quienAbandono === 'jugador' ? 'ia' : 'jugador';
-    } else {
-        const { jugador, ia } = estadoJuego.rondasGanadas;
-        if (jugador > ia) {
-            ganadorMano = 'jugador';
-        } else if (ia > jugador) {
-            ganadorMano = 'ia';
-        } else { // Empate en rondas (ej. 1-1 y la 3ra parda)
-            ganadorMano = estadoJuego.jugadorEsMano ? 'jugador' : 'ia';
+        function checkFinPartida() {
+            return estadoJuego.puntos.jugador >= estadoJuego.config.puntosMeta || estadoJuego.puntos.ia >= estadoJuego.config.puntosMeta;
         }
-    }
 
-    // Resolver Envido/Flor si no se resolvió
-    if (!estadoJuego.envido.resuelto) resolverEnvido();
-    if (estadoJuego.config.conFlor && !estadoJuego.flor.resuelto) resolverFlor();
-
-    // Sumar puntos del truco
-    const puntosTruco = estadoJuego.truco.puntos;
-    estadoJuego.puntos[ganadorMano] += puntosTruco;
-    UI.agregarAlHistorial(`${ganadorMano === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} gana la mano y ${puntosTruco} punto(s) del truco.`, 'sistema');
-
-    UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia, estadoJuego.config.puntosMeta);
-
-    if (checkFinPartida()) {
-        terminarPartida();
-    } else {
-        setTimeout(iniciarMano, 2000);
-    }
-}
-
-/**
- * Maneja un canto realizado por un jugador.
- * @param {string} canto - El canto realizado (ej. 'TRUCO').
- * @param {string} quienCanta - 'jugador' o 'ia'.
- */
-function manejarCanto(canto, quienCanta) {
-    UI.agregarAlHistorial(`${quienCanta === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} canta: ${canto}`, quienCanta);
-    UI.mostrarMensajeF(`${canto}!`);
-
-    const esCantoEnvido = [CANTOS.ENVIDO, CANTOS.REAL_ENVIDO, CANTOS.FALTA_ENVIDO].includes(canto);
-    const esCantoTruco = [CANTOS.TRUCO, CANTOS.RETRUCO, CANTOS.VALE_CUATRO].includes(canto);
-
-    if (esCantoEnvido) {
-        estadoJuego.envido.cantado = true;
-        estadoJuego.envido.esperandoRespuesta = true;
-        estadoJuego.envido.quienCanto = quienCanta;
-        estadoJuego.envido.historial.push(canto);
-    } else if (esCantoTruco) {
-        estadoJuego.truco.cantado = true;
-        estadoJuego.truco.esperandoRespuesta = true;
-        estadoJuego.truco.quienCanto = quienCanta;
-        estadoJuego.truco.estado = canto;
-        if (quienCanta === 'jugador') {
-            estadoJuego.truco.puedeSubirElJugador = false;
-            estadoJuego.truco.puedeSubirLaIA = true;
-        } else {
-            estadoJuego.truco.puedeSubirElJugador = true;
-            estadoJuego.truco.puedeSubirLaIA = false;
+        function terminarPartida() {
+            estadoJuego.juegoTerminado = true;
+            const ganador = estadoJuego.puntos.jugador >= estadoJuego.config.puntosMeta ? estadoJuego.config.nombreJugador : IA.nombre;
+            UI.mostrarFinPartida(ganador);
         }
-    } else if (canto === CANTOS.FLOR) {
-        // Lógica de Flor
-        estadoJuego.flor.cantado = true;
-        estadoJuego.flor.esperandoRespuesta = true;
-        estadoJuego.flor.quienCanto = quienCanta;
-    }
 
-    estadoJuego.turnoDelJugador = (quienCanta === 'ia');
-    actualizarTurno();
-
-    if (!estadoJuego.turnoDelJugador) {
-        // IA debe responder al canto del jugador
-        setTimeout(() => {
-            const respuesta = IA.responderCanto(canto, estadoJuego.ia.mano, estadoJuego);
-            manejarRespuesta(respuesta, 'ia');
-        }, 1500);
-    }
-}
-
-/**
- * Maneja la respuesta a un canto ('Quiero' o 'No Quiero').
- * @param {string} respuesta - 'QUIERO' o 'NO_QUIERO'.
- * @param {string} quienResponde - 'jugador' o 'ia'.
- */
-function manejarRespuesta(respuesta, quienResponde) {
-    const esRespuestaJugador = quienResponde === 'jugador';
-    UI.agregarAlHistorial(`${esRespuestaJugador ? estadoJuego.config.nombreJugador : IA.nombre} dice: ${respuesta}`, quienResponde);
-    UI.mostrarMensajeF(respuesta);
-
-    const cantoPendiente = estadoJuego.envido.esperandoRespuesta ? 'envido' : 'truco';
-
-    if (cantoPendiente === 'envido') {
-        estadoJuego.envido.esperandoRespuesta = false;
-        if (respuesta === CANTOS.QUIERO) {
-            resolverEnvido();
-        } else { // NO QUIERO
-            const quienGana = esRespuestaJugador ? 'ia' : 'jugador';
-            let puntos = 1;
-            if (estadoJuego.envido.historial.length > 1) {
-                puntos = calcularPuntosEnvidoNoQuerido();
-            }
-            estadoJuego.puntos[quienGana] += puntos;
-            UI.agregarAlHistorial(`${quienGana === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} suma ${puntos} punto(s) de envido no querido.`, 'sistema');
-            estadoJuego.envido.resuelto = true;
+        function setupEventListeners() {
+            UI.UIElements.comenzarBtn.addEventListener('click', iniciarPartida);
+            UI.UIElements.limpiarCacheBtn.addEventListener('click', () => location.reload(true));
+            UI.UIElements.volverMenuBtn.addEventListener('click', () => location.reload());
+            UI.UIElements.revanchaBtn.addEventListener('click', () => {
+                UI.ocultarFinPartida();
+                iniciarPartida();
+            });
+            UI.UIElements.menuPrincipalBtn.addEventListener('click', () => location.reload());
+            UI.UIElements.manoJugadorContainer.addEventListener('click', (e) => {
+                const cartaEl = e.target.closest('.carta');
+                if (cartaEl && estadoJuego.turnoDelJugador && !cartaEl.classList.contains('deshabilitada')) {
+                    manejarJugada(cartaEl.dataset.id, 'jugador');
+                }
+            });
+            UI.UIElements.botonesCanto.truco.addEventListener('click', () => manejarCanto(estadoJuego.truco.estado === 'no_cantado' ? CANTOS.TRUCO : estadoJuego.truco.estado === 'TRUCO' ? CANTOS.RETRUCO : CANTOS.VALE_CUATRO, 'jugador'));
+            UI.UIElements.botonesCanto.envido.addEventListener('click', () => manejarCanto(CANTOS.ENVIDO, 'jugador'));
+            UI.UIElements.botonesCanto.realEnvido.addEventListener('click', () => manejarCanto(CANTOS.REAL_ENVIDO, 'jugador'));
+            UI.UIElements.botonesCanto.faltaEnvido.addEventListener('click', () => manejarCanto(CANTOS.FALTA_ENVIDO, 'jugador'));
+            UI.UIElements.botonesCanto.flor.addEventListener('click', () => manejarCanto(CANTOS.FLOR, 'jugador'));
+            UI.UIElements.quieroBtn.addEventListener('click', () => manejarRespuesta(CANTOS.QUIERO, 'jugador'));
+            UI.UIElements.noQuieroBtn.addEventListener('click', () => manejarRespuesta(CANTOS.NO_QUIERO, 'jugador'));
+            UI.UIElements.botonesCanto.irAlMazo.addEventListener('click', () => {
+                UI.agregarAlHistorial(`${estadoJuego.config.nombreJugador} se va al mazo.`, 'jugador');
+                finalizarMano(true, 'jugador');
+            });
         }
-    } else if (cantoPendiente === 'truco') {
-        estadoJuego.truco.esperandoRespuesta = false;
-        if (respuesta === CANTOS.QUIERO) {
-            estadoJuego.truco.puntos = estadoJuego.truco.estado === 'TRUCO' ? 2 : estadoJuego.truco.estado === 'RETRUCO' ? 3 : 4;
-            // El que quiso ahora tiene el derecho de subir
-            if (quienResponde === 'jugador') {
-                estadoJuego.truco.puedeSubirElJugador = true;
-                estadoJuego.truco.puedeSubirLaIA = false;
-            } else {
-                estadoJuego.truco.puedeSubirElJugador = false;
-                estadoJuego.truco.puedeSubirLaIA = true;
-            }
-        } else { // NO QUIERO
-            const quienGana = esRespuestaJugador ? 'ia' : 'jugador';
-            estadoJuego.puntos[quienGana] += estadoJuego.truco.puntos; // Puntos del estado anterior
-            UI.agregarAlHistorial(`${quienGana === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} gana ${estadoJuego.truco.puntos} punto(s) por el truco no querido.`, 'sistema');
-            estadoJuego.truco.resuelto = true;
-            finalizarMano(true, quienResponde); // Termina la mano
-            return;
-        }
-    }
-    
-    // El turno vuelve a quien jugó la última carta o es mano
-    estadoJuego.turnoDelJugador = esRespuestaJugador ? estadoJuego.turnoDelJugador : !estadoJuego.turnoDelJugador;
-    actualizarTurno();
-}
 
-/**
- * Resuelve la disputa del envido.
- */
-function resolverEnvido() {
-    if (estadoJuego.envido.resuelto) return;
-    
-    const puntosJugador = calcularEnvido(estadoJuego.jugador.mano, estadoJuego.config.conFlor);
-    const puntosIA = calcularEnvido(estadoJuego.ia.mano, estadoJuego.config.conFlor);
-
-    UI.agregarAlHistorial(`${estadoJuego.config.nombreJugador} tiene ${puntosJugador} de envido.`, 'jugador');
-    UI.agregarAlHistorial(`${IA.nombre} tiene ${puntosIA} de envido.`, 'ia');
-    
-    let ganadorEnvido;
-    if (puntosJugador > puntosIA) {
-        ganadorEnvido = 'jugador';
-    } else if (puntosIA > puntosJugador) {
-        ganadorEnvido = 'ia';
-    } else {
-        ganadorEnvido = estadoJuego.jugadorEsMano ? 'jugador' : 'ia';
-    }
-    
-    const puntosGanados = calcularPuntosEnvidoQuerido();
-    estadoJuego.puntos[ganadorEnvido] += puntosGanados;
-    UI.agregarAlHistorial(`${ganadorEnvido === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} gana ${puntosGanados} punto(s) del envido.`, 'sistema');
-    
-    estadoJuego.envido.resuelto = true;
-    UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia, estadoJuego.config.puntosMeta);
-    if(checkFinPartida()) terminarPartida();
-}
-
-function calcularPuntosEnvidoQuerido() {
-    let puntos = 0;
-    for (const canto of estadoJuego.envido.historial) {
-        if (canto === CANTOS.ENVIDO) puntos += 2;
-        if (canto === CANTOS.REAL_ENVIDO) puntos += 3;
-        if (canto === CANTOS.FALTA_ENVIDO) {
-            const puntosOponente = estadoJuego.puntos.jugador > estadoJuego.puntos.ia ? estadoJuego.puntos.jugador : estadoJuego.puntos.ia;
-            puntos += (estadoJuego.config.puntosMeta - puntosOponente);
-        }
-    }
-    return puntos === 0 ? 2 : puntos; // Envido simple querido son 2 puntos
-}
-
-function calcularPuntosEnvidoNoQuerido() {
-    let puntos = 1;
-    const historial = estadoJuego.envido.historial;
-    if (historial.includes(CANTOS.FALTA_ENVIDO)) puntos = 1; // Simplificado
-    if (historial.includes(CANTOS.REAL_ENVIDO)) puntos += 2;
-    if (historial.filter(c => c === CANTOS.ENVIDO).length > 0) {
-        puntos += (historial.filter(c => c === CANTOS.ENVIDO).length-1) * 2;
-    }
-    return puntos;
-}
-
-function resolverFlor() {
-    // Lógica simplificada para resolver flor
-    if (estadoJuego.flor.resuelto) return;
-    if (estadoJuego.jugador.tieneFlor) {
-        estadoJuego.puntos.jugador += 3;
-        UI.agregarAlHistorial(`${estadoJuego.config.nombreJugador} suma 3 puntos por Flor.`, 'sistema');
-    }
-    if (estadoJuego.ia.tieneFlor) {
-        estadoJuego.puntos.ia += 3;
-        UI.agregarAlHistorial(`${IA.nombre} suma 3 puntos por Flor.`, 'sistema');
-    }
-    estadoJuego.flor.resuelto = true;
-    UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia, estadoJuego.config.puntosMeta);
-    if(checkFinPartida()) terminarPartida();
-}
-
-
-/**
- * Verifica si algún jugador alcanzó la meta de puntos.
- * @returns {boolean}
- */
-function checkFinPartida() {
-    return estadoJuego.puntos.jugador >= estadoJuego.config.puntosMeta || estadoJuego.puntos.ia >= estadoJuego.config.puntosMeta;
-}
-
-/**
- * Termina la partida y muestra el ganador.
- */
-function terminarPartida() {
-    estadoJuego.juegoTerminado = true;
-    const ganador = estadoJuego.puntos.jugador >= estadoJuego.config.puntosMeta ? estadoJuego.config.nombreJugador : IA.nombre;
-    UI.mostrarFinPartida(ganador);
-}
-
-// --- Funciones de Ayuda (exportadas para IA) ---
-
-/**
- * Obtiene el valor de una carta para el Truco.
- * @param {object} carta 
- * @returns {number} El índice de jerarquía (menor es mejor).
- */
-export function getValorTruco(carta) {
-    for (let i = 0; i < HIERARQUIA_TRUCO.length; i++) {
-        const regla = HIERARQUIA_TRUCO[i];
-        if (regla.numero === carta.numero) {
-            if (regla.palo === 'cualquiera' || regla.palo === carta.palo.nombre) {
-                return i;
-            }
-        }
-    }
-    return 99; // No debería pasar
-}
-
-/**
- * Calcula los puntos de envido de una mano.
- * @param {Array<object>} mano 
- * @param {boolean} conFlor - Si se juega con flor.
- * @param {boolean} esParaFlor - Si el cálculo es para una flor.
- * @returns {number}
- */
-export function calcularEnvido(mano, conFlor, esParaFlor = false) {
-    const palosContador = {};
-    mano.forEach(c => {
-        palosContador[c.palo.nombre] = (palosContador[c.palo.nombre] || 0) + 1;
-    });
-
-    const paloDominante = Object.keys(palosContador).find(p => palosContador[p] >= 2);
-
-    if (paloDominante) {
-        const cartasDelPalo = mano.filter(c => c.palo.nombre === paloDominante).sort((a,b) => VALOR_ENVIDO[b.numero] - VALOR_ENVIDO[a.numero]);
-        if (cartasDelPalo.length === 3 && !conFlor) { // Sin flor, se usan las 2 más altas
-            return 20 + VALOR_ENVIDO[cartasDelPalo[0].numero] + VALOR_ENVIDO[cartasDelPalo[1].numero];
-        }
-        if (cartasDelPalo.length === 3 && esParaFlor) { // Con flor, se suman las 3
-             return 20 + VALOR_ENVIDO[cartasDelPalo[0].numero] + VALOR_ENVIDO[cartasDelPalo[1].numero] + VALOR_ENVIDO[cartasDelPalo[2].numero];
-        }
-        return 20 + VALOR_ENVIDO[cartasDelPalo[0].numero] + VALOR_ENVIDO[cartasDelPalo[1].numero];
-    } else {
-        // Si no hay dos cartas del mismo palo, el envido es el valor de la carta más alta.
-        return Math.max(...mano.map(c => VALOR_ENVIDO[c.numero]));
-    }
-}
-
-/**
- * Verifica si una mano tiene flor.
- * @param {Array<object>} mano 
- * @returns {boolean}
- */
-function tieneFlor(mano) {
-    if (mano.length < 3) return false;
-    const primerPalo = mano[0].palo.nombre;
-    return mano.every(c => c.palo.nombre === primerPalo);
-}
-
-// --- Event Listeners ---
-function setupEventListeners() {
-    UI.UIElements.comenzarBtn.addEventListener('click', iniciarPartida);
-    UI.UIElements.limpiarCacheBtn.addEventListener('click', () => location.reload(true));
-    UI.UIElements.volverMenuBtn.addEventListener('click', () => location.reload());
-    UI.UIElements.revanchaBtn.addEventListener('click', () => {
-        UI.ocultarFinPartida();
-        iniciarPartida();
-    });
-    UI.UIElements.menuPrincipalBtn.addEventListener('click', () => location.reload());
-
-    UI.UIElements.manoJugadorContainer.addEventListener('click', (e) => {
-        const cartaEl = e.target.closest('.carta');
-        if (cartaEl && estadoJuego.turnoDelJugador && !cartaEl.classList.contains('deshabilitada')) {
-            manejarJugada(cartaEl.dataset.id, 'jugador');
-        }
-    });
-    
-    UI.UIElements.botonesCanto.truco.addEventListener('click', () => manejarCanto(estadoJuego.truco.estado === 'no_cantado' ? CANTOS.TRUCO : estadoJuego.truco.estado === 'TRUCO' ? CANTOS.RETRUCO : CANTOS.VALE_CUATRO, 'jugador'));
-    UI.UIElements.botonesCanto.envido.addEventListener('click', () => manejarCanto(CANTOS.ENVIDO, 'jugador'));
-    UI.UIElements.botonesCanto.realEnvido.addEventListener('click', () => manejarCanto(CANTOS.REAL_ENVIDO, 'jugador'));
-    UI.UIElements.botonesCanto.faltaEnvido.addEventListener('click', () => manejarCanto(CANTOS.FALTA_ENVIDO, 'jugador'));
-    UI.UIElements.botonesCanto.flor.addEventListener('click', () => manejarCanto(CANTOS.FLOR, 'jugador'));
-    
-    UI.UIElements.quieroBtn.addEventListener('click', () => manejarRespuesta(CANTOS.QUIERO, 'jugador'));
-    UI.UIElements.noQuieroBtn.addEventListener('click', () => manejarRespuesta(CANTOS.NO_QUIERO, 'jugador'));
-    
-    UI.UIElements.botonesCanto.irAlMazo.addEventListener('click', () => {
-        UI.agregarAlHistorial(`${estadoJuego.config.nombreJugador} se va al mazo.`, 'jugador');
-        finalizarMano(true, 'jugador');
-    });
-}
-
-// --- Inicialización ---
-document.addEventListener('DOMContentLoaded', () => {
-    UI.mostrarPantalla('inicio');
-    setupEventListeners();
-});
+        document.addEventListener('DOMContentLoaded', () => {
+            UI.mostrarPantalla('inicio');
+            setupEventListeners();
+        });
+    </script>
+</body>
+</html>
