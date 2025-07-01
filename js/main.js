@@ -10,51 +10,24 @@ let PUNTOS_PARA_GANAR, JUGAR_CON_FLOR;
 // --- Objeto de Botones y Elementos del DOM ---
 let botones; 
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Se inicializa el objeto 'botones' una vez que el DOM está listo
-    botones = {
-        log: document.getElementById('log-juego'),
-        marcadorGrafico: document.getElementById('marcador-grafico'),
-        info: document.getElementById('info-juego'),
-        mano: document.getElementById('mano-humano'),
-        manoCPU: document.getElementById('mano-cpu'),
-        nuevoJuego: document.getElementById('btn-nuevo-juego'),
-        flor: document.getElementById('btn-flor'),
-        contraflor: document.getElementById('btn-contraflor'),
-        contraflorResto: document.getElementById('btn-contraflor-resto'),
-        envido: document.getElementById('btn-envido'),
-        realEnvido: document.getElementById('btn-real-envido'),
-        faltaEnvido: document.getElementById('btn-falta-envido'),
-        truco: document.getElementById('btn-truco'),
-        quiero: document.getElementById('btn-quiero'),
-        noQuiero: document.getElementById('btn-no-quiero'),
-        reTruco: document.getElementById('btn-re-truco'),
-        valeCuatro: document.getElementById('btn-vale-cuatro')
-    };
-
-    // Asignar los eventos a los botones
-    document.getElementById('btn-comenzar').addEventListener('click', comenzarPartida);
-    botones.nuevoJuego.addEventListener('click', iniciarPartida);
-    botones.flor.addEventListener('click', manejarCantoFlor);
-    botones.envido.addEventListener('click', () => manejarCantoEnvido('humano', 1));
-    botones.realEnvido.addEventListener('click', () => manejarCantoEnvido('humano', 2));
-    botones.faltaEnvido.addEventListener('click', () => manejarCantoEnvido('humano', 3));
-    botones.truco.addEventListener('click', () => manejarCantoTruco('humano'));
-    botones.quiero.addEventListener('click', () => manejarRespuesta('humano', 'quiero'));
-    botones.noQuiero.addEventListener('click', () => manejarRespuesta('humano', 'no-quiero'));
-    botones.reTruco.addEventListener('click', () => manejarRespuesta('humano', 're-truco'));
-    botones.valeCuatro.addEventListener('click', () => manejarRespuesta('humano', 'vale-cuatro'));
-});
+// --- **NUEVO: Funciones de Pausa que faltaban** ---
+function pausarJuego() { 
+    juegoPausado = true; 
+    console.log("Juego Pausado");
+}
+function reanudarJuego() { 
+    juegoPausado = false; 
+    console.log("Juego Reanudado");
+}
 
 // --- Lógica de Juego Principal ---
 function comenzarPartida() {
     PUNTOS_PARA_GANAR = parseInt(document.querySelector('input[name="puntos-partida"]:checked').value);
     JUGAR_CON_FLOR = document.getElementById('con-flor').checked;
     const nombreJugador = document.getElementById('nombre-jugador').value || 'Jugador';
-    document.body.className = document.getElementById('layout-pc').checked ? 'layout-pc' : 'layout-celular';
     
-    jugadorHumano = { nombre: nombreJugador };
-    jugadorCPU = { nombre: 'TrucoEstrella' };
+    jugadorHumano = { nombre: nombreJugador, mano: [] };
+    jugadorCPU = { nombre: 'TrucoEstrella', mano: [] };
 
     document.getElementById('marcador-humano-nombre').textContent = jugadorHumano.nombre;
     document.getElementById('marcador-cpu-nombre').textContent = jugadorCPU.nombre;
@@ -239,3 +212,38 @@ function manejarCantoTruco(quienCanta) { if(quienCanta === 'humano') { pausarJue
 function manejarCantoEnvido(quienCanta, nivel) { pausarJuego(); estadoEnvido.nivel = nivel; cantoActual = 'envido'; ocultarTodosLosControles(); const nombres = {1: 'Envido', 2: 'Real Envido', 3: 'Falta Envido'}; if (quienCanta === 'humano') { agregarAlLog(jugadorHumano.nombre, nombres[nivel]); actualizarInfo(`¡${nombres[nivel].toUpperCase()}! Esperando respuesta...`); setTimeout(() => decisionCPU('envido'), 1500); } else { agregarAlLog(jugadorCPU.nombre, nombres[nivel]); actualizarInfo(`${jugadorCPU.nombre} canta: ¡${nombres[nivel].toUpperCase()}!`); mostrarBotonesRespuesta('humano', 'envido'); } }
 function manejarRespuesta(quienResponde, respuesta) { pausarJuego(); ocultarTodosLosControles(true); if (quienResponde === 'humano') { let canto = respuesta.replace(/-/g, ' '); canto = canto.charAt(0).toUpperCase() + canto.slice(1); agregarAlLog(jugadorHumano.nombre, canto); if (respuesta === 'quiero') { if (cantoActual === 'envido') { resolverEnvido(); } else { estadoTruco++; actualizarInfo(`¡QUIERO! La ronda vale ${[1,2,3,4][estadoTruco]} puntos.`); reanudarJuego(); prepararSiguienteMano(); } } else if (respuesta === 'no-quiero') { finalizarRonda('cpu'); } else { cantoActual = 'truco'; if(respuesta === 're-truco') estadoTruco = 2; if(respuesta === 'vale-cuatro') estadoTruco = 3; actualizarInfo(`¡${canto.toUpperCase()}! Esperando respuesta...`); setTimeout(() => decisionCPU('truco'), 1500); } } }
 function resolverEnvido() { estadoEnvido.respondido = true; const puntosH = calcularEnvido(jugadorHumano.mano); const puntosC = calcularEnvido(jugadorCPU.mano); const puntosMap = {1: 2, 2: 3, 3: PUNTOS_PARA_GANAR - Math.max(marcador.humano, marcador.cpu)}; const puntosEnDisputa = puntosMap[estadoEnvido.nivel] || 2; let ganadorEnvido; if (puntosH >= puntosC) { ganadorEnvido = 'humano'; } else { ganadorEnvido = 'cpu'; } marcador[ganadorEnvido] += puntosEnDisputa; let mensaje = `${ganadorEnvido === 'humano' ? 'Ganas' : 'Gana'} el envido con ${Math.max(puntosH, puntosC)} tantos.`; actualizarInfo(mensaje); agregarAlLog(jugadorHumano.nombre, `${puntosH} tantos.`); agregarAlLog(jugadorCPU.nombre, `${puntosC} tantos.`); actualizarMarcador(); setTimeout(() => { reanudarJuego(); mostrarBotonesDeCantoInicial(); prepararSiguienteMano(); }, 2000); }
+
+// --- Ligar eventos a los botones ---
+document.addEventListener('DOMContentLoaded', () => {
+    botones = {
+        log: document.getElementById('log-juego'),
+        marcadorGrafico: document.getElementById('marcador-grafico'),
+        info: document.getElementById('info-juego'),
+        mano: document.getElementById('mano-humano'),
+        manoCPU: document.getElementById('mano-cpu'),
+        nuevoJuego: document.getElementById('btn-nuevo-juego'),
+        flor: document.getElementById('btn-flor'),
+        contraflor: document.getElementById('btn-contraflor'),
+        contraflorResto: document.getElementById('btn-contraflor-resto'),
+        envido: document.getElementById('btn-envido'),
+        realEnvido: document.getElementById('btn-real-envido'),
+        faltaEnvido: document.getElementById('btn-falta-envido'),
+        truco: document.getElementById('btn-truco'),
+        quiero: document.getElementById('btn-quiero'),
+        noQuiero: document.getElementById('btn-no-quiero'),
+        reTruco: document.getElementById('btn-re-truco'),
+        valeCuatro: document.getElementById('btn-vale-cuatro')
+    };
+
+    document.getElementById('btn-comenzar').addEventListener('click', comenzarPartida);
+    botones.nuevoJuego.addEventListener('click', iniciarPartida);
+    botones.flor.addEventListener('click', manejarCantoFlor);
+    botones.envido.addEventListener('click', () => manejarCantoEnvido('humano', 1));
+    botones.realEnvido.addEventListener('click', () => manejarCantoEnvido('humano', 2));
+    botones.faltaEnvido.addEventListener('click', () => manejarCantoEnvido('humano', 3));
+    botones.truco.addEventListener('click', () => manejarCantoTruco('humano'));
+    botones.quiero.addEventListener('click', () => manejarRespuesta('humano', 'quiero'));
+    botones.noQuiero.addEventListener('click', () => manejarRespuesta('humano', 'no-quiero'));
+    botones.reTruco.addEventListener('click', () => manejarRespuesta('humano', 're-truco'));
+    botones.valeCuatro.addEventListener('click', () => manejarRespuesta('humano', 'vale-cuatro'));
+});
