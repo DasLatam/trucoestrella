@@ -16,12 +16,14 @@ import {
   desbloquearCartas
 } from "./ui.js";
 import {
-  iaJugarCarta,
+  calcularEnvido,
+  iaElegirCantoEnvido,
+  iaResponderEnvido,
   iaElegirCantoTruco,
   iaResponderTruco,
-  iaElegirCantoEnvido,
-  iaResponderEnvido
+  iaElegirCarta
 } from "./ia.js";
+
 
 let jugador = { nombre: "Jugador", puntos: 0, mano: [], envido: 0 };
 let ia = { nombre: "TrucoEstrella", puntos: 0, mano: [], envido: 0 };

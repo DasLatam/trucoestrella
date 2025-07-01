@@ -1,102 +1,79 @@
-// ui.js
+// ia.js
 
-function mostrarMano(jugadorId, mano, ocultar, callback) {
-  const contenedor = document.getElementById(jugadorId === "jugador" ? "mano-jugador" : "mano-ia");
-  contenedor.innerHTML = "";
-  mano.forEach((carta, index) => {
-    const div = document.createElement("div");
-    div.className = "carta";
-    div.innerText = ocultar ? "🂠" : `${carta.numero} ${carta.palo}`;
-    if (!ocultar && jugadorId === "jugador") {
-      div.classList.add("jugador");
-      div.addEventListener("click", () => callback(index));
-    }
-    contenedor.appendChild(div);
+// Función para calcular los puntos de envido de una mano
+function calcularEnvido(mano) {
+  const palos = {};
+  mano.forEach(carta => {
+    if (!palos[carta.palo]) palos[carta.palo] = [];
+    palos[carta.palo].push(carta.numero <= 7 ? carta.numero : 0);
   });
-}
 
-function mostrarCartaEnMesa(jugadorId, carta) {
-  const contenedor = document.getElementById("mesa");
-  const div = document.createElement("div");
-  div.className = "carta mesa";
-  div.innerText = `${carta.numero} ${carta.palo}`;
-  contenedor.appendChild(div);
-}
-
-function limpiarMesa() {
-  document.getElementById("mesa").innerHTML = "";
-}
-
-function actualizarPorotos(jugadorId, puntos) {
-  const contenedor = document.getElementById(`porotos-${jugadorId}`);
-  contenedor.innerHTML = "";
-  for (let i = 0; i < puntos; i++) {
-    const poroto = document.createElement("div");
-    poroto.className = "poroto";
-    contenedor.appendChild(poroto);
+  let max = 0;
+  for (const palo in palos) {
+    const nums = palos[palo].sort((a, b) => b - a);
+    if (nums.length >= 2) {
+      max = Math.max(max, 20 + nums[0] + nums[1]);
+    } else if (nums.length === 1) {
+      max = Math.max(max, nums[0]);
+    }
   }
+  return max;
 }
 
-function logHistorial(texto) {
-  const historial = document.getElementById("historial");
-  const p = document.createElement("p");
-  p.textContent = texto;
-  historial.appendChild(p);
-  historial.scrollTop = historial.scrollHeight;
+// IA elige si cantar envido o no
+function iaElegirCantoEnvido(mano, esMano) {
+  const puntos = calcularEnvido(mano);
+  if (puntos >= 30) return "falta envido";
+  if (puntos >= 27 && esMano) return "real envido";
+  if (puntos >= 25) return "envido";
+  return null;
 }
 
-function mostrarBotonesCanto(visible) {
-  document.getElementById("botones-canto").style.display = visible ? "flex" : "none";
+// IA responde a un envido
+function iaResponderEnvido(mano, tipo) {
+  const puntos = calcularEnvido(mano);
+  if (tipo === "envido" && puntos >= 26) return "quiero";
+  if (tipo === "real envido" && puntos >= 28) return "quiero";
+  if (tipo === "falta envido" && puntos >= 30) return "quiero";
+  return "no quiero";
 }
 
-function ocultarBotonesCanto() {
-  mostrarBotonesCanto(false);
+// IA elige si cantar truco
+function iaElegirCantoTruco(mano, ganoPrimera) {
+  const fuerza = mano.reduce((acc, carta) => acc + carta.rank, 0) / mano.length;
+  if (fuerza >= 15 || ganoPrimera) return "truco";
+  return null;
 }
 
-function mostrarModalVictoria(nombreGanador) {
-  const modal = document.getElementById("modal-victoria");
-  modal.style.display = "block";
-  document.getElementById("ganador").textContent = nombreGanador;
+// IA responde a un canto de truco
+function iaResponderTruco(mano, tipo) {
+  const fuerza = mano.reduce((acc, carta) => acc + carta.rank, 0) / mano.length;
+
+  if (tipo === "truco" && fuerza > 13) return "quiero";
+  if (tipo === "retruco" && fuerza > 15) return "quiero";
+  if (tipo === "vale cuatro" && fuerza > 16) return "quiero";
+  return "no quiero";
 }
 
-function mostrarOpcionesEnvido(tipo, callback) {
-  // por ahora simplificado
-  callback("quiero");
-}
-
-function mostrarOpcionesTruco(tipo, callback) {
-  // por ahora simplificado
-  callback("quiero");
-}
-
-function mostrarRespuestaCanto(tipo, callback) {
-  // por ahora simplificado
-  const aceptar = confirm(`${tipo.toUpperCase()}: ¿Querés aceptar?`);
-  callback(aceptar ? "quiero" : "no quiero");
-}
-
-function bloquearCartas() {
-  const cartas = document.querySelectorAll(".carta.jugador");
-  cartas.forEach(carta => carta.classList.add("bloqueada"));
-}
-
-function desbloquearCartas() {
-  const cartas = document.querySelectorAll(".carta.jugador");
-  cartas.forEach(carta => carta.classList.remove("bloqueada"));
+// IA elige qué carta jugar
+function iaElegirCarta(mano, cartaJugador) {
+  if (!cartaJugador) {
+    return mano.indexOf(mano.reduce((c, m) => c.rank < m.rank ? c : m));
+  }
+  const ganadoras = mano.filter(c => c.rank > cartaJugador.rank);
+  if (ganadoras.length > 0) {
+    const menorGanadora = ganadoras.reduce((a, b) => a.rank < b.rank ? a : b);
+    return mano.indexOf(menorGanadora);
+  }
+  const perdedora = mano.reduce((a, b) => a.rank < b.rank ? a : b);
+  return mano.indexOf(perdedora);
 }
 
 export {
-  mostrarMano,
-  mostrarCartaEnMesa,
-  limpiarMesa,
-  actualizarPorotos,
-  logHistorial,
-  mostrarBotonesCanto,
-  ocultarBotonesCanto,
-  mostrarModalVictoria,
-  mostrarOpcionesEnvido,
-  mostrarOpcionesTruco,
-  mostrarRespuestaCanto,
-  bloquearCartas,
-  desbloquearCartas
+  calcularEnvido,
+  iaElegirCantoEnvido,
+  iaResponderEnvido,
+  iaElegirCantoTruco,
+  iaResponderTruco,
+  iaElegirCarta
 };
