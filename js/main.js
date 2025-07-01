@@ -75,6 +75,10 @@ function mostrarBotonesDeCantoInicial() { if(juegoPausado || !turnoDelHumano) { 
 function pausarJuego() { juegoPausado = true; }
 function reanudarJuego() { juegoPausado = false; }
 function iniciarPartida() { marcador = { humano: 0, cpu: 0 }; manoDeLaRonda = (manoDeLaRonda === 'humano') ? 'cpu' : 'humano'; if(botones.log) { botones.log.innerHTML = ''; } iniciarRonda(); }
+function comenzarPartida() {
+    document.getElementById('btn-comenzar').style.display = 'none';
+    iniciarPartida();
+}
 function iniciarRonda() {
   manoActual = 1; manosGanadas = { humano: 0, cpu: 0 }; resultadosManos = [];
   estadoEnvido = { nivel: 0, respondido: false }; estadoTruco = 0; cantoActual = null; tieneFlor = { humano: false, cpu: false, respondido: false };
