@@ -1,14 +1,10 @@
 // =================================================================================
 // ARCHIVO DE CONFIGURACIÓN Y DATOS BASE
-// Contiene todas las constantes y datos inmutables del juego.
 // =================================================================================
 
-// --- Definiciones de la Baraja ---
 const PALOS = ['oros', 'copas', 'espadas', 'bastos'];
 const NUMEROS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
 
-// --- Jerarquía de las Cartas ---
-// Un número más bajo significa una carta más fuerte.
 const JERARQUIA_TRUCO = {
     '1-espadas': 1, '1-bastos': 2, '7-espadas': 3, '7-oros': 4,
     '3-espadas': 5, '3-oros': 5, '3-copas': 5, '3-bastos': 5,
@@ -23,7 +19,6 @@ const JERARQUIA_TRUCO = {
     '4-espadas': 14, '4-oros': 14, '4-copas': 14, '4-bastos': 14
 };
 
-// --- Diseños SVG para las Cartas ---
 const SVG_ICONS = {
     oros: `<g transform="translate(21, 40) scale(0.4)"><circle cx="50" cy="50" r="45" fill="#FFD700" stroke="#DAA520" stroke-width="5"/></g>`,
     copas: `<g transform="translate(16, 18) scale(0.6)"><path d="M 25,5 C 45,5 45,25 25,25 C 5,25 5,5 25,5 M 15,22 C 15,35 35,35 35,22 L 32 60 L 18 60 Z M 10 60 L 40 60 L 35 65 L 15 65 Z" fill="#B71C1C" stroke="#7f0000" stroke-width="2"/></g>`,

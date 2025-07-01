@@ -1,13 +1,12 @@
 // =================================================================================
 // ARCHIVO DE MANEJO DE LA INTERFAZ DE USUARIO (UI)
-// Contiene todas las funciones que dibujan, actualizan y manipulan el DOM.
 // =================================================================================
 
 function agregarAlLog(autor, mensaje) {
     const p = document.createElement('p');
     p.innerHTML = `<strong>${autor}:</strong> ${mensaje}`;
     botones.log.appendChild(p);
-    botones.log.scrollTop = botones.log.scrollHeight; // Auto-scroll
+    botones.log.scrollTop = botones.log.scrollHeight;
 }
 
 function actualizarInfo(mensaje) {
@@ -15,30 +14,27 @@ function actualizarInfo(mensaje) {
 }
 
 function actualizarMarcador() {
-    // La función principal del marcador ahora es la gráfica, la digital es un extra.
     dibujarMarcadorGrafico();
 }
 
 function dibujarMarcadorGrafico() {
-    if (!jugadorHumano) return;
+    if(!jugadorHumano) return;
     document.getElementById('marcador-humano-nombre').textContent = jugadorHumano.nombre;
     document.getElementById('marcador-cpu-nombre').textContent = jugadorCPU.nombre;
     const porotosHumano = document.getElementById('marcador-humano-porotos');
     const porotosCPU = document.getElementById('marcador-cpu-porotos');
-    porotosHumano.innerHTML = '';
+    porotosHumano.innerHTML = ''; 
     porotosCPU.innerHTML = '';
 
     let htmlHumano = '', htmlCPU = '';
-
-    for (let i = 1; i <= marcador.humano; i++) {
+    for(let i = 1; i <= marcador.humano; i++) {
         htmlHumano += `<div class="poroto-grupo"><div class="poroto ${i % 5 === 0 ? 'quinto' : ''}"></div></div>`;
-        if (i === 15) htmlHumano += '<div class="linea-buenas"></div>';
+        if(i === 15) htmlHumano += '<div class="linea-buenas"></div>';
     }
-    for (let i = 1; i <= marcador.cpu; i++) {
+    for(let i = 1; i <= marcador.cpu; i++) {
         htmlCPU += `<div class="poroto-grupo"><div class="poroto ${i % 5 === 0 ? 'quinto' : ''}"></div></div>`;
-        if (i === 15) htmlCPU += '<div class="linea-buenas"></div>';
+        if(i === 15) htmlCPU += '<div class="linea-buenas"></div>';
     }
-
     porotosHumano.innerHTML = htmlHumano;
     porotosCPU.innerHTML = htmlCPU;
 }
@@ -46,21 +42,12 @@ function dibujarMarcadorGrafico() {
 function crearElementoCarta(carta, esLomo = false) {
     const el = document.createElement('div');
     el.className = 'carta';
-
     if (esLomo) {
         el.innerHTML = SVG_LOMO_CARTA;
         return el;
     }
-    
     const color = (carta.palo === 'oros' || carta.palo === 'copas') ? '#B71C1C' : 'black';
-    const svgCarta = `
-        <svg viewbox="0 0 85 125" style="background-color: white; border: 2px solid black; border-radius: 8px; width: 100%; height: 100%;">
-            <text x="5" y="18" font-size="16" font-weight="bold" fill="${color}">${carta.numero}</text>
-            <g transform="scale(0.8) translate(5, 5)">${SVG_ICONS[carta.palo]}</g>
-            <text x="42.5" y="118" font-size="9" text-anchor="middle" fill="#424242">${carta.palo.charAt(0).toUpperCase() + carta.palo.slice(1)}</text>
-            <text x="80" y="110" font-size="16" font-weight="bold" fill="${color}" transform="rotate(180, 42.5, 62.5)">${carta.numero}</text>
-        </svg>
-    `;
+    const svgCarta = `<svg viewbox="0 0 85 125" style="background-color: white; border: 2px solid black; border-radius: 8px; width: 100%; height: 100%;"><text x="5" y="18" font-size="16" font-weight="bold" fill="${color}">${carta.numero}</text><g transform="scale(0.8) translate(5, 5)">${SVG_ICONS[carta.palo]}</g><text x="42.5" y="118" font-size="9" text-anchor="middle" fill="#424242">${carta.palo.charAt(0).toUpperCase() + carta.palo.slice(1)}</text><text x="80" y="110" font-size="16" font-weight="bold" fill="${color}" transform="rotate(180, 42.5, 62.5)">${carta.numero}</text></svg>`;
     el.innerHTML = svgCarta;
     return el;
 }
@@ -69,7 +56,6 @@ function dibujarMano() {
     botones.mano.innerHTML = '';
     jugadorHumano.mano.forEach(carta => {
         const el = crearElementoCarta(carta);
-        // La función 'jugarCarta' se definirá en main.js, pero los eventos se asignan aquí.
         el.addEventListener('click', () => jugarCarta(carta));
         botones.mano.appendChild(el);
     });
@@ -96,7 +82,6 @@ function actualizarEstadoBotonesMano(){
     });
 }
 
-
 function ocultarTodosLosControles(dejarTruco = false) {
     for (const key in botones) {
         if (botones[key] && typeof botones[key].style !== 'undefined') {
@@ -116,7 +101,7 @@ function mostrarBotonesRespuesta(turno, tipoCanto) {
         if (tipoCanto === 'truco') {
             if (estadoTruco === 1) botones.reTruco.style.display = 'block';
             if (estadoTruco === 2) botones.valeCuatro.style.display = 'block';
-        } else { // envido
+        } else {
             if (estadoEnvido.nivel < 2) botones.realEnvido.style.display = 'block';
             if (estadoEnvido.nivel < 3) botones.faltaEnvido.style.display = 'block';
         }
@@ -128,7 +113,6 @@ function mostrarBotonesDeCantoInicial() {
         ocultarTodosLosControles();
         return;
     }
-
     if (manoActual === 1 && !estadoEnvido.respondido) {
         if (tieneFlor.humano) {
             botones.flor.style.display = 'block';
@@ -138,7 +122,6 @@ function mostrarBotonesDeCantoInicial() {
             botones.faltaEnvido.style.display = 'block';
         }
     }
-
     if (estadoTruco < 1) {
         botones.truco.style.display = 'block';
     }
