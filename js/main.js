@@ -1,20 +1,26 @@
-// --- LÓGICA PRINCIPAL Y FLUJO DEL JUEGO ---
+// =================================================================================
+// ARCHIVO PRINCIPAL (main.js)
+// Contiene el flujo principal del juego, el manejo de estado y los eventos.
+// =================================================================================
 
 // --- Variables de Estado Globales ---
-let marcador, jugadorHumano, jugadorCPU, manoActual, manosGanadas, resultadosManos, turnoDelHumano, estadoEnvido, estadoTruco, cantoActual, tieneFlor, manoDeLaRonda, jugadorMano, cartaJugadaPorLider, juegoPausado = false;
+// Estas variables guardan toda la información sobre la partida en curso.
+let marcador, jugadorHumano, jugadorCPU, manoActual, manosGanadas, resultadosManos, turnoDelHumano, estadoEnvido, estadoTruco, cantoActual, tieneFlor, manoDeLaRonda, jugadorMano, cartaJugadaPorLider, juegoPausado;
 
-// --- Objeto de Botones y Elementos (CORREGIDO - AÑADIDO) ---
-// Este objeto es crucial y faltaba en la versión anterior.
+// Objeto que contendrá las referencias a los elementos del DOM
 let botones; 
 
 // --- Lógica de Juego Principal ---
+
 function comenzarPartida() {
+    // Leer la configuración inicial
     PUNTOS_PARA_GANAR = parseInt(document.querySelector('input[name="puntos-partida"]:checked').value);
     JUGAR_CON_FLOR = document.getElementById('con-flor').checked;
     const nombreJugador = document.getElementById('nombre-jugador').value || 'Jugador';
     
-    jugadorHumano = { nombre: nombreJugador, mano: [] };
-    jugadorCPU = { nombre: 'TrucoEstrella', mano: [] };
+    // Configurar jugadores y la interfaz
+    jugadorHumano = { nombre: nombreJugador };
+    jugadorCPU = { nombre: 'TrucoEstrella' };
 
     document.getElementById('marcador-humano-nombre').textContent = jugadorHumano.nombre;
     document.getElementById('marcador-cpu-nombre').textContent = jugadorCPU.nombre;
@@ -24,18 +30,20 @@ function comenzarPartida() {
     document.getElementById('pantalla-config').style.display = 'none';
     document.getElementById('area-juego-wrapper').style.display = 'block';
     
+    // Iniciar la primera partida
     manoDeLaRonda = 'cpu';
     iniciarPartida();
 }
 
 function iniciarPartida() {
     marcador = { humano: 0, cpu: 0 };
-    manoDeLaRonda = (manoDeLaRonda === 'humano') ? 'cpu' : 'humano';
+    manoDeLaRonda = (manoDeLaRonda === 'humano') ? 'cpu' : 'humano'; // Alternar quién empieza
     if(botones.log) { botones.log.innerHTML = ''; }
     iniciarRonda();
 }
 
 function iniciarRonda() {
+  // Reiniciar todas las variables de la ronda
   manoActual = 1; manosGanadas = { humano: 0, cpu: 0 }; resultadosManos = [];
   estadoEnvido = { nivel: 0, respondido: false }; estadoTruco = 0; cantoActual = null; tieneFlor = { humano: false, cpu: false, respondido: false };
   jugadorMano = manoDeLaRonda; cartaJugadaPorLider = null; reanudarJuego();
@@ -47,27 +55,31 @@ function iniciarRonda() {
   ocultarTodosLosControles(); 
   botones.nuevoJuego.style.display = 'none';
   
+  // Limpiar la mesa
   for(let i=1; i<=3; i++) { 
       document.getElementById(`slot-humano-${i}`).innerHTML = ''; 
       document.getElementById(`slot-cpu-${i}`).innerHTML = ''; 
   }
 
+  // Repartir cartas
   const baraja = crearBarajaTruco(); 
   barajar(baraja);
-
   for (let i = 0; i < 3; i++) { 
       jugadorHumano.mano.push(baraja.pop()); 
       jugadorCPU.mano.push(baraja.pop()); 
   }
   
+  // Verificar si hay flor
   if(JUGAR_CON_FLOR) { 
       tieneFlor.humano = detectarFlor(jugadorHumano.mano); 
       tieneFlor.cpu = detectarFlor(jugadorCPU.mano); 
   }
 
+  // Dibujar las manos en la UI
   dibujarManoCPU(true); 
   dibujarMano();
 
+  // Decidir el primer paso de la ronda
   if (tieneFlor.humano) { 
       botones.flor.style.display = 'block'; 
       actualizarInfo(`¡Tienes Flor! Debes cantarla.`); 
@@ -81,18 +93,46 @@ function iniciarRonda() {
 
 function prepararSiguienteMano() {
     if(juegoPausado) return;
+    
+    // Determinar quién es mano para esta jugada
     if(manoActual > 1) { 
         const ganadorManoAnterior = resultadosManos[manoActual - 2]; 
         if (ganadorManoAnterior !== 'empate') jugadorMano = ganadorManoAnterior; 
     }
+    
     turnoDelHumano = (jugadorMano === 'humano');
     dibujarMano();
+
     if (turnoDelHumano) { 
         actualizarInfo(`Mano ${manoActual}. Eres mano, te toca jugar.`); 
         mostrarBotonesDeCantoInicial(); 
     } else { 
         actualizarInfo(`Mano ${manoActual}. Juega ${jugadorCPU.nombre}.`); 
         mostrarBotonesDeCantoInicial(); 
+        setTimeout(jugarTurnoCPU, 1500); 
+    }
+}
+
+function jugarCarta(cartaJugada) {
+    if (!turnoDelHumano || juegoPausado) return;
+    if(tieneFlor.humano && !tieneFlor.respondido) { 
+        actualizarInfo("No puedes jugar, debes cantar la Flor."); 
+        return; 
+    }
+    
+    pausarJuego();
+    ocultarTodosLosControles(true);
+    
+    jugadorHumano.mano = jugadorHumano.mano.filter(c => c.id !== cartaJugada.id);
+    dibujarMano();
+    document.getElementById(`slot-humano-${manoActual}`).appendChild(crearElementoCarta(cartaJugada));
+    agregarAlLog(jugadorHumano.nombre, `juega ${cartaJugada.nombre}`);
+
+    if (cartaJugadaPorLider) { // El humano está respondiendo
+        setTimeout(() => evaluarMano(cartaJugadaPorLider, cartaJugada), 500);
+    } else { // El humano es mano
+        cartaJugadaPorLider = cartaJugada; 
+        actualizarInfo(`Esperando jugada...`); 
         setTimeout(jugarTurnoCPU, 1500); 
     }
 }
@@ -144,3 +184,65 @@ function finalizarRonda(ganadorPorNoQuerer, configFlor = null) {
         let puntosNoQuerido = { truco: estadoTruco === 0 ? 1 : estadoTruco, envido: [0,1,2,3][estadoEnvido.nivel] };
         puntos = puntosNoQuerido[cantoActual] || 1;
     } else {
+        puntos = [1, 2, 3, 4][estadoTruco] || 1;
+        if (manosGanadas.humano === manosGanadas.cpu) { // Cubre empates
+            ganadorFinal = resultadosManos[0] === 'empate' ? manoDeLaRonda : resultadosManos[0];
+        } else {
+            ganadorFinal = manosGanadas.humano > manosGanadas.cpu ? 'humano' : 'cpu';
+        }
+    }
+
+    marcador[ganadorFinal] += puntos;
+    actualizarMarcador();
+    const nombreGanador = (ganadorFinal === 'humano') ? jugadorHumano.nombre : jugadorCPU.nombre;
+    actualizarInfo(`🏆 ¡${nombreGanador} gana la ronda y se lleva ${puntos} ${puntos > 1 ? 'puntos' : 'punto'}! 🏆`);
+    
+    setTimeout(() => {
+        if (marcador.humano >= PUNTOS_PARA_GANAR) {
+            actualizarInfo(`🎉 ¡FELICIDADES, ${jugadorHumano.nombre.toUpperCase()}, HAS GANADO LA PARTIDA! 🎉`);
+            botones.nuevoJuego.style.display = 'block';
+        } else if (marcador.cpu >= PUNTOS_PARA_GANAR) {
+            actualizarInfo(`Gana ${jugadorCPU.nombre}. ¡Mejor suerte la próxima!`);
+            botones.nuevoJuego.style.display = 'block';
+        } else {
+            iniciarPartida();
+        }
+    }, 3000);
+}
+
+// --- Ligar eventos a los botones ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Inicializar el objeto 'botones' después de que el DOM esté cargado.
+    botones = {
+        log: document.getElementById('log-juego'),
+        marcadorGrafico: document.getElementById('marcador-grafico'),
+        info: document.getElementById('info-juego'),
+        mano: document.getElementById('mano-humano'),
+        manoCPU: document.getElementById('mano-cpu'),
+        nuevoJuego: document.getElementById('btn-nuevo-juego'),
+        flor: document.getElementById('btn-flor'),
+        contraflor: document.getElementById('btn-contraflor'),
+        contraflorResto: document.getElementById('btn-contraflor-resto'),
+        envido: document.getElementById('btn-envido'),
+        realEnvido: document.getElementById('btn-real-envido'),
+        faltaEnvido: document.getElementById('btn-falta-envido'),
+        truco: document.getElementById('btn-truco'),
+        quiero: document.getElementById('btn-quiero'),
+        noQuiero: document.getElementById('btn-no-quiero'),
+        reTruco: document.getElementById('btn-re-truco'),
+        valeCuatro: document.getElementById('btn-vale-cuatro')
+    };
+
+    // Asignar los eventos a los botones usando addEventListener
+    document.getElementById('btn-comenzar').addEventListener('click', comenzarPartida);
+    botones.nuevoJuego.addEventListener('click', iniciarPartida);
+    botones.flor.addEventListener('click', manejarCantoFlor);
+    botones.envido.addEventListener('click', () => manejarCantoEnvido('humano', 1));
+    botones.realEnvido.addEventListener('click', () => manejarCantoEnvido('humano', 2));
+    botones.faltaEnvido.addEventListener('click', () => manejarCantoEnvido('humano', 3));
+    botones.truco.addEventListener('click', () => manejarCantoTruco('humano'));
+    botones.quiero.addEventListener('click', () => manejarRespuesta('humano', 'quiero'));
+    botones.noQuiero.addEventListener('click', () => manejarRespuesta('humano', 'no-quiero'));
+    botones.reTruco.addEventListener('click', () => manejarRespuesta('humano', 're-truco'));
+    botones.valeCuatro.addEventListener('click', () => manejarRespuesta('humano', 'vale-cuatro'));
+});

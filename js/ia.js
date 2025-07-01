@@ -1,4 +1,7 @@
-// --- FUNCIONES DE INTELIGENCIA ARTIFICIAL (IA) DE LA CPU ---
+// =================================================================================
+// ARCHIVO DE INTELIGENCIA ARTIFICIAL (IA)
+// Contiene toda la lógica de decisiones de la CPU.
+// =================================================================================
 
 function elegirCartaCPU() {
     const manoCPU = jugadorCPU.mano;
@@ -12,7 +15,7 @@ function elegirCartaCPU() {
     // Si la CPU es mano (no hay carta del oponente en la mesa)
     if (!cartaJugadaPorLider) {
         // Juega su carta más baja para ver qué hace el oponente.
-        return manoCPU.shift(); 
+        return manoCPU.shift();
     } else { // Si la CPU está respondiendo a una carta
         // Busca las cartas que le ganarían a la del oponente
         const cartasGanadoras = manoCPU.filter(c => compararCartas(c, cartaJugadaPorLider) === 'cpu');
@@ -20,11 +23,13 @@ function elegirCartaCPU() {
         let cartaParaJugar;
         if (cartasGanadoras.length > 0) {
             // Si tiene cartas para ganar, elige la de menor valor entre las ganadoras
+            // (La primera del array ordenado de peor a mejor)
             cartaParaJugar = cartasGanadoras[0];
         } else {
-            // Si no puede ganar, tira su carta más alta para no perder por tanto en caso de parda.
-            // (La mano ya está ordenada de peor a mejor, la más alta es la última)
-            cartaParaJugar = manoCPU[manoCPU.length - 1];
+            // Si no puede ganar, tira su carta más alta para "perder por más" y guardar las bajas
+            // que podrían empatar o ganar una segunda/tercera mano.
+            manoCPU.sort((a,b) => a.rankingTruco - b.rankingTruco);
+            cartaParaJugar = manoCPU[0];
         }
         
         // Quita la carta elegida de la mano de la CPU y la devuelve
@@ -37,6 +42,7 @@ function decisionCPU(tipoCanto) {
     reanudarJuego();
 
     if (tipoCanto === 'truco') {
+        // La CPU revisa su mejor carta para decidir
         const mejorCartaCPU = jugadorCPU.mano.reduce((mejor, actual) => (actual.rankingTruco < mejor.rankingTruco) ? actual : mejor, { rankingTruco: 15 });
         
         // Estrategia para responder al truco
@@ -54,11 +60,12 @@ function decisionCPU(tipoCanto) {
         } else { // Si tiene malas cartas, se va
             agregarAlLog(jugadorCPU.nombre, "No Quiero");
             actualizarInfo(`${jugadorCPU.nombre}: No quiero.`);
-            finalizarRonda('humano');
+            finalizarRonda('humano', 'truco');
         }
     } else { // Lógica para el Envido
         const misPuntos = calcularEnvido(jugadorCPU.mano);
 
+        // Estrategia para responder al envido
         if (misPuntos >= 30 && estadoEnvido.nivel < 3) {
             estadoEnvido.nivel++;
             const nombres = {1: 'Envido', 2: 'Real Envido', 3: 'Falta Envido'};

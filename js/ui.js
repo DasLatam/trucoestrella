@@ -1,4 +1,7 @@
-// --- FUNCIONES DE MANEJO DE LA INTERFAZ DE USUARIO (UI) ---
+// =================================================================================
+// ARCHIVO DE MANEJO DE LA INTERFAZ DE USUARIO (UI)
+// Contiene todas las funciones que dibujan, actualizan y manipulan el DOM.
+// =================================================================================
 
 function agregarAlLog(autor, mensaje) {
     const p = document.createElement('p');
@@ -12,31 +15,28 @@ function actualizarInfo(mensaje) {
 }
 
 function actualizarMarcador() {
-    dibujarMarcadorGrafico(); 
+    // La función principal del marcador ahora es la gráfica, la digital es un extra.
+    dibujarMarcadorGrafico();
 }
 
 function dibujarMarcadorGrafico() {
-    if(!jugadorHumano) return;
+    if (!jugadorHumano) return;
     document.getElementById('marcador-humano-nombre').textContent = jugadorHumano.nombre;
     document.getElementById('marcador-cpu-nombre').textContent = jugadorCPU.nombre;
     const porotosHumano = document.getElementById('marcador-humano-porotos');
     const porotosCPU = document.getElementById('marcador-cpu-porotos');
-    porotosHumano.innerHTML = ''; 
+    porotosHumano.innerHTML = '';
     porotosCPU.innerHTML = '';
-    
+
     let htmlHumano = '', htmlCPU = '';
 
-    for(let i = 1; i <= marcador.humano; i++) {
-        htmlHumano += `<div class="poroto-grupo">
-            <div class="poroto ${i % 5 === 0 ? 'quinto' : ''}"></div>
-        </div>`;
-        if(i === 15) htmlHumano += '<div class="linea-buenas"></div>';
+    for (let i = 1; i <= marcador.humano; i++) {
+        htmlHumano += `<div class="poroto-grupo"><div class="poroto ${i % 5 === 0 ? 'quinto' : ''}"></div></div>`;
+        if (i === 15) htmlHumano += '<div class="linea-buenas"></div>';
     }
-    for(let i = 1; i <= marcador.cpu; i++) {
-        htmlCPU += `<div class="poroto-grupo">
-            <div class="poroto ${i % 5 === 0 ? 'quinto' : ''}"></div>
-        `;
-        if(i === 15) htmlCPU += '<div class="linea-buenas"></div>';
+    for (let i = 1; i <= marcador.cpu; i++) {
+        htmlCPU += `<div class="poroto-grupo"><div class="poroto ${i % 5 === 0 ? 'quinto' : ''}"></div></div>`;
+        if (i === 15) htmlCPU += '<div class="linea-buenas"></div>';
     }
 
     porotosHumano.innerHTML = htmlHumano;
@@ -69,10 +69,11 @@ function dibujarMano() {
     botones.mano.innerHTML = '';
     jugadorHumano.mano.forEach(carta => {
         const el = crearElementoCarta(carta);
-        el.disabled = !turnoDelHumano || juegoPausado;
-        el.onclick = () => jugarCarta(carta);
+        // La función 'jugarCarta' se definirá en main.js, pero los eventos se asignan aquí.
+        el.addEventListener('click', () => jugarCarta(carta));
         botones.mano.appendChild(el);
     });
+    actualizarEstadoBotonesMano();
 }
 
 function dibujarManoCPU(inicial = false) {
@@ -87,6 +88,14 @@ function dibujarManoCPU(inicial = false) {
         }
     }
 }
+
+function actualizarEstadoBotonesMano(){
+    const cartasEnMano = botones.mano.querySelectorAll('.carta');
+    cartasEnMano.forEach(cartaEl => {
+        cartaEl.disabled = !turnoDelHumano || juegoPausado;
+    });
+}
+
 
 function ocultarTodosLosControles(dejarTruco = false) {
     for (const key in botones) {
