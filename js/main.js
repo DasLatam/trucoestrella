@@ -1,5 +1,5 @@
 // =================================================================================
-// ARCHIVO PRINCIPAL (main.js)
+// ARCHIVO PRINCIPAL (main.js) v4.6
 // Orquesta todo el juego, maneja el estado y los eventos.
 // =================================================================================
 
@@ -10,14 +10,12 @@ let PUNTOS_PARA_GANAR, JUGAR_CON_FLOR;
 // --- Objeto de Botones y Elementos del DOM ---
 let botones; 
 
-// --- **NUEVO: Funciones de Pausa que faltaban** ---
+// --- **CORREGIDO: Funciones de Pausa que faltaban** ---
 function pausarJuego() { 
     juegoPausado = true; 
-    console.log("Juego Pausado");
 }
 function reanudarJuego() { 
     juegoPausado = false; 
-    console.log("Juego Reanudado");
 }
 
 // --- Lógica de Juego Principal ---
