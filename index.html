@@ -15,11 +15,12 @@
             font-family: 'Roboto', sans-serif;
             background-color: #0A381F; /* Verde oscuro de paño de truco */
             color: #E0E0E0;
+            font-size: 14px;
         }
 
         .carta {
-            width: 100px;
-            height: 150px;
+            width: 90px;
+            height: 135px;
             background-color: #FDFDFD;
             border: 1px solid #333;
             border-radius: 10px;
@@ -27,7 +28,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             font-weight: bold;
             color: #333;
             box-shadow: 3px 3px 7px rgba(0,0,0,0.3);
@@ -43,16 +44,16 @@
             position: absolute;
             top: 5px;
             left: 10px;
-            font-size: 1.2rem;
+            font-size: 1rem;
         }
         .carta .palo-esquina {
             position: absolute;
-            top: 25px;
+            top: 22px;
             left: 10px;
-            font-size: 1rem;
+            font-size: 0.9rem;
         }
         .carta .palo-grande {
-            font-size: 3rem;
+            font-size: 2.5rem;
         }
         .carta-boca-abajo {
             background-color: #B71C1C;
@@ -67,8 +68,8 @@
             box-shadow: 3px 3px 7px rgba(0,0,0,0.3);
         }
         .slot-carta {
-            width: 100px;
-            height: 150px;
+            width: 90px;
+            height: 135px;
             border: 2px dashed rgba(255, 255, 255, 0.2);
             border-radius: 10px;
             display: flex;
@@ -76,12 +77,12 @@
             align-items: center;
         }
         #chat {
-            height: 500px; /* Altura fija */
-            overflow-y: auto; /* Scroll vertical */
+            height: 90%; 
+            overflow-y: auto;
             background-color: rgba(0,0,0,0.2);
             border-radius: 8px;
             padding: 10px;
-            user-select: text; /* Permite seleccionar texto */
+            user-select: text;
             display: flex;
             flex-direction: column;
         }
@@ -89,29 +90,28 @@
             margin-bottom: 5px;
             font-size: 0.9rem;
         }
-        .historial-jugador { color: #81D4FA; } /* Azul claro */
-        .historial-ia { color: #FFCC80; } /* Naranja claro */
-        .historial-sistema { color: #C5E1A5; font-style: italic; } /* Verde claro */
+        .historial-jugador { color: #81D4FA; }
+        .historial-ia { color: #FFCC80; }
+        .historial-sistema { color: #C5E1A5; font-style: italic; }
         
-        /* Estilos para los porotos del marcador */
         .marcador-grupo {
             display: flex;
             flex-wrap: wrap;
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             position: relative;
-            margin: 5px;
+            margin: 4px;
         }
         .poroto {
-            background-color: #FFEB3B; /* Amarillo fósforo */
+            background-color: #FFEB3B;
             position: absolute;
             box-shadow: 1px 1px 3px rgba(0,0,0,0.5);
         }
-        .poroto1 { width: 4px; height: 50px; top: 5px; left: 5px; }
-        .poroto2 { width: 4px; height: 50px; top: 5px; left: 50px; }
-        .poroto3 { width: 50px; height: 4px; top: 5px; left: 5px; }
-        .poroto4 { width: 50px; height: 4px; top: 50px; left: 5px; }
-        .poroto5 { width: 64px; height: 4px; top: 28px; left: -2px; transform: rotate(45deg); }
+        .poroto1 { width: 3px; height: 40px; top: 5px; left: 5px; }
+        .poroto2 { width: 3px; height: 40px; top: 5px; left: 42px; }
+        .poroto3 { width: 40px; height: 3px; top: 5px; left: 5px; }
+        .poroto4 { width: 40px; height: 3px; top: 42px; left: 5px; }
+        .poroto5 { width: 54px; height: 3px; top: 23px; left: -2px; transform: rotate(45deg); }
 
         #marcador-container {
             border: 2px solid #C0A060;
@@ -123,9 +123,22 @@
             border-left: 2px dashed #C0A060;
             margin: 0 1rem;
         }
+        .canto-display {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #FFD700;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 2.5em;
+            font-weight: bold;
+            z-index: 100;
+            text-transform: uppercase;
+            border: 2px solid #FFD700;
+        }
     </style>
 </head>
-<body class="p-4">
+<body class="p-2 md:p-4">
 
     <!-- Pantalla de Inicio -->
     <div id="inicio-screen" class="max-w-md mx-auto mt-10 p-8 bg-green-800 rounded-xl shadow-2xl">
@@ -165,62 +178,56 @@
 
     <!-- Pantalla de Juego -->
     <div id="juego-screen" class="hidden w-full h-screen">
-        <div class="grid grid-cols-12 gap-4 h-full">
+        <div class="grid grid-cols-12 gap-2 h-full">
             
-            <!-- Columna 1: Botones de Canto -->
-            <div class="col-span-2 flex flex-col justify-center items-center space-y-3 p-2">
-                <h2 class="text-xl font-bold mb-4 text-yellow-300">Cantos</h2>
-                <button id="cantar-truco-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Truco</button>
-                <button id="cantar-envido-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Envido</button>
-                <button id="cantar-real-envido-btn" class="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded-lg">Real Envido</button>
-                <button id="cantar-falta-envido-btn" class="w-full bg-green-800 hover:bg-green-900 text-white font-bold py-2 px-4 rounded-lg">Falta Envido</button>
-                <button id="cantar-flor-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg hidden">Flor</button>
+            <!-- Columna 1: Opciones -->
+            <div class="col-span-2 flex flex-col justify-center items-center space-y-2 p-1">
+                <h2 class="text-xl font-bold mb-4 text-yellow-300">Opciones</h2>
+                <button id="cantar-truco-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg">Truco</button>
+                <button id="cantar-envido-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg">Envido</button>
+                <button id="cantar-real-envido-btn" class="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-3 rounded-lg">Real Envido</button>
+                <button id="cantar-falta-envido-btn" class="w-full bg-green-800 hover:bg-green-900 text-white font-bold py-2 px-3 rounded-lg">Falta Envido</button>
+                <button id="cantar-flor-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-lg hidden">Flor</button>
                 <div id="quiero-container" class="w-full space-y-2 hidden">
-                    <button id="quiero-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded-lg">Quiero</button>
-                    <button id="no-quiero-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">No Quiero</button>
+                    <button id="quiero-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-3 rounded-lg">Quiero</button>
+                    <button id="no-quiero-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg">No Quiero</button>
                 </div>
-                <button id="ir-al-mazo-btn" class="w-full mt-8 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">Ir al Mazo</button>
-                <button id="volver-menu-btn" class="w-full mt-auto bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg">Volver al Menú</button>
+                <button id="ir-al-mazo-btn" class="w-full mt-8 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-3 rounded-lg">Ir al Mazo</button>
+                <button id="volver-menu-btn" class="w-full mt-auto bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-3 rounded-lg">Volver al Menú</button>
             </div>
 
             <!-- Columna 2: Área de Juego -->
-            <div class="col-span-6 flex flex-col justify-between items-center py-4">
+            <div class="col-span-7 flex flex-col justify-between items-center py-2 relative">
+                <!-- Canto Display IA -->
+                <div id="canto-display-ia" class="canto-display hidden" style="top: 25%;"></div>
                 <!-- Mano IA -->
                 <div class="w-full">
-                    <h2 id="nombre-ia" class="text-center text-2xl font-bold mb-2 text-yellow-300">TrucoEstrella</h2>
-                    <div id="mano-ia" class="flex justify-center items-center space-x-4 h-[160px]">
-                        <!-- Cartas de la IA se generan aquí -->
-                    </div>
+                    <h2 id="nombre-ia" class="text-center text-xl font-bold mb-1 text-yellow-300">TrucoEstrella</h2>
+                    <div id="mano-ia" class="flex justify-center items-center space-x-2 h-[140px]"></div>
                 </div>
 
                 <!-- Mesa -->
-                <div id="mesa" class="w-full h-auto bg-green-800 rounded-lg shadow-inner flex flex-col justify-around items-center p-4 border-2 border-yellow-800 min-h-[380px]">
-                    <!-- Cartas Jugadas IA -->
-                    <div id="cartas-jugadas-ia" class="flex justify-center space-x-4 mb-4">
-                        <div id="slot-ia-1" class="slot-carta"></div>
-                        <div id="slot-ia-2" class="slot-carta"></div>
-                        <div id="slot-ia-3" class="slot-carta"></div>
+                <div id="mesa" class="w-full h-auto bg-green-800 rounded-lg shadow-inner flex flex-col justify-around items-center p-2 border-2 border-yellow-800 min-h-[320px]">
+                    <div id="cartas-jugadas-ia" class="flex justify-center space-x-2 mb-2">
+                        <div id="slot-ia-1" class="slot-carta"></div><div id="slot-ia-2" class="slot-carta"></div><div id="slot-ia-3" class="slot-carta"></div>
                     </div>
-                    <!-- Cartas Jugadas Jugador -->
-                    <div id="cartas-jugadas-jugador" class="flex justify-center space-x-4 mt-4">
-                        <div id="slot-jugador-1" class="slot-carta"></div>
-                        <div id="slot-jugador-2" class="slot-carta"></div>
-                        <div id="slot-jugador-3" class="slot-carta"></div>
+                    <div id="cartas-jugadas-jugador" class="flex justify-center space-x-2 mt-2">
+                        <div id="slot-jugador-1" class="slot-carta"></div><div id="slot-jugador-2" class="slot-carta"></div><div id="slot-jugador-3" class="slot-carta"></div>
                     </div>
                 </div>
                 <div id="mensaje-flotante" class="text-2xl font-bold text-white bg-black bg-opacity-50 px-4 py-2 rounded-lg absolute hidden z-20"></div>
 
+                <!-- Canto Display Jugador -->
+                <div id="canto-display-jugador" class="canto-display hidden" style="bottom: 25%;"></div>
                 <!-- Mano Jugador -->
                 <div class="w-full">
-                    <div id="mano-jugador" class="flex justify-center items-center space-x-4 h-[160px]">
-                        <!-- Cartas del jugador se generan aquí -->
-                    </div>
-                    <h2 id="nombre-jugador-display" class="text-center text-2xl font-bold mt-2 text-yellow-300">Jugador</h2>
+                    <div id="mano-jugador" class="flex justify-center items-center space-x-2 h-[140px]"></div>
+                    <h2 id="nombre-jugador-display" class="text-center text-xl font-bold mt-1 text-yellow-300">Jugador</h2>
                 </div>
             </div>
 
-            <!-- Columna 3: Marcador -->
-            <div class="col-span-2 flex flex-col items-center p-4">
+            <!-- Columna 3 y 4: Marcador y Chat -->
+            <div class="col-span-3 flex flex-col p-2 space-y-4">
                 <div id="marcador-container" class="w-full flex justify-around">
                     <div class="text-center">
                         <h3 id="marcador-nombre-jugador" class="text-lg font-semibold">Jugador</h3>
@@ -232,15 +239,13 @@
                         <div id="marcador-ia" class="flex flex-wrap justify-center"></div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Columna 4: Chat -->
-            <div class="col-span-2 p-2 flex flex-col">
-                <h2 class="text-xl font-bold text-center mb-4 text-yellow-300">Chat</h2>
-                <div id="chat" class="flex-grow"></div>
-                <div class="mt-2 flex">
-                    <input type="text" placeholder="Escribe un mensaje..." class="bg-gray-700 text-white w-full rounded-l-md p-2 focus:outline-none" disabled>
-                    <button class="bg-blue-600 text-white px-4 rounded-r-md" disabled>Enviar</button>
+                <div class="flex flex-col flex-grow">
+                    <h2 class="text-xl font-bold text-center mb-2 text-yellow-300">Chat</h2>
+                    <div id="chat" class="flex-grow"></div>
+                    <div class="mt-2 flex">
+                        <input type="text" placeholder="Escribe un mensaje..." class="bg-gray-700 text-white w-full rounded-l-md p-2 focus:outline-none" disabled>
+                        <button class="bg-blue-600 text-white px-4 rounded-r-md" disabled>Enviar</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -307,7 +312,6 @@
             const manoIAContainer = document.getElementById('mano-ia');
             const marcadorJugadorContainer = document.getElementById('marcador-jugador');
             const marcadorIAContainer = document.getElementById('marcador-ia');
-            const lineaMitad = document.getElementById('linea-mitad');
             const chatContainer = document.getElementById('chat');
             const botonesCanto = {
                 truco: document.getElementById('cantar-truco-btn'),
@@ -318,15 +322,14 @@
                 irAlMazo: document.getElementById('ir-al-mazo-btn'),
             };
             const quieroContainer = document.getElementById('quiero-container');
-            const quieroBtn = document.getElementById('quiero-btn');
-            const noQuieroBtn = document.getElementById('no-quiero-btn');
             const modalFinPartida = document.getElementById('modal-fin-partida');
             const ganadorTexto = document.getElementById('ganador-texto');
             const mensajeFlotante = document.getElementById('mensaje-flotante');
             const modalEnvido = document.getElementById('modal-envido');
             const envidoResultadoTexto = document.getElementById('envido-resultado-texto');
             const envidoGanadorTexto = document.getElementById('envido-ganador-texto');
-
+            const cantoDisplayIA = document.getElementById('canto-display-ia');
+            const cantoDisplayJugador = document.getElementById('canto-display-jugador');
 
             function crearElementoCarta(carta, esBocaAbajo = false) {
                 const cartaDiv = document.createElement('div');
@@ -400,10 +403,9 @@
                         document.getElementById(`slot-ia-${i}`).innerHTML = '';
                     }
                 },
-                actualizarMarcador: (puntosJugador, puntosIA, metaPuntos) => {
+                actualizarMarcador: (puntosJugador, puntosIA) => {
                     marcadorJugadorContainer.innerHTML = generarPorotos(puntosJugador);
                     marcadorIAContainer.innerHTML = generarPorotos(puntosIA);
-                    // lineaMitad.classList.toggle('hidden', metaPuntos !== PUNTOS_META.TREINTA);
                 },
                 agregarAlChat: (mensaje, tipo) => {
                     const p = document.createElement('p');
@@ -440,6 +442,14 @@
                         carta.classList.toggle('jugable', puedeJugarCarta);
                     });
                 },
+                mostrarCanto: (jugador, canto) => {
+                    const displayEl = jugador === 'jugador' ? cantoDisplayJugador : cantoDisplayIA;
+                    displayEl.textContent = canto;
+                    displayEl.classList.remove('hidden');
+                    setTimeout(() => {
+                        displayEl.classList.add('hidden');
+                    }, 3000);
+                },
                 mostrarFinPartida: (nombreGanador) => {
                     ganadorTexto.textContent = `¡Ha ganado ${nombreGanador}!`;
                     modalFinPartida.classList.remove('hidden');
@@ -464,7 +474,9 @@
                     limpiarCacheBtn: document.getElementById('limpiar-cache-btn'),
                     puntosMetaRadios: document.getElementsByName('puntos-meta'),
                     conFlorCheckbox: document.getElementById('con-flor'),
-                    manoJugadorContainer, botonesCanto, quieroBtn, noQuieroBtn,
+                    manoJugadorContainer, botonesCanto, 
+                    quieroBtn: document.getElementById('quiero-btn'), 
+                    noQuieroBtn: document.getElementById('no-quiero-btn'),
                     revanchaBtn: document.getElementById('revancha-btn'),
                     menuPrincipalBtn: document.getElementById('menu-principal-btn'),
                     volverMenuBtn: document.getElementById('volver-menu-btn'),
@@ -612,7 +624,7 @@
             }
             UI.limpiarMesa();
             UI.dibujarManos(estadoJuego.jugador.mano, estadoJuego.ia.mano);
-            UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia, estadoJuego.config.puntosMeta);
+            UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia);
             UI.agregarAlChat('--- Nueva Mano ---', 'sistema');
             UI.agregarAlChat(`${estadoJuego.jugadorEsMano ? estadoJuego.config.nombreJugador : estadoJuego.config.nombreIA} es mano.`, 'sistema');
             
@@ -711,9 +723,7 @@
             if (porAbandono) {
                 ganadorMano = quienAbandono === 'jugador' ? 'ia' : 'jugador';
                  if (estadoJuego.truco.cantado && !estadoJuego.truco.resuelto) {
-                    let puntosNoQuerido = 1;
-                    if (estadoJuego.truco.estado === CANTOS.RETRUCO) puntosNoQuerido = 2;
-                    if (estadoJuego.truco.estado === CANTOS.VALE_CUATRO) puntosNoQuerido = 3;
+                    let puntosNoQuerido = estadoJuego.truco.puntos;
                     estadoJuego.puntos[ganadorMano] += puntosNoQuerido;
                     UI.agregarAlChat(`${ganadorMano === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} gana ${puntosNoQuerido} punto(s) por el truco no querido.`, 'sistema');
                 } else {
@@ -730,13 +740,9 @@
                 else if (conteo.ia > conteo.jugador) ganadorMano = 'ia';
                 else ganadorMano = estadoJuego.jugadorEsMano ? 'jugador' : 'ia';
 
-                if (estadoJuego.truco.cantado) {
-                    estadoJuego.puntos[ganadorMano] += estadoJuego.truco.puntos;
-                    UI.agregarAlChat(`${ganadorMano === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} gana la mano y ${estadoJuego.truco.puntos} punto(s) del truco.`, 'sistema');
-                } else {
-                     estadoJuego.puntos[ganadorMano] += 1;
-                     UI.agregarAlChat(`${ganadorMano === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} gana la mano y 1 punto.`, 'sistema');
-                }
+                const puntosEnJuego = estadoJuego.truco.cantado ? estadoJuego.truco.puntos : 1;
+                estadoJuego.puntos[ganadorMano] += puntosEnJuego;
+                UI.agregarAlChat(`${ganadorMano === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} gana la mano y ${puntosEnJuego} punto(s).`, 'sistema');
             }
             
             if (estadoJuego.envido.cantado && !estadoJuego.envido.resuelto) {
@@ -746,7 +752,7 @@
                  resolverFlor();
             }
             
-            UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia, estadoJuego.config.puntosMeta);
+            UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia);
             if (checkFinPartida()) {
                 terminarPartida();
             } else {
@@ -788,7 +794,7 @@
 
         function manejarCanto(canto, quienCanta) {
             UI.agregarAlChat(`${quienCanta === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} canta: ${canto}`, quienCanta);
-            UI.mostrarMensajeF(`${canto}!`);
+            UI.mostrarCanto(quienCanta, canto);
             
             estadoJuego.accion = 'esperando_respuesta';
             const esCantoEnvido = [CANTOS.ENVIDO, CANTOS.REAL_ENVIDO, CANTOS.FALTA_ENVIDO].includes(canto);
@@ -857,6 +863,8 @@
                 puntosGanados = calcularPuntosEnvidoNoQuerido();
                 estadoJuego.puntos[ganadorEnvido] += puntosGanados;
                 UI.agregarAlChat(`${ganadorEnvido === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre} suma ${puntosGanados} punto(s) de envido no querido.`, 'sistema');
+                UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia);
+                if(checkFinPartida()) terminarPartida();
             } else {
                 if (puntosJugador > puntosIA) ganadorEnvido = 'jugador';
                 else if (puntosIA > puntosJugador) ganadorEnvido = 'ia';
@@ -866,16 +874,18 @@
                 estadoJuego.puntos[ganadorEnvido] += puntosGanados;
                 
                 const nombreGanador = ganadorEnvido === 'jugador' ? estadoJuego.config.nombreJugador : IA.nombre;
+                UI.agregarAlChat(`${estadoJuego.config.nombreJugador} tiene ${puntosJugador} de envido.`, 'jugador');
+                UI.agregarAlChat(`${IA.nombre} tiene ${puntosIA} de envido.`, 'ia');
+                UI.agregarAlChat(`Gana ${nombreGanador} ${puntosGanados} punto(s) del envido.`, 'sistema');
+                
                 UI.mostrarResultadoEnvido(puntosJugador, estadoJuego.config.nombreJugador, puntosIA, IA.nombre, nombreGanador, puntosGanados);
+                
                 setTimeout(() => {
                     UI.ocultarResultadoEnvido();
-                    UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia, estadoJuego.config.puntosMeta);
+                    UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia);
                     if(checkFinPartida()) terminarPartida();
                 }, 3000);
-                return;
             }
-            UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia, estadoJuego.config.puntosMeta);
-            if(checkFinPartida()) terminarPartida();
         }
 
         function resolverFlor() {
@@ -888,16 +898,15 @@
                 estadoJuego.puntos.ia += 3;
                 UI.agregarAlChat(`${IA.nombre} suma 3 puntos por Flor.`, 'sistema');
             } // Lógica para flor vs flor pendiente
-            UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia, estadoJuego.config.puntosMeta);
+            UI.actualizarMarcador(estadoJuego.puntos.jugador, estadoJuego.puntos.ia);
             if(checkFinPartida()) terminarPartida();
         }
         
         function manejarRespuesta(respuesta, quienResponde) {
             const esRespuestaJugador = quienResponde === 'jugador';
             UI.agregarAlChat(`${esRespuestaJugador ? estadoJuego.config.nombreJugador : IA.nombre} dice: ${respuesta}`, quienResponde);
-            UI.mostrarMensajeF(respuesta);
+            UI.mostrarCanto(quienResponde, respuesta);
             
-            estadoJuego.accion = 'jugando';
             const cantoPendiente = (estadoJuego.envido.cantado && !estadoJuego.envido.resuelto) || (estadoJuego.flor.cantado && !estadoJuego.flor.resuelto) ? 'envido' : 'truco';
 
             if (cantoPendiente === 'envido') {
@@ -918,6 +927,7 @@
                 }
             }
             
+            estadoJuego.accion = 'jugando';
             estadoJuego.turnoDelJugador = estadoJuego.quienJuegaRonda === 'jugador';
             actualizarTurno();
         }
