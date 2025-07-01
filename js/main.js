@@ -44,7 +44,7 @@ let estado = {
   historialManos: [],
   cartasJugador: [],
   cartasIA: [],
-  estadoCanto: null // 'envido', 'truco', etc.
+  estadoCanto: null
 };
 
 function iniciarJuego() {
@@ -85,153 +85,53 @@ function iniciarRonda() {
   if (estado.turno === "ia") turnoIA();
 }
 
-function jugarCarta(carta, index) {
-  if (estado.turno !== "jugador" || estado.estadoCanto) return;
-
-  bloquearCartas();
-  jugador.mano.splice(index, 1);
-  estado.cartasJugador.push(carta);
-  estado.cartasJugadas.push({ jugador: "jugador", carta });
-
-  mostrarMano("jugador", jugador.mano, false, jugarCarta);
-  mostrarCartaEnMesa("jugador", carta);
-  cambiarTurno();
-}
-
-function turnoIA() {
-  if (estado.estadoCanto) return;
-
-  setTimeout(() => {
-    const eleccion = iaElegirCantoTruco(ia.mano);
-    if (!estado.cantos.truco.activo && eleccion === "truco") {
-      cantarTruco("ia");
-      return;
-    }
-
-    const cartaJugador = estado.cartasJugadas.filter(c => c.jugador === "jugador")[estado.manoActual - 1];
-    const cartaIA = iaJugarCarta(ia.mano, cartaJugador?.carta);
-    ia.mano = ia.mano.filter(c => c !== cartaIA);
-    estado.cartasIA.push(cartaIA);
-    estado.cartasJugadas.push({ jugador: "ia", carta: cartaIA });
-    mostrarMano("ia", ia.mano, true);
-    mostrarCartaEnMesa("ia", cartaIA);
-    cambiarTurno();
-  }, 1000);
-}
-
-function cambiarTurno() {
-  if (estado.cartasJugador.length === estado.manoActual && estado.cartasIA.length === estado.manoActual) {
-    const cartaJ = estado.cartasJugador[estado.manoActual - 1];
-    const cartaI = estado.cartasIA[estado.manoActual - 1];
-    const resultado = compararCartas(cartaJ, cartaI);
-
-    if (resultado === 1) logHistorial(`🟢 Mano ${estado.manoActual} la gana ${jugador.nombre}`);
-    else if (resultado === -1) logHistorial(`🔴 Mano ${estado.manoActual} la gana TrucoEstrella`);
-    else logHistorial(`⚪ Mano ${estado.manoActual} es parda`);
-
-    estado.manoActual++;
-
-    if (estado.manoActual > 3) terminarRonda();
-    else estado.turno = estado.quienEsMano === "jugador" ? "ia" : "jugador";
-
-    desbloquearCartas();
-    if (estado.turno === "ia") turnoIA();
-  } else {
-    estado.turno = estado.turno === "jugador" ? "ia" : "jugador";
-    desbloquearCartas();
-    if (estado.turno === "ia") turnoIA();
-  }
-}
-
-function compararCartas(carta1, carta2) {
-  const valor1 = getValorTruco(carta1);
-  const valor2 = getValorTruco(carta2);
-  if (valor1 > valor2) return 1;
-  else if (valor1 < valor2) return -1;
-  else return 0;
-}
-
-function terminarRonda() {
-  const manosGanadas = { jugador: 0, ia: 0 };
-
-  for (let i = 0; i < 3; i++) {
-    const cJ = estado.cartasJugador[i];
-    const cI = estado.cartasIA[i];
-    if (!cJ || !cI) continue;
-    const res = compararCartas(cJ, cI);
-    if (res === 1) manosGanadas.jugador++;
-    else if (res === -1) manosGanadas.ia++;
-  }
-
-  let ganador = null;
-  if (manosGanadas.jugador > manosGanadas.ia) ganador = "jugador";
-  else if (manosGanadas.ia > manosGanadas.jugador) ganador = "ia";
-  else ganador = estado.quienEsMano;
-
-  if (ganador === "jugador") {
-    jugador.puntos += estado.cantos.truco.nivel;
-    logHistorial(`✅ Ronda ganada por ${jugador.nombre}`);
-  } else {
-    ia.puntos += estado.cantos.truco.nivel;
-    logHistorial(`❌ Ronda ganada por TrucoEstrella`);
-  }
-
-  actualizarPorotos("jugador", jugador.puntos);
-  actualizarPorotos("ia", ia.puntos);
-
-  if (jugador.puntos >= estado.partidaA) mostrarModalVictoria(jugador.nombre);
-  else if (ia.puntos >= estado.partidaA) mostrarModalVictoria("TrucoEstrella");
-  else {
-    estado.ronda++;
-    estado.quienEsMano = estado.quienEsMano === "jugador" ? "ia" : "jugador";
-    estado.cartasJugador = [];
-    estado.cartasIA = [];
-    iniciarRonda();
-  }
-}
-
-function cantarTruco(quien) {
-  estado.estadoCanto = "truco";
-  logHistorial(`${quien === "jugador" ? jugador.nombre : "TrucoEstrella"} canta TRUCO!`);
+function cantarEnvido(quien) {
+  if (estado.cantos.envido) return;
+  estado.estadoCanto = "envido";
+  estado.cantos.envido = "envido";
+  logHistorial(`${quien === "jugador" ? jugador.nombre : "TrucoEstrella"} canta ENVIDO!`);
 
   if (quien === "jugador") {
-    mostrarRespuestaCanto("truco", respuesta => {
+    mostrarRespuestaCanto("envido", respuesta => {
       if (respuesta === "quiero") {
-        estado.cantos.truco.activo = true;
-        logHistorial(`TrucoEstrella dice QUIERO al Truco.`);
+        const resultado = jugador.envido > ia.envido ? "jugador" : jugador.envido < ia.envido ? "ia" : estado.quienEsMano;
+        const puntos = 2;
+        logHistorial(`${jugador.nombre}: ${jugador.envido} puntos. TrucoEstrella: ${ia.envido} puntos.`);
+        logHistorial(`🏁 ${resultado === "jugador" ? jugador.nombre : "TrucoEstrella"} gana el Envido (${puntos} pts)`);
+        if (resultado === "jugador") jugador.puntos += puntos;
+        else ia.puntos += puntos;
+        actualizarPorotos("jugador", jugador.puntos);
+        actualizarPorotos("ia", ia.puntos);
       } else {
-        logHistorial(`TrucoEstrella dice NO QUIERO al Truco. Gana 1 punto ${jugador.nombre}`);
+        logHistorial(`TrucoEstrella dice NO QUIERO al Envido. ${jugador.nombre} gana 1 punto.`);
         jugador.puntos += 1;
-        terminarRonda();
-        return;
+        actualizarPorotos("jugador", jugador.puntos);
       }
       estado.estadoCanto = null;
     });
   } else {
-    mostrarRespuestaCanto("truco", respuesta => {
+    mostrarRespuestaCanto("envido", respuesta => {
       if (respuesta === "quiero") {
-        estado.cantos.truco.activo = true;
-        logHistorial(`${jugador.nombre} dice QUIERO al Truco.`);
+        const resultado = jugador.envido > ia.envido ? "jugador" : jugador.envido < ia.envido ? "ia" : estado.quienEsMano;
+        const puntos = 2;
+        logHistorial(`${jugador.nombre}: ${jugador.envido} puntos. TrucoEstrella: ${ia.envido} puntos.`);
+        logHistorial(`🏁 ${resultado === "jugador" ? jugador.nombre : "TrucoEstrella"} gana el Envido (${puntos} pts)`);
+        if (resultado === "jugador") jugador.puntos += puntos;
+        else ia.puntos += puntos;
+        actualizarPorotos("jugador", jugador.puntos);
+        actualizarPorotos("ia", ia.puntos);
       } else {
-        logHistorial(`${jugador.nombre} dice NO QUIERO al Truco. Gana 1 punto TrucoEstrella`);
+        logHistorial(`${jugador.nombre} dice NO QUIERO al Envido. TrucoEstrella gana 1 punto.`);
         ia.puntos += 1;
-        terminarRonda();
-        return;
+        actualizarPorotos("ia", ia.puntos);
       }
       estado.estadoCanto = null;
     });
   }
-}
-
-function mezclar(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
 }
 
 document.getElementById("btn-comenzar").addEventListener("click", iniciarJuego);
 document.getElementById("btn-reiniciar").addEventListener("click", () => location.reload());
 document.getElementById("btn-limpiar-cache").addEventListener("click", () => location.reload(true));
 document.getElementById("btn-truco").addEventListener("click", () => cantarTruco("jugador"));
+document.getElementById("btn-envido").addEventListener("click", () => cantarEnvido("jugador"));
