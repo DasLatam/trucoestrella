@@ -48,9 +48,18 @@ export function calcularFlor(mano) {
  * Decide qué carta jugar.
  * @param {Array} manoCpu - La mano actual de la IA.
  * @param {object} rondaState - El estado actual de la ronda.
- * @returns {object} La carta que la IA ha decidido jugar.
+ * @returns {object|null} La carta que la IA ha decidido jugar, o null si no puede.
  */
 export function decidirJugada(manoCpu, rondaState) {
+    // *** FIX ***
+    // Guarda defensiva: si la mano está vacía, es un estado de error.
+    // Devolvemos null para que la función que llama maneje este caso.
+    if (!manoCpu || manoCpu.length === 0) {
+        console.error("IA: decidirJugada fue llamada con una mano vacía.");
+        return null;
+    }
+    // *** END FIX ***
+
     const cartaJugador = rondaState.mesa.player[rondaState.manoActual - 1];
     const rankingJugador = cartaJugador ? getRanking(cartaJugador) : -1;
 
@@ -59,7 +68,7 @@ export function decidirJugada(manoCpu, rondaState) {
 
     if (rankingJugador === -1) { // La CPU es mano en esta jugada
         // Estrategia: si ganó la primera, juega la más alta para asegurar. Si no, la más baja.
-        if (rondaState.ganadorMano[0] === 'cpu' && manoOrdenada.length > 0) {
+        if (rondaState.ganadorMano[0] === 'cpu') {
             return manoOrdenada[manoOrdenada.length - 1];
         }
         return manoOrdenada[0];

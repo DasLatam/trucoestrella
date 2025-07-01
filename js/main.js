@@ -174,6 +174,19 @@ function jugadorJuegaCarta(carta) {
  * @param {object} carta - La carta a jugar.
  */
 function jugarCarta(jugador, carta) {
+    // *** FIX ***
+    // Guarda defensiva: si la carta es inválida (null/undefined), indica un error de estado.
+    // Se termina la ronda para evitar que el juego se rompa.
+    if (!carta) {
+        console.error(`jugarCarta fue llamada con una carta inválida para ${jugador}. Probablemente la mano estaba vacía.`);
+        const perdedor = jugador;
+        const ganador = perdedor === 'player' ? 'cpu' : 'player';
+        ui.agregarLog(`Error de estado. ${jugador} no pudo jugar.`, 'sistema');
+        terminarRonda(ganador);
+        return;
+    }
+    // *** END FIX ***
+
     const r = gameState.rondaActual;
     const mano = jugador === 'player' ? r.manoPlayer : r.manoCpu;
     const nombreJugador = jugador === 'player' ? gameState.config.nombreJugador : 'CPU';
@@ -376,7 +389,7 @@ function procesarRespuesta(respondedor, decision) {
             resolverFlor();
         } else { // TRUCO
             // El juego continúa, el turno vuelve a quien era mano de la ronda
-            r.turno = r.esManoPlayer ? 'player' : 'player'; // Corrección: debe ser el que jugó la última carta o el mano
+            r.turno = r.esManoPlayer ? 'player' : 'cpu'; 
             procesarTurno();
         }
     }
@@ -502,7 +515,7 @@ function sumarPuntos(jugador, cantidad, motivo) {
 
 function verificarFinPartida() {
     if (gameState.marcador.player >= gameState.config.puntosVictoria || gameState.marcador.cpu >= gameState.config.puntosVictoria) {
-        finalizarPartida(gameState.marcador.player > gameState.marcador.cpu ? 'player' : 'cpu');
+        finalizarPartida(gameState.marcador.player >= gameState.config.puntosVictoria ? 'player' : 'cpu');
     }
 }
 
