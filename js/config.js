@@ -1,79 +1,86 @@
-// config.js
-
-// Palos de la baraja española
-export const PALOS = ["espada", "basto", "oro", "copa"];
-
-// Símbolos visuales
-export const SIMBOLOS_PALOS = {
-  espada: "⚔️",
-  basto: "🌲",
-  oro: "💰",
-  copa: "🍷",
+export const SUITS = {
+    ESPADA: '⚔️',
+    BASTO: '🌲',
+    ORO: '💰',
+    COPA: '🍷'
 };
 
-// Cartas válidas por palo
-export const NUMEROS_VALIDOS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
-
-// Ranking de Truco (de mayor a menor)
-export const RANKING_TRUCO = [
-  { numero: 1, palo: "espada" },
-  { numero: 1, palo: "basto" },
-  { numero: 7, palo: "espada" },
-  { numero: 7, palo: "oro" },
-  { numero: 3 },
-  { numero: 2 },
-  { numero: 1 },
-  { numero: 12 },
-  { numero: 11 },
-  { numero: 10 },
-  { numero: 7 },
-  { numero: 6 },
-  { numero: 5 },
-  { numero: 4 },
+export const CARD_HIERARCHY = [
+    { number: 1, suit: SUITS.ESPADA, rank: 14, name: "Ancho de Espada" },
+    { number: 1, suit: SUITS.BASTO, rank: 13, name: "Ancho de Basto" },
+    { number: 7, suit: SUITS.ESPADA, rank: 12, name: "Siete de Espada" },
+    { number: 7, suit: SUITS.ORO, rank: 11, name: "Siete de Oro" },
+    { number: 3, suit: SUITS.ESPADA, rank: 10, name: "Tres" },
+    { number: 3, suit: SUITS.BASTO, rank: 10, name: "Tres" },
+    { number: 3, suit: SUITS.ORO, rank: 10, name: "Tres" },
+    { number: 3, suit: SUITS.COPA, rank: 10, name: "Tres" },
+    { number: 2, suit: SUITS.ESPADA, rank: 9, name: "Dos" },
+    { number: 2, suit: SUITS.BASTO, rank: 9, name: "Dos" },
+    { number: 2, suit: SUITS.ORO, rank: 9, name: "Dos" },
+    { number: 2, suit: SUITS.COPA, rank: 9, name: "Dos" },
+    { number: 1, suit: SUITS.ORO, rank: 8, name: "Ancho Falso" },
+    { number: 1, suit: SUITS.COPA, rank: 8, name: "Ancho Falso" },
+    { number: 12, suit: SUITS.ESPADA, rank: 7, name: "Doce" },
+    { number: 12, suit: SUITS.BASTO, rank: 7, name: "Doce" },
+    { number: 12, suit: SUITS.ORO, rank: 7, name: "Doce" },
+    { number: 12, suit: SUITS.COPA, rank: 7, name: "Doce" },
+    { number: 11, suit: SUITS.ESPADA, rank: 6, name: "Once" },
+    { number: 11, suit: SUITS.BASTO, rank: 6, name: "Once" },
+    { number: 11, suit: SUITS.ORO, rank: 6, name: "Once" },
+    { number: 11, suit: SUITS.COPA, rank: 6, name: "Once" },
+    { number: 10, suit: SUITS.ESPADA, rank: 5, name: "Diez" },
+    { number: 10, suit: SUITS.BASTO, rank: 5, name: "Diez" },
+    { number: 10, suit: SUITS.ORO, rank: 5, name: "Diez" },
+    { number: 10, suit: SUITS.COPA, rank: 5, name: "Diez" },
+    { number: 7, suit: SUITS.BASTO, rank: 4, name: "Siete Falso" },
+    { number: 7, suit: SUITS.COPA, rank: 4, name: "Siete Falso" },
+    { number: 6, suit: SUITS.ESPADA, rank: 3, name: "Seis" },
+    { number: 6, suit: SUITS.BASTO, rank: 3, name: "Seis" },
+    { number: 6, suit: SUITS.ORO, rank: 3, name: "Seis" },
+    { number: 6, suit: SUITS.COPA, rank: 3, name: "Seis" },
+    { number: 5, suit: SUITS.ESPADA, rank: 2, name: "Cinco" },
+    { number: 5, suit: SUITS.BASTO, rank: 2, name: "Cinco" },
+    { number: 5, suit: SUITS.ORO, rank: 2, name: "Cinco" },
+    { number: 5, suit: SUITS.COPA, rank: 2, name: "Cinco" },
+    { number: 4, suit: SUITS.ESPADA, rank: 1, name: "Cuatro" },
+    { number: 4, suit: SUITS.BASTO, rank: 1, name: "Cuatro" },
+    { number: 4, suit: SUITS.ORO, rank: 1, name: "Cuatro" },
+    { number: 4, suit: SUITS.COPA, rank: 1, name: "Cuatro" },
 ];
 
-// Valor numérico para comparar cartas en Truco
-export const getValorTruco = (carta) => {
-  for (let i = 0; i < RANKING_TRUCO.length; i++) {
-    const r = RANKING_TRUCO[i];
-    if (r.numero === carta.numero && (!r.palo || r.palo === carta.palo)) {
-      return i;
-    }
-  }
-  return 99; // invalida
+export const GAME_POINTS = {
+    NO_QUIERO_TRUCO: 1,
+    TRUCO: 2,
+    NO_QUIERO_RETRUCO: 2,
+    RETRUCO: 3,
+    NO_QUIERO_VALE4: 3,
+    VALE_CUATRO: 4,
+    
+    NO_QUIERO_ENVIDO: 1,
+    ENVIDO: 2,
+    
+    NO_QUIERO_REAL_ENVIDO: 1,
+    REAL_ENVIDO: 3,
+    
+    NO_QUIERO_ENVIDO_ENVIDO: 2,
+    ENVIDO_ENVIDO: 4,
+
+    NO_QUIERO_ENVIDO_REAL: 3,
+    ENVIDO_REAL: 5,
+
+    NO_QUIERO_ENVIDO_ENVIDO_REAL: 4,
+    ENVIDO_ENVIDO_REAL: 7,
+
+    FALTA_ENVIDO: (opponentPoints, maxPoints) => maxPoints - opponentPoints,
+
+    FLOR: 3,
+    NO_QUIERO_CONTRAFLOR: 3,
+    CONTRAFLOR: 6,
+    NO_QUIERO_CONTRAFLOR_AL_RESTO: 6,
+    CONTRAFLOR_AL_RESTO: (opponentPoints, maxPoints) => maxPoints - opponentPoints,
 };
 
-// Valor para Envido y Flor
-export const getValorEnvido = (mano) => {
-  const grupos = {};
-  for (const carta of mano) {
-    if (!grupos[carta.palo]) grupos[carta.palo] = [];
-    grupos[carta.palo].push(carta);
-  }
-
-  let max = 0;
-  for (const cartas of Object.values(grupos)) {
-    const nums = cartas.map(c => c.numero <= 7 ? c.numero : 0);
-    if (cartas.length >= 2) {
-      const mejores = nums.sort((a, b) => b - a).slice(0, 2);
-      const suma = mejores[0] + mejores[1] + 20;
-      if (suma > max) max = suma;
-    } else {
-      const sola = nums[0] || 0;
-      if (sola > max) max = sola;
-    }
-  }
-
-  return max;
-};
-
-// Crea la baraja completa
-export const crearMazo = () => {
-  const mazo = [];
-  for (const palo of PALOS) {
-    for (const numero of NUMEROS_VALIDOS) {
-      mazo.push({ numero, palo });
-    }
-  }
-  return mazo;
+export const PLAYERS = {
+    PLAYER: 'player',
+    IA: 'ia'
 };

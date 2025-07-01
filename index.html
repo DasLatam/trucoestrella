@@ -1,77 +1,130 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>TrucoEstrella</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrucoEstrella 🃏</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🃏</text></svg>">
 </head>
 <body>
-  <main id="app">
-    <section id="menu-inicial">
-      <h1>🎴 TrucoEstrella</h1>
 
-      <label>
-        Nombre del jugador:
-        <input type="text" id="nombre-jugador" maxlength="20" placeholder="Tu nombre" />
-      </label>
+    <div id="start-screen" class="screen active">
+        <div class="start-container">
+            <h1>TrucoEstrella</h1>
+            <p>Un juego de Truco Argentino para un jugador.</p>
+            <div class="settings">
+                <input type="text" id="player-name" placeholder="Ingresá tu nombre" maxlength="15">
+                <fieldset>
+                    <legend>Jugar a:</legend>
+                    <label>
+                        <input type="radio" name="game-points" value="15" checked> 15 Puntos
+                    </label>
+                    <label>
+                        <input type="radio" name="game-points" value="30"> 30 Puntos
+                    </label>
+                </fieldset>
+                <label class="flor-checkbox">
+                    <input type="checkbox" id="with-flor"> Jugar con flor
+                </label>
+                <button id="start-game-btn" class="btn btn-primary">Comenzar Partida</button>
+                <button id="clear-cache-btn" class="btn btn-secondary">Limpiar Cache</button>
+            </div>
+             <p class="credits">Desarrollado con IA por Daslatam para la comunidad.</p>
+        </div>
+    </div>
 
-      <fieldset>
-        <legend>Puntos</legend>
-        <label><input type="radio" name="puntos" value="15" checked /> 15 puntos</label>
-        <label><input type="radio" name="puntos" value="30" /> 30 puntos</label>
-      </fieldset>
-
-      <label>
-        <input type="checkbox" id="activar-flor" />
-        Jugar con Flor
-      </label>
-
-      <button id="comenzar-btn">Comenzar Partida</button>
-      <button id="limpiar-cache-btn">Limpiar Cache</button>
-    </section>
-
-    <section id="pantalla-juego" class="oculto">
-      <!-- Juego en curso -->
-      <div id="layout-juego">
-        <!-- Columna 1: Botonera de Cantos -->
-        <div id="columna-cantos">
-          <button class="btn-canto" data-canto="truco">Truco</button>
-          <button class="btn-canto" data-canto="envido">Envido</button>
-          <button class="btn-canto" data-canto="quiero-ir-al-mazo">Ir al Mazo</button>
+    <div id="game-screen" class="screen">
+        <div id="actions-column">
+            <button id="truco-btn" class="btn canto-btn">Truco</button>
+            <button id="retruco-btn" class="btn canto-btn">Re-Truco</button>
+            <button id="vale4-btn" class="btn canto-btn">Vale Cuatro</button>
+            <hr class="canto-divider">
+            <button id="envido-btn" class="btn canto-btn">Envido</button>
+            <button id="real-envido-btn" class="btn canto-btn">Real Envido</button>
+            <button id="falta-envido-btn" class="btn canto-btn">Falta Envido</button>
+            <hr class="canto-divider">
+             <button id="flor-btn" class="btn canto-btn">Flor</button>
+            <button id="contraflor-btn" class="btn canto-btn">Contraflor</button>
+            <button id="contraflor-resto-btn" class="btn canto-btn">Contraflor al Resto</button>
+             <hr class="canto-divider">
+            <button id="mazo-btn" class="btn mazo-btn">Ir al Mazo</button>
         </div>
 
-        <!-- Columna 2: Área de Juego -->
-        <div id="area-juego">
-          <div id="mano-ia" class="mano ia"></div>
-          <div id="mesa"></div>
-          <div id="mano-jugador" class="mano jugador"></div>
+        <div id="game-area">
+            <div id="ia-info">
+                <span id="ia-name">TrucoEstrella</span>
+                 <div id="ia-hand" class="hand">
+                    <div class="card-placeholder"></div>
+                    <div class="card-placeholder"></div>
+                    <div class="card-placeholder"></div>
+                </div>
+            </div>
+           
+            <div id="table">
+                <div class="table-row" id="ia-table">
+                    <div class="card-slot"></div>
+                    <div class="card-slot"></div>
+                    <div class="card-slot"></div>
+                </div>
+                 <div class="table-row" id="player-table">
+                    <div class="card-slot"></div>
+                    <div class="card-slot"></div>
+                    <div class="card-slot"></div>
+                </div>
+            </div>
+
+             <div id="player-info">
+                <span id="player-name-display">Jugador</span>
+                <div id="player-hand" class="hand">
+                    <div class="card-placeholder"></div>
+                    <div class="card-placeholder"></div>
+                    <div class="card-placeholder"></div>
+                </div>
+            </div>
         </div>
 
-        <!-- Columna 3: Puntos -->
-        <div id="columna-puntos">
-          <div>
-            <span id="nombre-jugador-marcador"></span>
-            <div id="porotos-jugador" class="porotos"></div>
-          </div>
-          <hr />
-          <div>
-            <span>TrucoEstrella</span>
-            <div id="porotos-ia" class="porotos"></div>
-          </div>
+        <div id="scoreboard-column">
+            <h2>Puntos</h2>
+            <div id="scoreboard">
+                <div class="score-container">
+                    <h3 id="player-score-name">Jugador</h3>
+                    <div id="player-score" class="score"></div>
+                </div>
+                <div class="score-container">
+                    <h3>TrucoEstrella</h3>
+                    <div id="ia-score" class="score"></div>
+                </div>
+            </div>
         </div>
 
-        <!-- Columna 4: Historial -->
-        <div id="historial">
-          <h3>Historial</h3>
-          <div id="log" contenteditable="true"></div>
+        <div id="history-column">
+            <h2>Historial</h2>
+            <div id="history-log"></div>
         </div>
-      </div>
+        
+        <button id="back-to-menu-btn" class="btn back-menu-btn">Volver al Menú</button>
+    </div>
 
-      <button id="volver-menu-btn" class="btn-secundario">Volver al Menú</button>
-    </section>
-  </main>
+    <div id="canto-modal" class="modal-overlay">
+        <div class="modal-content">
+            <p id="modal-message"></p>
+            <div id="modal-options" class="modal-options">
+                </div>
+        </div>
+    </div>
+    
+    <div id="end-game-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="end-game-title"></h2>
+            <p id="end-game-message"></p>
+            <div class="modal-options">
+                <button id="revancha-btn" class="btn btn-primary">Revancha</button>
+                <button id="end-game-menu-btn" class="btn btn-secondary">Volver al Menú</button>
+            </div>
+        </div>
+    </div>
 
-  <script type="module" src="js/main.js"></script>
+    <script src="js/main.js" type="module"></script>
 </body>
 </html>
