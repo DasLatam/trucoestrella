@@ -5,7 +5,7 @@
   <title>TrucoEstrella</title>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #004d40; color: white; text-align: center; font-size: 14px; margin: 0; padding: 5px; }
-    h1, h2, h3 { color: #b2dfdb; text-shadow: 1px 1px 2px black; }
+    h1, h2, h3 { color: #b2dfdb; text-shadow: 1px 1px 2px black; margin: 5px 0; }
     #version-display { position: absolute; top: 5px; right: 10px; font-size: 0.8em; color: rgba(255,255,255,0.4); }
     #pantalla-config { padding: 15px; background-color: #00695c; max-width: 400px; margin: 20px auto; border-radius: 10px; box-shadow: 0 0 15px black; }
     .opcion-config { margin: 10px 0; font-size: 1.1em; text-align: left; padding-left: 20px;}
@@ -13,16 +13,7 @@
     .opcion-config input[type="text"] { font-size: 0.9em; padding: 5px; border-radius: 4px; border: 1px solid #b2dfdb; }
     #btn-comenzar { background-color: #4CAF50 !important; font-size: 1.2em !important; margin-top: 15px !important; display: inline-block !important; }
     #area-juego-wrapper { display: none; }
-    .layout-pc .contenedor-principal { display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 20px; }
-    .layout-celular .contenedor-principal { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
-    .layout-pc #log-juego-container { text-align: left; }
-    .layout-celular #log-juego-container { text-align: center; }
-    .layout-pc #log-juego { width: 220px; height: 420px; }
-    .layout-celular #log-juego { width: 350px; height: 150px; margin: auto; }
-    #log-juego { background-color: rgba(0,0,0,0.2); border: 2px solid #00796b; border-radius: 8px; padding: 10px; overflow-y: auto; font-family: monospace; text-align: left; }
-    #log-juego p { margin: 4px 0; font-size: 0.9em; }
-    #log-juego strong { color: #ffcc80; }
-    #marcador { font-size: 1.5em; font-weight: bold; color: #ffeb3b; background-color: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 8px; display: inline-block; margin-bottom: 5px; }
+    #marcador-digital { font-size: 1.5em; font-weight: bold; color: #ffeb3b; background-color: rgba(0,0,0,0.2); padding: 5px 10px; border-radius: 8px; display: inline-block; margin-bottom: 5px; }
     .mesa { background-color: #00695c; border: 2px solid #00796b; border-radius: 10px; padding: 10px; margin: 5px auto; display: flex; flex-direction: column; gap: 10px; width: 240px; }
     .fila-jugador { display: flex; justify-content: space-around; gap: 8px; min-height: 95px; }
     .slot-carta { width: 65px; height: 95px; border: 1px dashed rgba(255,255,255,0.2); border-radius: 5px; position: relative; }
@@ -33,14 +24,35 @@
     .mano-jugador .carta:not([disabled]):hover { transform: translateY(-10px) scale(1.05); }
     .carta[disabled] { cursor: not-allowed; opacity: 0.8; }
     #info-juego { font-size: 1.1em; min-height: 30px; margin: 10px 0; color: #ffcc80; font-weight: bold; }
-    #controles-juego { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; padding: 5px; max-width: 350px; margin: auto; }
+    #controles-juego { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; padding: 5px; max-width: 400px; margin: auto; }
     #controles-juego button { padding: 8px 15px; font-size: 0.9em; cursor: pointer; border-radius: 5px; border: none; background-color: #ffab00; color: black; font-weight: bold; display: none; }
     .carta-perdedora svg { opacity: 0.6; }
     .carta-ganadora svg { border: 2px solid #ffeb3b; box-shadow: 0 0 10px #ffeb3b; }
+    /* --- Estilos para los Diseños --- */
+    .contenedor-principal { display: flex; justify-content: center; align-items: flex-start; gap: 20px; }
+    .layout-pc #area-juego-wrapper { text-align: center; }
+    .layout-pc .contenedor-principal { flex-direction: column; align-items: center; }
+    .layout-celular .contenedor-principal { flex-direction: row; align-items: center; }
+    .layout-celular #area-juego { order: 2; }
+    .layout-celular #controles-juego { order: 1; flex-direction: column; max-width: 150px; }
+    .layout-celular #marcador-grafico { order: 3; }
+    .layout-pc #marcador-grafico { display: none; }
+    .layout-celular #marcador-digital, .layout-celular #log-juego-container-pc { display: none; }
+    #log-juego-container-pc { text-align: center; margin-top: 15px; }
+    #log-juego { background-color: rgba(0,0,0,0.2); border: 2px solid #00796b; border-radius: 8px; padding: 10px; overflow-y: auto; font-family: monospace; text-align: left; }
+    .layout-pc #log-juego { width: 450px; height: 120px; margin: auto; }
+    .layout-celular #log-juego { display: none; } /* Opcional: Ocultar log en modo celular si no hay espacio */
+    #log-juego p { margin: 4px 0; font-size: 0.9em; }
+    #log-juego strong { color: #ffcc80; }
+    #marcador-grafico { display: flex; gap: 15px; }
+    .marcador-columna { width: 60px; min-height: 300px; background-color: rgba(0,0,0,0.2); border-radius: 8px; padding: 5px; }
+    .poroto { width: 80%; height: 8px; background-color: white; border-radius: 4px; margin: 4px auto; }
+    .poroto.quinto { transform: rotate(90deg) translate(-16px, -16px); }
+    .linea-buenas { height: 2px; background-color: red; margin: 5px 0; }
   </style>
 </head>
 <body class="layout-pc">
-  <span id="version-display">v2.1</span>
+  <span id="version-display">v2.2</span>
   <h1>TrucoEstrella</h1>
   <div id="pantalla-config">
     <h3>Configurar Partida</h3>
@@ -52,9 +64,12 @@
   </div>
   <div id="area-juego-wrapper">
     <div class="contenedor-principal">
+        <div id="controles-juego">
+            <button id="btn-flor" onclick="manejarCantoFlor()">Flor</button><button id="btn-envido" onclick="manejarCantoEnvido('humano', 1)">Envido</button><button id="btn-real-envido" onclick="manejarCantoEnvido('humano', 2)">R. Envido</button><button id="btn-falta-envido" onclick="manejarCantoEnvido('humano', 3)">F. Envido</button><button id="btn-truco" onclick="manejarCantoTruco('humano')">Truco</button><button id="btn-quiero" onclick="manejarRespuesta('humano', 'quiero')">Quiero</button><button id="btn-no-quiero" onclick="manejarRespuesta('humano', 'no-quiero')">No Quiero</button><button id="btn-re-truco" onclick="manejarRespuesta('humano', 're-truco')">Re-Truco</button><button id="btn-vale-cuatro" onclick="manejarRespuesta('humano', 'vale-cuatro')">V. Cuatro</button>
+        </div>
         <div id="area-juego">
-            <div id="marcador"></div>
-            <h2>Mano de TrucoEstrella</h2>
+            <div id="marcador-digital"></div>
+            <h2>TrucoEstrella</h2>
             <div class="mano-cpu fila-jugador" id="mano-cpu"></div>
             <div id="info-juego"></div>
             <div class="mesa" id="mesa">
@@ -63,14 +78,18 @@
             </div>
             <h2>Tu Mano</h2>
             <div class="mano-jugador fila-jugador" id="mano-humano"></div>
-            <div id="controles-juego">
-                <button id="btn-flor" onclick="manejarCantoFlor()">Cantar Flor</button><button id="btn-envido" onclick="manejarCantoEnvido('humano', 1)">Envido</button><button id="btn-real-envido" onclick="manejarCantoEnvido('humano', 2)">Real Envido</button><button id="btn-falta-envido" onclick="manejarCantoEnvido('humano', 3)">Falta Envido</button><button id="btn-truco" onclick="manejarCantoTruco('humano')">Truco</button><button id="btn-quiero" onclick="manejarRespuesta('humano', 'quiero')">Quiero</button><button id="btn-no-quiero" onclick="manejarRespuesta('humano', 'no-quiero')">No Quiero</button><button id="btn-re-truco" onclick="manejarRespuesta('humano', 're-truco')">Re-Truco</button><button id="btn-vale-cuatro" onclick="manejarRespuesta('humano', 'vale-cuatro')">Vale Cuatro</button><button id="btn-nuevo-juego" onclick="iniciarPartida()">Jugar Nueva Partida</button>
-            </div>
         </div>
-        <div id="log-juego-container">
-            <h3>Historial</h3>
-            <div id="log-juego"></div>
+        <div id="marcador-grafico">
+            <div class="marcador-columna"><h3 id="marcador-humano-nombre"></h3><div id="marcador-humano-porotos"></div></div>
+            <div class="marcador-columna"><h3 id="marcador-cpu-nombre"></h3><div id="marcador-cpu-porotos"></div></div>
         </div>
+    </div>
+    <div id="log-juego-container-pc">
+        <h3>Historial</h3>
+        <div id="log-juego"></div>
+    </div>
+    <div id="controles-finales">
+        <button id="btn-nuevo-juego" onclick="iniciarPartida()">Jugar Nueva Partida</button>
     </div>
   </div>
 
@@ -83,11 +102,10 @@
     const SVG_ICONS = { oros: `<g transform="translate(21, 40) scale(0.4)"><circle cx="50" cy="50" r="45" fill="#FFD700" stroke="#DAA520" stroke-width="5"/></g>`, copas: `<g transform="translate(16, 18) scale(0.6)"><path d="M 25,5 C 45,5 45,25 25,25 C 5,25 5,5 25,5 M 15,22 C 15,35 35,35 35,22 L 32 60 L 18 60 Z M 10 60 L 40 60 L 35 65 L 15 65 Z" fill="#B71C1C" stroke="#7f0000" stroke-width="2"/></g>`, espadas: `<g transform="translate(18, 15) scale(0.6)"><path d="M 25 65 L 25 45 C 20 45, 20 40, 15 40 L 35 40 C 30 40, 30 45, 25 45 M 25 65 L 15 70 L 35 70 Z M 25 5 L 25 40" stroke="black" stroke-width="4" fill="none" /><path d="M25 5 L 35 15 L 15 15 Z" fill="#87CEEB"/></g>`, bastos: `<g transform="translate(20, 15) scale(0.6)"><path d="M20,65 C30,55 30,40 20,30 C10,40 10,55 20,65 M20,5 L20,65" stroke="#388E3C" stroke-width="7" stroke-linecap="round" fill="none"/><path d="M20,15 L30,20 L20,25 L10,20Z" fill="#A5D6A7"/></g>` };
     const SVG_LOMO_CARTA = `<svg viewbox="0 0 70 105" style="background-color: #4A148C; border: 2px solid black; border-radius: 5px; width: 100%; height: 100%;"><text x="35" y="55" font-size="12" font-weight="bold" fill="white" text-anchor="middle">Truco</text><text x="35" y="70" font-size="12" font-weight="bold" fill="#FFD700" text-anchor="middle">Estrella</text></svg>`;
     
-    // --- Variables de Estado del Juego ---
     let marcador, jugadorHumano, jugadorCPU, manoActual, manosGanadas, resultadosManos, turnoDelHumano, estadoEnvido, estadoTruco, cantoActual, tieneFlor, manoDeLaRonda, jugadorMano, cartaJugadaPorLider, juegoPausado = false;
-    const botones = { log: document.getElementById('log-juego'), marcador: document.getElementById('marcador'), info: document.getElementById('info-juego'), mano: document.getElementById('mano-humano'), manoCPU: document.getElementById('mano-cpu'), nuevoJuego: document.getElementById('btn-nuevo-juego'), flor: document.getElementById('btn-flor'), envido: document.getElementById('btn-envido'), realEnvido: document.getElementById('btn-real-envido'), faltaEnvido: document.getElementById('btn-falta-envido'), truco: document.getElementById('btn-truco'), quiero: document.getElementById('btn-quiero'), noQuiero: document.getElementById('btn-no-quiero'), reTruco: document.getElementById('btn-re-truco'), valeCuatro: document.getElementById('btn-vale-cuatro') };
+    const botones = { log: document.getElementById('log-juego'), marcadorDigital: document.getElementById('marcador-digital'), marcadorGrafico: document.getElementById('marcador-grafico'), info: document.getElementById('info-juego'), mano: document.getElementById('mano-humano'), manoCPU: document.getElementById('mano-cpu'), nuevoJuego: document.getElementById('btn-nuevo-juego'), flor: document.getElementById('btn-flor'), envido: document.getElementById('btn-envido'), realEnvido: document.getElementById('btn-real-envido'), faltaEnvido: document.getElementById('btn-falta-envido'), truco: document.getElementById('btn-truco'), quiero: document.getElementById('btn-quiero'), noQuiero: document.getElementById('btn-no-quiero'), reTruco: document.getElementById('btn-re-truco'), valeCuatro: document.getElementById('btn-vale-cuatro') };
 
-    // --- **CORREGIDO: Funciones Base al Principio del Script** ---
+    // --- Funciones Base ---
     function crearBarajaTruco() { const b = []; for (const p of PALOS) for (const n of NUMEROS) b.push({ numero: n, palo: p, valorEnvido: n < 10 ? n : 0, rankingTruco: JERARQUIA_TRUCO[`${n}-${p}`], nombre: `${n} de ${p}`, id: `${n}-${p}` }); return b; }
     function barajar(b) { for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[b[i], b[j]] = [b[j], b[i]]; } }
     function compararCartas(c1, c2) { if(!c1 || !c2) return 'empate'; if (c1.rankingTruco < c2.rankingTruco) return 'humano'; if (c2.rankingTruco < c1.rankingTruco) return 'cpu'; return 'empate'; }
@@ -104,18 +122,15 @@
         const nombreJugador = document.getElementById('nombre-jugador').value || 'Jugador';
         const layout = document.getElementById('layout-pc').checked ? 'layout-pc' : 'layout-celular';
         document.body.className = layout;
-        jugadorHumano = { nombre: nombreJugador, mano: [] };
-        jugadorCPU = { nombre: 'TrucoEstrella', mano: [] };
+        jugadorHumano = { nombre: nombreJugador };
+        jugadorCPU = { nombre: 'TrucoEstrella' };
         document.getElementById('pantalla-config').style.display = 'none';
         document.getElementById('area-juego-wrapper').style.display = 'block';
         manoDeLaRonda = 'cpu';
         iniciarPartida();
     }
-    
     function iniciarPartida() { marcador = { humano: 0, cpu: 0 }; manoDeLaRonda = (manoDeLaRonda === 'humano') ? 'cpu' : 'humano'; iniciarRonda(); }
-    
     function iniciarRonda() {
-      console.log("--- Nueva Ronda ---");
       manoActual = 1; manosGanadas = { humano: 0, cpu: 0 }; resultadosManos = [];
       estadoEnvido = { nivel: 0, respondido: false }; estadoTruco = 0; cantoActual = null; tieneFlor = { humano: false, cpu: false, respondido: false };
       jugadorMano = manoDeLaRonda; cartaJugadaPorLider = null; reanudarJuego();
@@ -124,14 +139,13 @@
       for(let i=1; i<=3; i++) { document.getElementById(`slot-humano-${i}`).innerHTML = ''; document.getElementById(`slot-cpu-${i}`).innerHTML = ''; }
       const baraja = crearBarajaTruco(); barajar(baraja);
       for (let i = 0; i < 3; i++) { jugadorHumano.mano.push(baraja.pop()); jugadorCPU.mano.push(baraja.pop()); }
-      jugadorCPU.mano.sort((a,b) => b.rankingTruco - a.rankingTruco); // IA Estratégica
+      jugadorCPU.mano.sort((a,b) => a.rankingTruco - b.rankingTruco);
       if(JUGAR_CON_FLOR) { tieneFlor.humano = detectarFlor(jugadorHumano.mano); tieneFlor.cpu = detectarFlor(jugadorCPU.mano); }
       dibujarManoCPU(true); dibujarMano();
       if (tieneFlor.humano) { botones.flor.style.display = 'inline-block'; actualizarInfo(`¡Tienes Flor! Debes cantarla.`); }
       else if (tieneFlor.cpu) { agregarAlLog(jugadorCPU.nombre, "¡FLOR!"); finalizarRonda(); }
       else { prepararSiguienteMano(); }
     }
-
     function prepararSiguienteMano() {
         if(juegoPausado) return;
         if(manoActual > 1) { const ganadorManoAnterior = resultadosManos[manoActual - 2]; if (ganadorManoAnterior !== 'empate') jugadorMano = ganadorManoAnterior; }
@@ -140,7 +154,6 @@
         if (turnoDelHumano) { actualizarInfo(`Mano ${manoActual}. Eres mano, te toca jugar.`); mostrarBotonesDeCantoInicial(); }
         else { actualizarInfo(`Mano ${manoActual}. Juega ${jugadorCPU.nombre}.`); mostrarBotonesDeCantoInicial(); setTimeout(jugarTurnoCPU, 1500); }
     }
-    
     function jugarCarta(cartaJugada) {
         if (!turnoDelHumano || juegoPausado) return;
         if(tieneFlor.humano && !tieneFlor.respondido) { actualizarInfo("No puedes jugar, debes cantar la Flor."); return; }
@@ -153,40 +166,37 @@
         if (cartaJugadaPorLider) { evaluarMano(cartaJugadaPorLider, cartaJugada); }
         else { cartaJugadaPorLider = cartaJugada; actualizarInfo(`Esperando jugada de ${jugadorCPU.nombre}...`); setTimeout(jugarTurnoCPU, 1500); }
     }
-
     function jugarTurnoCPU() {
         if(manoActual === 1 && !estadoEnvido.respondido && !tieneFlor.cpu && jugadorMano === 'cpu') {
             const misPuntos = calcularEnvido(jugadorCPU.mano);
             if (misPuntos >= 30) { manejarCantoEnvido('cpu', 1); return; }
         }
         const cartaAJugar = elegirCartaCPU();
-        if(!cartaAJugar) { console.error("CPU sin cartas para jugar."); reanudarJuego(); return; }
+        if(!cartaAJugar) { reanudarJuego(); return; }
         dibujarManoCPU();
         document.getElementById(`slot-cpu-${manoActual}`).appendChild(crearElementoCarta(cartaAJugar));
         agregarAlLog(jugadorCPU.nombre, `juega ${cartaAJugar.nombre}`);
         if (cartaJugadaPorLider) { evaluarMano(cartaJugadaPorLider, cartaAJugar); }
         else { cartaJugadaPorLider = cartaAJugar; turnoDelHumano = true; dibujarMano(); actualizarInfo(`${jugadorCPU.nombre} jugó. Te toca responder.`); mostrarBotonesDeCantoInicial(); reanudarJuego(); }
     }
-    
     function elegirCartaCPU() {
         const manoCPU = jugadorCPU.mano;
         if (manoCPU.length === 0) return null;
-        manoCPU.sort((a,b) => a.rankingTruco - b.rankingTruco); // Ordenar de mejor a peor
+        manoCPU.sort((a,b) => a.rankingTruco - b.rankingTruco);
         if (!cartaJugadaPorLider) {
-            return manoCPU.pop(); // Juega la peor carta si es mano
+            return manoCPU.pop(); 
         } else {
             const cartasGanadoras = manoCPU.filter(c => compararCartas(c, cartaJugadaPorLider) === 'cpu');
             let cartaParaJugar;
             if (cartasGanadoras.length > 0) {
-                cartaParaJugar = cartasGanadoras[cartasGanadoras.length - 1]; // Juega la más baja que gana
+                cartaParaJugar = cartasGanadoras[cartasGanadoras.length - 1];
             } else {
-                cartaParaJugar = manoCPU[0]; // Si no puede ganar, tira la más alta
+                cartaParaJugar = manoCPU[0];
             }
             jugadorCPU.mano = jugadorCPU.mano.filter(c => c.id !== cartaParaJugar.id);
             return cartaParaJugar;
         }
     }
-
     function evaluarMano(c1, c2) {
         const jugadorManoActualEsHumano = (jugadorMano === 'humano');
         const cartaHumano = jugadorManoActualEsHumano ? c1 : c2;
@@ -202,42 +212,70 @@
         cartaJugadaPorLider = null;
         setTimeout(revisarFinDeRonda, 2000);
     }
-    
     function revisarFinDeRonda() {
-        const ganoYEmpardoHumano = manosGanadas.humano === 1 && resultadosManos.length >= 2 && resultadosManos[0] === 'humano' && resultadosManos[1] === 'empate';
-        const ganoYEmpardoCPU = manosGanadas.cpu === 1 && resultadosManos.length >= 2 && resultadosManos[0] === 'cpu' && resultadosManos[1] === 'empate';
+        const ganoYEmpardoHumano = manosGanadas.humano === 1 && resultadosManos.length === 2 && resultadosManos[0] === 'humano' && resultadosManos[1] === 'empate';
+        const ganoYEmpardoCPU = manosGanadas.cpu === 1 && resultadosManos.length === 2 && resultadosManos[0] === 'cpu' && resultadosManos[1] === 'empate';
         const ganadorPorDosManos = manosGanadas.humano === 2 || manosGanadas.cpu === 2;
         if (ganadorPorDosManos || ganoYEmpardoHumano || ganoYEmpardoCPU || manoActual === 3) {
             finalizarRonda();
         } else { manoActual++; reanudarJuego(); prepararSiguienteMano(); }
     }
-
-    function finalizarRonda(ganadorPorNoQuerer) { /* Código completo en la siguiente función para evitar duplicados */ }
-    function manejarCantoFlor() { /* Código completo en la siguiente función para evitar duplicados */ }
-    function manejarCantoTruco(quienCanta) { /* Código completo en la siguiente función para evitar duplicados */ }
-    function manejarCantoEnvido(quienCanta, nivel) { /* Código completo en la siguiente función para evitar duplicados */ }
-    function manejarRespuesta(quienResponde, respuesta) { /* Código completo en la siguiente función para evitar duplicados */ }
-    function decisionCPU(tipoCanto) { /* Código completo en la siguiente función para evitar duplicados */ }
-    function resolverEnvido() { /* Código completo en la siguiente función para evitar duplicados */ }
+    function finalizarRonda(ganadorPorNoQuerer) {
+        pausarJuego(); ocultarTodosLosControles(); let ganadorFinal, puntos;
+        if (ganadorPorNoQuerer) {
+            ganadorFinal = (ganadorPorNoQuerer === 'humano') ? 'humano' : 'cpu';
+            let puntosNoQuerido = { truco: estadoTruco === 0 ? 1 : estadoTruco, envido: [0, 1, 2, 3][estadoEnvido.nivel] };
+            puntos = puntosNoQuerido[cantoActual] || 1;
+        } else {
+            puntos = [1, 2, 3, 4][estadoTruco] || 1;
+            if (manosGanadas.humano === manosGanadas.cpu) {
+                ganadorFinal = resultadosManos[0] === 'empate' ? manoDeLaRonda : resultadosManos[0];
+            } else {
+                ganadorFinal = manosGanadas.humano > manosGanadas.cpu ? 'humano' : 'cpu';
+            }
+        }
+        marcador[ganadorFinal] += puntos;
+        actualizarMarcador();
+        const nombreGanador = (ganadorFinal === 'humano') ? jugadorHumano.nombre : jugadorCPU.nombre;
+        actualizarInfo(`🏆 ¡${nombreGanador} gana la ronda y se lleva ${puntos} ${puntos > 1 ? 'puntos' : 'punto'}! 🏆`);
+        setTimeout(() => {
+            if (marcador.humano >= PUNTOS_PARA_GANAR) {
+                actualizarInfo(`🎉 ¡FELICIDADES, ${jugadorHumano.nombre.toUpperCase()}, HAS GANADO LA PARTIDA! 🎉`);
+                botones.nuevoJuego.style.display = 'inline-block';
+            } else if (marcador.cpu >= PUNTOS_PARA_GANAR) {
+                actualizarInfo(`Gana ${jugadorCPU.nombre}. ¡Mejor suerte la próxima!`);
+                botones.nuevoJuego.style.display = 'inline-block';
+            } else {
+                iniciarPartida();
+            }
+        }, 3000);
+    }
+    function manejarCantoFlor() { if (!tieneFlor.humano) return; pausarJuego(); ocultarTodosLosControles(); tieneFlor.respondido = true; agregarAlLog(jugadorHumano.nombre, "¡FLOR!"); let mensaje = "¡FLOR! "; marcador.humano += 3; if (tieneFlor.cpu) { marcador.cpu += 3; mensaje += `${jugadorCPU.nombre} también tiene Flor. Son 3 puntos para cada uno.`; agregarAlLog(jugadorCPU.nombre, "¡FLOR!");} else { mensaje += `Son 3 puntos para ti.`; } actualizarInfo(mensaje); actualizarMarcador(); setTimeout(() => { reanudarJuego(); if(marcador.humano < PUNTOS_PARA_GANAR && marcador.cpu < PUNTOS_PARA_GANAR) { prepararSiguienteMano(); } else { finalizarRonda(); } }, 2000); }
+    function manejarCantoTruco(quienCanta) { if(quienCanta === 'humano') { pausarJuego(); ocultarTodosLosControles(true); cantoActual = 'truco'; estadoTruco = 1; agregarAlLog(jugadorHumano.nombre, "Truco"); actualizarInfo(`¡TRUCO! Esperando respuesta...`); setTimeout(() => decisionCPU('truco'), 1500); } }
+    function manejarCantoEnvido(quienCanta, nivel) { pausarJuego(); estadoEnvido.nivel = nivel; cantoActual = 'envido'; ocultarTodosLosControles(); const nombres = {1: 'Envido', 2: 'Real Envido', 3: 'Falta Envido'}; if (quienCanta === 'humano') { agregarAlLog(jugadorHumano.nombre, nombres[nivel]); actualizarInfo(`¡${nombres[nivel].toUpperCase()}! Esperando respuesta...`); setTimeout(() => decisionCPU('envido'), 1500); } else { agregarAlLog(jugadorCPU.nombre, nombres[nivel]); actualizarInfo(`${jugadorCPU.nombre} canta: ¡${nombres[nivel].toUpperCase()}!`); mostrarBotonesRespuesta('humano', 'envido'); } }
+    function manejarRespuesta(quienResponde, respuesta) { pausarJuego(); ocultarTodosLosControles(true); if (quienResponde === 'humano') { let canto = respuesta.replace(/-/g, ' '); canto = canto.charAt(0).toUpperCase() + canto.slice(1); agregarAlLog(jugadorHumano.nombre, canto); if (respuesta === 'quiero') { if (cantoActual === 'envido') { resolverEnvido(); } else { estadoTruco++; actualizarInfo(`¡QUIERO! La ronda vale ${[1,2,3,4][estadoTruco]} puntos.`); reanudarJuego(); prepararSiguienteMano(); } } else if (respuesta === 'no-quiero') { finalizarRonda('cpu'); } else { cantoActual = 'truco'; if(respuesta === 're-truco') estadoTruco = 2; if(respuesta === 'vale-cuatro') estadoTruco = 3; actualizarInfo(`¡${canto.toUpperCase()}! Esperando respuesta...`); setTimeout(() => decisionCPU('truco'), 1500); } } }
+    function decisionCPU(tipoCanto) { reanudarJuego(); if (tipoCanto === 'truco') { const mejorCartaCPU = jugadorCPU.mano.reduce((mejor, actual) => (actual.rankingTruco < mejor.rankingTruco) ? actual : mejor, {rankingTruco: 15}); if (mejorCartaCPU.rankingTruco <= 5 && estadoTruco < 3) { estadoTruco++; const canto = estadoTruco === 2 ? "Re-Truco" : "Vale Cuatro"; agregarAlLog(jugadorCPU.nombre, `Quiero ${canto}`); actualizarInfo(`${jugadorCPU.nombre}: ¡QUIERO ${canto.toUpperCase()}!`); mostrarBotonesRespuesta('humano', 'truco'); } else if (mejorCartaCPU.rankingTruco <= 10) { estadoTruco++; agregarAlLog(jugadorCPU.nombre, "Quiero"); actualizarInfo(`${jugadorCPU.nombre}: ¡QUIERO!`); prepararSiguienteMano(); } else { agregarAlLog(jugadorCPU.nombre, "No Quiero"); actualizarInfo(`${jugadorCPU.nombre}: No quiero.`); finalizarRonda('humano'); } } else { const misPuntos = calcularEnvido(jugadorCPU.mano); if (misPuntos >= 30 && estadoEnvido.nivel < 3) { estadoEnvido.nivel++; const nombres = {1: 'Envido', 2: 'Real Envido', 3: 'Falta Envido'}; agregarAlLog(jugadorCPU.nombre, nombres[estadoEnvido.nivel]); actualizarInfo(`${jugadorCPU.nombre} canta: ¡${nombres[estadoEnvido.nivel].toUpperCase()}!`); mostrarBotonesRespuesta('humano', 'envido'); } else if (misPuntos >= 27) { agregarAlLog(jugadorCPU.nombre, "Quiero"); actualizarInfo(`${jugadorCPU.nombre}: ¡QUIERO!`); resolverEnvido(); } else { agregarAlLog(jugadorCPU.nombre, "No Quiero"); actualizarInfo(`${jugadorCPU.nombre}: No quiero.`); estadoEnvido.respondido = true; marcador.humano += estadoEnvido.nivel || 1; actualizarMarcador(); setTimeout(() => { mostrarBotonesDeCantoInicial(); prepararSiguienteMano(); }, 2000); } } }
+    function resolverEnvido() { estadoEnvido.respondido = true; const puntosH = calcularEnvido(jugadorHumano.mano); const puntosC = calcularEnvido(jugadorCPU.mano); const puntosMap = {1: 2, 2: 3, 3: PUNTOS_PARA_GANAR - Math.max(marcador.humano, marcador.cpu)}; const puntosEnDisputa = puntosMap[estadoEnvido.nivel] || 2; let ganadorEnvido, mensaje; if (puntosH >= puntosC) { ganadorEnvido = 'humano'; } else { ganadorEnvido = 'cpu'; } marcador[ganadorEnvido] += puntosEnDisputa; mensaje = `${ganadorEnvido === 'humano' ? 'Ganas' : 'Gana'} el envido con ${Math.max(puntosH, puntosC)} tantos.`; actualizarInfo(mensaje); agregarAlLog(jugadorHumano.nombre, `${puntosH} tantos.`); agregarAlLog(jugadorCPU.nombre, `${puntosC} tantos.`); actualizarMarcador(); setTimeout(() => { mostrarBotonesDeCantoInicial(); prepararSiguienteMano(); }, 2000); }
     
     // --- Funciones de UI y Auxiliares ---
     function dibujarMano() { botones.mano.innerHTML = ''; jugadorHumano.mano.forEach(c => { const el = crearElementoCarta(c); el.disabled = !turnoDelHumano || juegoPausado; el.onclick = () => jugarCarta(c); botones.mano.appendChild(el); }); }
     function dibujarManoCPU(inicial = false) { if(inicial) { botones.manoCPU.innerHTML = ''; for(let i = 0; i < 3; i++) { botones.manoCPU.appendChild(crearElementoCarta(null, true)); } } else { if(botones.manoCPU.firstChild) botones.manoCPU.removeChild(botones.manoCPU.firstChild); } }
     function crearElementoCarta(carta, esLomo = false) { if (esLomo) { const lomo = document.createElement('div'); lomo.className = 'carta'; lomo.innerHTML = SVG_LOMO_CARTA; return lomo; } const color = (carta.palo === 'oros' || carta.palo === 'copas') ? '#B71C1C' : 'black'; const svgCarta = `<svg viewbox="0 0 85 125" style="background-color: white; border: 2px solid black; border-radius: 8px; width: 100%; height: 100%;"><text x="5" y="18" font-size="16" font-weight="bold" fill="${color}">${carta.numero}</text><g transform="scale(0.8) translate(5, 5)">${SVG_ICONS[carta.palo]}</g><text x="42.5" y="118" font-size="9" text-anchor="middle" fill="#424242">${carta.palo.charAt(0).toUpperCase() + carta.palo.slice(1)}</text><text x="80" y="110" font-size="16" font-weight="bold" fill="${color}" transform="rotate(180, 42.5, 62.5)">${carta.numero}</text></svg>`; const el = document.createElement('div'); el.className = 'carta'; el.innerHTML = svgCarta; return el; }
     function actualizarInfo(m) { botones.info.innerHTML = m; }
-    function actualizarMarcador() { botones.marcador.textContent = `${jugadorHumano.nombre}: ${marcador.humano} - ${jugadorCPU.nombre}: ${marcador.cpu}`; }
-    function ocultarTodosLosControles(dejarTruco = false) { for (const key in botones) { if (!['marcador', 'info', 'mano', 'nuevoJuego', 'log', 'manoCPU'].includes(key)) { if(dejarTruco && key === 'truco' && estadoTruco < 1) continue; botones[key].style.display = 'none'; } } }
+    function actualizarMarcador() { const layout = document.body.className; if (layout === 'layout-pc') { botones.marcadorDigital.textContent = `${jugadorHumano.nombre}: ${marcador.humano} - ${jugadorCPU.nombre}: ${marcador.cpu}`; } else { dibujarMarcadorGrafico(); } }
+    function dibujarMarcadorGrafico() {
+        document.getElementById('marcador-humano-nombre').textContent = jugadorHumano.nombre;
+        document.getElementById('marcador-cpu-nombre').textContent = jugadorCPU.nombre;
+        const porotosHumano = document.getElementById('marcador-humano-porotos');
+        const porotosCPU = document.getElementById('marcador-cpu-porotos');
+        porotosHumano.innerHTML = '';
+        porotosCPU.innerHTML = '';
+        for(let i = 1; i <= marcador.humano; i++) { porotosHumano.innerHTML += `<div class="poroto ${i % 5 === 0 ? 'quinto' : ''}"></div>`; if(i === 15) porotosHumano.innerHTML += '<div class="linea-buenas"></div>'; }
+        for(let i = 1; i <= marcador.cpu; i++) { porotosCPU.innerHTML += `<div class="poroto ${i % 5 === 0 ? 'quinto' : ''}"></div>`; if(i === 15) porotosCPU.innerHTML += '<div class="linea-buenas"></div>'; }
+    }
+    function ocultarTodosLosControles(dejarTruco = false) { for (const key in botones) { if (!['marcadorDigital', 'marcadorGrafico', 'info', 'mano', 'nuevoJuego', 'log', 'manoCPU'].includes(key)) { if(dejarTruco && key === 'truco' && estadoTruco < 1) continue; botones[key].style.display = 'none'; } } }
     function mostrarBotonesRespuesta(turno, tipoCanto) { pausarJuego(); if(turno === 'humano') { botones.quiero.style.display = 'inline-block'; botones.noQuiero.style.display = 'inline-block'; if (tipoCanto === 'truco') { if(estadoTruco === 1) botones.reTruco.style.display = 'inline-block'; if(estadoTruco === 2) botones.valeCuatro.style.display = 'inline-block'; } else { if(estadoEnvido.nivel < 2) botones.realEnvido.style.display = 'inline-block'; if(estadoEnvido.nivel < 3) botones.faltaEnvido.style.display = 'inline-block'; } } }
     function mostrarBotonesDeCantoInicial() { if(juegoPausado || !turnoDelHumano) return; if(manoActual === 1 && !estadoEnvido.respondido) { if(tieneFlor.humano) { botones.flor.style.display = 'inline-block'; } else if(!tieneFlor.cpu) { botones.envido.style.display = 'inline-block'; botones.realEnvido.style.display = 'inline-block'; botones.faltaEnvido.style.display = 'inline-block';} } if(estadoTruco < 1) { botones.truco.style.display = 'inline-block'; } }
-
-    // --- Lógica de Cantos y Respuestas (Re-pegadas para asegurar integridad) ---
-    finalizarRonda = function(ganadorPorNoQuerer) { pausarJuego(); ocultarTodosLosControles(); let ganadorFinal, puntos; if(ganadorPorNoQuerer) { ganadorFinal = (ganadorPorNoQuerer === 'humano') ? 'humano' : 'cpu'; let puntosNoQuerido = { truco: estadoTruco === 0 ? 1 : estadoTruco, envido: [0,1,2,3][estadoEnvido.nivel] }; puntos = puntosNoQuerido[cantoActual] || 1; } else { puntos = [1, 2, 3, 4][estadoTruco] || 1; if (manosGanadas.humano === manosGanadas.cpu) { ganadorFinal = resultadosManos[0] === 'empate' ? manoDeLaRonda : resultadosManos[0]; } else { ganadorFinal = manosGanadas.humano > manosGanadas.cpu ? 'humano' : 'cpu'; } } marcador[ganadorFinal] += puntos; actualizarMarcador(); const nombreGanador = (ganadorFinal === 'humano') ? jugadorHumano.nombre : jugadorCPU.nombre; actualizarInfo(`🏆 ¡${nombreGanador} gana la ronda y se lleva ${puntos} ${puntos > 1 ? 'puntos' : 'punto'}! 🏆`); setTimeout(() => { if (marcador.humano >= PUNTOS_PARA_GANAR) { actualizarInfo(`🎉 ¡FELICIDADES, ${jugadorHumano.nombre.toUpperCase()}, HAS GANADO LA PARTIDA! 🎉`); botones.nuevoJuego.style.display = 'inline-block'; } else if (marcador.cpu >= PUNTOS_PARA_GANAR) { actualizarInfo(`Gana ${jugadorCPU.nombre}. ¡Mejor suerte la próxima!`); botones.nuevoJuego.style.display = 'inline-block'; } else { iniciarPartida(); } }, 3000); };
-    manejarCantoFlor = function() { if (!tieneFlor.humano) return; pausarJuego(); ocultarTodosLosControles(); tieneFlor.respondido = true; agregarAlLog(jugadorHumano.nombre, "¡FLOR!"); let mensaje = "¡FLOR! "; marcador.humano += 3; if (tieneFlor.cpu) { marcador.cpu += 3; mensaje += `${jugadorCPU.nombre} también tiene Flor. Son 3 puntos para cada uno.`; agregarAlLog(jugadorCPU.nombre, "¡FLOR!");} else { mensaje += `Son 3 puntos para ti.`; } actualizarInfo(mensaje); actualizarMarcador(); setTimeout(() => { reanudarJuego(); if(marcador.humano < PUNTOS_PARA_GANAR && marcador.cpu < PUNTOS_PARA_GANAR) { prepararSiguienteMano(); } else { finalizarRonda(); } }, 2000); };
-    manejarCantoTruco = function(quienCanta) { if(quienCanta === 'humano') { pausarJuego(); ocultarTodosLosControles(true); cantoActual = 'truco'; estadoTruco = 1; agregarAlLog(jugadorHumano.nombre, "Truco"); actualizarInfo(`¡TRUCO! Esperando respuesta...`); setTimeout(() => decisionCPU('truco'), 1500); } };
-    manejarCantoEnvido = function(quienCanta, nivel) { pausarJuego(); estadoEnvido.nivel = nivel; cantoActual = 'envido'; ocultarTodosLosControles(); const nombres = {1: 'Envido', 2: 'Real Envido', 3: 'Falta Envido'}; if (quienCanta === 'humano') { agregarAlLog(jugadorHumano.nombre, nombres[nivel]); actualizarInfo(`¡${nombres[nivel].toUpperCase()}! Esperando respuesta...`); setTimeout(() => decisionCPU('envido'), 1500); } else { agregarAlLog(jugadorCPU.nombre, nombres[nivel]); actualizarInfo(`${jugadorCPU.nombre} canta: ¡${nombres[nivel].toUpperCase()}!`); mostrarBotonesRespuesta('humano', 'envido'); } };
-    manejarRespuesta = function(quienResponde, respuesta) { pausarJuego(); ocultarTodosLosControles(true); if (quienResponde === 'humano') { let canto = respuesta.replace(/-/g, ' '); canto = canto.charAt(0).toUpperCase() + canto.slice(1); agregarAlLog(jugadorHumano.nombre, canto); if (respuesta === 'quiero') { reanudarJuego(); if (cantoActual === 'envido') { resolverEnvido(); } else { estadoTruco++; actualizarInfo(`¡QUIERO! La ronda vale ${[1,2,3,4][estadoTruco]} puntos.`); prepararSiguienteMano(); } } else if (respuesta === 'no-quiero') { finalizarRonda('cpu'); } else { cantoActual = 'truco'; if(respuesta === 're-truco') estadoTruco = 2; if(respuesta === 'vale-cuatro') estadoTruco = 3; actualizarInfo(`¡${canto.toUpperCase()}! Esperando respuesta...`); setTimeout(() => decisionCPU('truco'), 1500); } } };
-    decisionCPU = function(tipoCanto) { reanudarJuego(); if (tipoCanto === 'truco') { const mejorCartaCPU = jugadorCPU.mano.reduce((mejor, actual) => (actual.rankingTruco < mejor.rankingTruco) ? actual : mejor, {rankingTruco: 15}); if (mejorCartaCPU.rankingTruco <= 5 && estadoTruco < 3) { estadoTruco++; const canto = estadoTruco === 2 ? "Re-Truco" : "Vale Cuatro"; agregarAlLog(jugadorCPU.nombre, `Quiero ${canto}`); actualizarInfo(`${jugadorCPU.nombre}: ¡QUIERO ${canto.toUpperCase()}!`); mostrarBotonesRespuesta('humano', 'truco'); } else if (mejorCartaCPU.rankingTruco <= 10) { estadoTruco++; agregarAlLog(jugadorCPU.nombre, "Quiero"); actualizarInfo(`${jugadorCPU.nombre}: ¡QUIERO!`); prepararSiguienteMano(); } else { agregarAlLog(jugadorCPU.nombre, "No Quiero"); actualizarInfo(`${jugadorCPU.nombre}: No quiero.`); finalizarRonda('humano'); } } else { const misPuntos = calcularEnvido(jugadorCPU.mano); if (misPuntos >= 30 && estadoEnvido.nivel < 3) { estadoEnvido.nivel++; const nombres = {1: 'Envido', 2: 'Real Envido', 3: 'Falta Envido'}; agregarAlLog(jugadorCPU.nombre, nombres[estadoEnvido.nivel]); actualizarInfo(`${jugadorCPU.nombre} canta: ¡${nombres[estadoEnvido.nivel].toUpperCase()}!`); mostrarBotonesRespuesta('humano', 'envido'); } else if (misPuntos >= 27) { agregarAlLog(jugadorCPU.nombre, "Quiero"); actualizarInfo(`${jugadorCPU.nombre}: ¡QUIERO!`); resolverEnvido(); } else { agregarAlLog(jugadorCPU.nombre, "No Quiero"); actualizarInfo(`${jugadorCPU.nombre}: No quiero.`); estadoEnvido.respondido = true; marcador.humano += estadoEnvido.nivel || 1; actualizarMarcador(); setTimeout(() => { reanudarJuego(); mostrarBotonesDeCantoInicial(); prepararSiguienteMano(); }, 2000); } } };
-    resolverEnvido = function() { estadoEnvido.respondido = true; const puntosH = calcularEnvido(jugadorHumano.mano); const puntosC = calcularEnvido(jugadorCPU.mano); const puntosMap = {1: 2, 2: 3, 3: PUNTOS_PARA_GANAR - Math.max(marcador.humano, marcador.cpu)}; const puntosEnDisputa = puntosMap[estadoEnvido.nivel] || 2; let ganadorEnvido, mensaje; if (puntosH >= puntosC) { ganadorEnvido = 'humano'; } else { ganadorEnvido = 'cpu'; } marcador[ganadorEnvido] += puntosEnDisputa; mensaje = `${ganadorEnvido === 'humano' ? 'Ganas' : 'Gana'} el envido con ${Math.max(puntosH, puntosC)} tantos.`; actualizarInfo(mensaje); agregarAlLog(jugadorHumano.nombre, `${puntosH} tantos.`); agregarAlLog(jugadorCPU.nombre, `${puntosC} tantos.`); actualizarMarcador(); setTimeout(() => { reanudarJuego(); mostrarBotonesDeCantoInicial(); prepararSiguienteMano(); }, 2000); };
   </script>
 </body>
 </html>
