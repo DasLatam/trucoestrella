@@ -311,7 +311,9 @@ function terminarRondaPorJuego(ganador) {
     ui.agregarLog(`${nombreGanador} gana la ronda.`, 'sistema');
     sumarPuntos(ganador, puntos, 'del truco');
 
-    setTimeout(() => iniciarNuevaRonda(!gameState.rondaActual.esManoPlayer), 3000);
+    // *** FIX: Alternar quién es mano en la siguiente ronda ***
+    gameState.esManoPlayerInicial = !gameState.rondaActual.esManoPlayer;
+    setTimeout(() => iniciarNuevaRonda(gameState.esManoPlayerInicial), 3000);
 }
 
 // --- Lógica de Cantos ---
@@ -361,7 +363,7 @@ function cpuRespondeCanto() {
     const canto = r.esperandoRespuesta;
     const respuesta = ia.decidirRespuesta(r.manoCpu, canto, r);
 
-    if (['RETRUCO', 'REAL_ENVIDO', 'CONTRAFLOR'].includes(respuesta.decision)) {
+    if (['RETRUCO', 'REAL_ENVIDO', 'CONTRAFLOR', 'FALTA_ENVIDO'].includes(respuesta.decision)) {
         procesarCanto('cpu', canto.tipo, respuesta.decision);
     } else {
         procesarRespuesta('cpu', respuesta.decision);
@@ -465,7 +467,8 @@ function resolverFlor() {
     const nombreGanador = ganador === 'player' ? gameState.config.nombreJugador : 'TrucoEstrella';
     ui.mostrarModal(`Resultado de la Flor`, `${nombreGanador} gana ${puntosGanados} puntos.<br>${gameState.config.nombreJugador}: ${puntosPlayer} pts. | TrucoEstrella: ${puntosCpu} pts.`);
     sumarPuntos(ganador, puntosGanados, motivo);
-    setTimeout(() => iniciarNuevaRonda(!r.esManoPlayer), 4000);
+    gameState.esManoPlayerInicial = !gameState.rondaActual.esManoPlayer;
+    setTimeout(() => iniciarNuevaRonda(gameState.esManoPlayerInicial), 4000);
 }
 
 
@@ -518,7 +521,8 @@ function terminarRondaPorAbandono(ganador, puntos, motivo) {
     r.rondaTerminada = true;
 
     sumarPuntos(ganador, puntos, motivo);
-    setTimeout(() => iniciarNuevaRonda(!r.esManoPlayer), 2000);
+    gameState.esManoPlayerInicial = !gameState.rondaActual.esManoPlayer;
+    setTimeout(() => iniciarNuevaRonda(gameState.esManoPlayerInicial), 2000);
 }
 
 function jugadorVaAlMazo() {
@@ -618,6 +622,7 @@ function init() {
         iniciarPartida();
     });
     document.getElementById('btn-menu-principal').addEventListener('click', () => {
+        // Simplemente recarga la página para volver al menú de configuración
         window.location.reload();
     });
 
