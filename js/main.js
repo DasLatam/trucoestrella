@@ -87,7 +87,13 @@ function comenzarPartida() {
     document.getElementById('btn-comenzar').style.display = 'none';
     iniciarPartida();
 }
+window.comenzarPartida = comenzarPartida; // Hace la función global para el DOM
+
 function iniciarRonda() {
+    // Asegura que los jugadores existen (solución definitiva)
+    if (!jugadorHumano) jugadorHumano = { nombre: "Vos", mano: [] };
+    if (!jugadorCPU) jugadorCPU = { nombre: "CPU", mano: [] };
+
     manoActual = 1; 
     manosGanadas = { humano: 0, cpu: 0 }; 
     resultadosManos = [];
