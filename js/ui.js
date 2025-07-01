@@ -2,26 +2,24 @@
 // ARCHIVO DE MANEJO DE LA INTERFAZ DE USUARIO (UI) (Módulo)
 // =================================================================================
 
-// Importamos las constantes que necesitamos desde config.js
 import { SVG_ICONS, SVG_LOMO_CARTA } from './config.js';
 
-// Exportamos cada función para que main.js pueda usarla
-export function agregarAlLog(autor, mensaje) {
+export function agregarAlLog(botones, autor, mensaje) {
     const p = document.createElement('p');
     p.innerHTML = `<strong>${autor}:</strong> ${mensaje}`;
     botones.log.appendChild(p);
-    botones.log.scrollTop = botones.log.scrollHeight; // Auto-scroll
+    botones.log.scrollTop = botones.log.scrollHeight;
 }
 
-export function actualizarInfo(mensaje) {
+export function actualizarInfo(botones, mensaje) {
     botones.info.innerHTML = mensaje;
 }
 
-export function actualizarMarcador() {
-    dibujarMarcadorGrafico();
+export function actualizarMarcador(botones, marcador, jugadorHumano, jugadorCPU) {
+    dibujarMarcadorGrafico(botones, marcador, jugadorHumano, jugadorCPU);
 }
 
-export function dibujarMarcadorGrafico() {
+function dibujarMarcadorGrafico(botones, marcador, jugadorHumano, jugadorCPU) {
     if(!jugadorHumano) return;
     document.getElementById('marcador-humano-nombre').textContent = jugadorHumano.nombre;
     document.getElementById('marcador-cpu-nombre').textContent = jugadorCPU.nombre;
@@ -67,17 +65,19 @@ export function crearElementoCarta(carta, esLomo = false) {
     return el;
 }
 
-export function dibujarMano() {
+export function dibujarMano(botones, jugadorHumano, turnoDelHumano, juegoPausado, jugarCartaCallback) {
     botones.mano.innerHTML = '';
     jugadorHumano.mano.forEach(carta => {
         const el = crearElementoCarta(carta);
-        el.addEventListener('click', () => jugarCarta(carta));
+        el.disabled = !turnoDelHumano || juegoPausado;
+        if (!el.disabled) {
+            el.addEventListener('click', () => jugarCartaCallback(carta));
+        }
         botones.mano.appendChild(el);
     });
-    actualizarEstadoBotonesMano();
 }
 
-export function dibujarManoCPU(inicial = false) {
+export function dibujarManoCPU(botones, inicial = false) {
     if (inicial) {
         botones.manoCPU.innerHTML = '';
         for (let i = 0; i < 3; i++) {
@@ -90,27 +90,21 @@ export function dibujarManoCPU(inicial = false) {
     }
 }
 
-export function actualizarEstadoBotonesMano(){
-    const cartasEnMano = botones.mano.querySelectorAll('.carta');
-    cartasEnMano.forEach(cartaEl => {
-        cartaEl.disabled = !turnoDelHumano || juegoPausado;
-    });
-}
-
-
-export function ocultarTodosLosControles(dejarTruco = false) {
+export function ocultarTodosLosControles(botones, estadoTruco) {
     for (const key in botones) {
         if (botones[key] && typeof botones[key].style !== 'undefined') {
             if (!['marcadorGrafico', 'info', 'mano', 'nuevoJuego', 'log', 'manoCPU'].includes(key)) {
-                if(dejarTruco && key === 'truco' && estadoTruco < 1) continue;
-                botones[key].style.display = 'none';
+                if(key === 'truco' && estadoTruco >= 1) {
+                    // No ocultar el truco si ya se cantó, para que no reaparezca
+                } else {
+                    botones[key].style.display = 'none';
+                }
             }
         }
     }
 }
 
-export function mostrarBotonesRespuesta(turno, tipoCanto) {
-    pausarJuego();
+export function mostrarBotonesRespuesta(botones, turno, tipoCanto, estadoTruco, estadoEnvido) {
     if (turno === 'humano') {
         botones.quiero.style.display = 'block';
         botones.noQuiero.style.display = 'block';
@@ -124,9 +118,9 @@ export function mostrarBotonesRespuesta(turno, tipoCanto) {
     }
 }
 
-export function mostrarBotonesDeCantoInicial() {
+export function mostrarBotonesDeCantoInicial(botones, juegoPausado, turnoDelHumano, manoActual, estadoEnvido, tieneFlor, estadoTruco) {
     if (juegoPausado || !turnoDelHumano) {
-        ocultarTodosLosControles();
+        ocultarTodosLosControles(botones, estadoTruco);
         return;
     }
 

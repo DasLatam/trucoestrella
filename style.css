@@ -10,6 +10,8 @@ h1, h2, h3 { color: #b2dfdb; text-shadow: 1px 1px 2px black; margin: 5px 0; }
 .contenedor-principal { display: flex; justify-content: center; align-items: flex-end; gap: 20px; }
 #columna-controles { width: 120px; display: flex; flex-direction: column; }
 #columna-juego { display: flex; flex-direction: column; align-items: center; }
+#columna-marcador { }
+#columna-chat { }
 #controles-juego { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
 #controles-juego button { width: 100%; padding: 8px 10px; font-size: 0.9em; cursor: pointer; border-radius: 5px; border: none; background-color: #ffab00; color: black; font-weight: bold; display: none; }
 #marcador-grafico { display: flex; gap: 10px; }
@@ -33,4 +35,5 @@ h1, h2, h3 { color: #b2dfdb; text-shadow: 1px 1px 2px black; margin: 5px 0; }
 #info-juego { font-size: 1.1em; min-height: 30px; margin: 10px 0; color: #ffcc80; font-weight: bold; }
 .carta-perdedora svg { opacity: 0.6; }
 .carta-ganadora svg { border: 2px solid #ffeb3b; box-shadow: 0 0 10px #ffeb3b; }
-#controles-finales button { display: none; margin-top: 15px; }
+#controles-finales { text-align: center; margin-top: 20px; }
+#controles-finales button { display: none; }
