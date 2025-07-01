@@ -575,6 +575,7 @@ function actualizarEstadoBotones() {
 
     const estado = {
         esTurnoPlayer: esTurnoPlayer,
+        jugadaEnProgreso: r.jugadaEnProgreso,
         esperandoRespuesta: esperandoRespuestaPlayer,
         
         // *** FIX: Lógica para permitir Envido después de Truco ***
@@ -612,36 +613,40 @@ function barajarMazo(mazo) {
 }
 
 // --- Inicialización y Event Listeners ---
-function init() {
-    document.getElementById('start-game-btn').addEventListener('click', iniciarPartida);
-    document.getElementById('modal-close-btn').addEventListener('click', ui.ocultarModal);
-    
-    // *** FIX: Botones de Revancha y Menú ***
-    document.getElementById('btn-revancha').addEventListener('click', () => {
-        ui.ocultarModal();
-        iniciarPartida();
-    });
-    document.getElementById('btn-menu-principal').addEventListener('click', () => {
-        // Simplemente recarga la página para volver al menú de configuración
-        window.location.reload();
-    });
+// *** FIX: Envolver en DOMContentLoaded para evitar errores de elementos nulos ***
+document.addEventListener('DOMContentLoaded', () => {
+    function init() {
+        document.getElementById('start-game-btn').addEventListener('click', iniciarPartida);
+        document.getElementById('modal-close-btn').addEventListener('click', ui.ocultarModal);
+        
+        document.getElementById('btn-revancha').addEventListener('click', () => {
+            ui.ocultarModal();
+            iniciarPartida();
+        });
+        document.getElementById('btn-menu-principal').addEventListener('click', () => {
+            window.location.reload();
+        });
+        document.getElementById('btn-clear-cache').addEventListener('click', () => {
+            window.location.reload(true);
+        });
 
-    document.getElementById('btn-truco').addEventListener('click', () => procesarCanto('player', 'TRUCO', 'TRUCO'));
-    document.getElementById('btn-retruco').addEventListener('click', () => procesarCanto('player', 'TRUCO', 'RETRUCO'));
-    document.getElementById('btn-vale-cuatro').addEventListener('click', () => procesarCanto('player', 'TRUCO', 'VALE_CUATRO'));
-    
-    document.getElementById('btn-envido').addEventListener('click', () => procesarCanto('player', 'ENVIDO', 'ENVIDO'));
-    document.getElementById('btn-real-envido').addEventListener('click', () => procesarCanto('player', 'ENVIDO', 'REAL_ENVIDO'));
-    document.getElementById('btn-falta-envido').addEventListener('click', () => procesarCanto('player', 'ENVIDO', 'FALTA_ENVIDO'));
-    
-    document.getElementById('btn-flor').addEventListener('click', () => procesarCanto('player', 'FLOR', 'FLOR'));
-    document.getElementById('btn-contraflor').addEventListener('click', () => procesarCanto('player', 'FLOR', 'CONTRAFLOR'));
-    document.getElementById('btn-contraflor-resto').addEventListener('click', () => procesarCanto('player', 'FLOR', 'CONTRAFLOR_AL_RESTO'));
-    
-    document.getElementById('btn-quiero').addEventListener('click', () => procesarRespuesta('player', 'QUIERO'));
-    document.getElementById('btn-no-quiero').addEventListener('click', () => procesarRespuesta('player', 'NO_QUIERO'));
-    
-    document.getElementById('btn-ir-al-mazo').addEventListener('click', jugadorVaAlMazo);
-}
+        document.getElementById('btn-truco').addEventListener('click', () => procesarCanto('player', 'TRUCO', 'TRUCO'));
+        document.getElementById('btn-retruco').addEventListener('click', () => procesarCanto('player', 'TRUCO', 'RETRUCO'));
+        document.getElementById('btn-vale-cuatro').addEventListener('click', () => procesarCanto('player', 'TRUCO', 'VALE_CUATRO'));
+        
+        document.getElementById('btn-envido').addEventListener('click', () => procesarCanto('player', 'ENVIDO', 'ENVIDO'));
+        document.getElementById('btn-real-envido').addEventListener('click', () => procesarCanto('player', 'ENVIDO', 'REAL_ENVIDO'));
+        document.getElementById('btn-falta-envido').addEventListener('click', () => procesarCanto('player', 'ENVIDO', 'FALTA_ENVIDO'));
+        
+        document.getElementById('btn-flor').addEventListener('click', () => procesarCanto('player', 'FLOR', 'FLOR'));
+        document.getElementById('btn-contraflor').addEventListener('click', () => procesarCanto('player', 'FLOR', 'CONTRAFLOR'));
+        document.getElementById('btn-contraflor-resto').addEventListener('click', () => procesarCanto('player', 'FLOR', 'CONTRAFLOR_AL_RESTO'));
+        
+        document.getElementById('btn-quiero').addEventListener('click', () => procesarRespuesta('player', 'QUIERO'));
+        document.getElementById('btn-no-quiero').addEventListener('click', () => procesarRespuesta('player', 'NO_QUIERO'));
+        
+        document.getElementById('btn-ir-al-mazo').addEventListener('click', jugadorVaAlMazo);
+    }
 
-init();
+    init();
+});

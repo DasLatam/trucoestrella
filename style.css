@@ -5,7 +5,7 @@
     --color-carta-dorso: #b42a2a;
     --color-borde: #222;
     --color-primary: #daa520;
-    --color-secondary: #c0c0c0;
+    --color-secondary: #8a3c3c;
     --font-family: 'Roboto', sans-serif;
 }
 
@@ -20,7 +20,7 @@ body {
     margin: 0;
     overflow: hidden;
     height: 100vh;
-    user-select: none;
+    /* user-select: none; quitado para permitir selección */
     font-size: 14px; /* Reducir tamaño de fuente base para escalar todo */
 }
 
@@ -28,6 +28,7 @@ body {
     display: none;
     width: 100%;
     height: 100%;
+    position: relative;
 }
 
 .pantalla.activa {
@@ -89,6 +90,7 @@ body {
     border-radius: 8px;
     font-weight: bold;
     transition: all 0.2s ease;
+    margin-top: 5px;
 }
 .btn-primary {
     background-color: var(--color-primary);
@@ -97,6 +99,13 @@ body {
 .btn-primary:hover {
     background-color: #f0c040;
     box-shadow: 0 0 15px var(--color-primary);
+}
+.btn-secondary {
+    background-color: var(--color-secondary);
+    color: white;
+}
+.btn-secondary:hover {
+    background-color: #a15f5f;
 }
 
 
@@ -108,6 +117,19 @@ body {
     height: 100vh;
     gap: 10px;
     padding: 10px;
+}
+
+.btn-menu {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    z-index: 10;
+    background-color: rgba(0,0,0,0.5);
+    border: 1px solid var(--color-primary);
+    color: var(--color-primary);
+}
+.btn-menu:hover {
+    background-color: rgba(0,0,0,0.7);
 }
 
 .columna {
@@ -244,7 +266,6 @@ body {
     align-self: center;
 }
 
-
 /* Columna 3: Marcador */
 #col-marcador { align-items: center; }
 .marcador-container { width: 100%; }
@@ -305,6 +326,7 @@ body {
     padding: 10px;
     border-radius: 5px;
     min-height: 0;
+    user-select: text; /* Permitir seleccionar texto */
 }
 #historial-log p {
     margin: 0 0 6px 0;
@@ -344,4 +366,7 @@ body {
 #modal-body {
     margin: 20px 0;
     font-size: 1.2em;
+}
+#modal-close-btn, #btn-revancha {
+    margin: 5px;
 }

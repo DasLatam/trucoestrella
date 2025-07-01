@@ -31,11 +31,13 @@
                 <label class="checkbox-label"><input type="checkbox" id="con-flor"> Jugar con Flor</label>
             </div>
             <button id="start-game-btn" class="btn btn-primary">Comenzar Partida</button>
+            <button id="btn-clear-cache" class="btn btn-secondary" title="Fuerza la recarga de la página sin usar la memoria caché del navegador.">Limpiar Cache</button>
         </div>
     </div>
 
     <!-- Pantalla de Juego Principal -->
     <div id="game-screen" class="pantalla">
+        <button id="btn-menu-principal" class="btn btn-menu">Volver al Menú</button>
         <!-- Columna 1: Botonera de Cantos -->
         <div id="col-botones" class="columna">
             <div class="botonera">
@@ -57,7 +59,7 @@
         <!-- Columna 2: Área de Juego -->
         <div id="col-juego" class="columna">
             <div id="cpu-info" class="player-info">
-                <span id="cpu-name-display">CPU</span>
+                <span id="cpu-name-display">TrucoEstrella</span>
                 <div id="cpu-hand" class="mano">
                     <!-- Cartas de la CPU (boca abajo) -->
                 </div>
@@ -87,7 +89,7 @@
             <div class="marcador-container">
                 <h3>Puntos</h3>
                 <div class="score-section">
-                    <h4 id="cpu-name-marcador">CPU</h4>
+                    <h4 id="cpu-name-marcador">TrucoEstrella</h4>
                     <div id="marcador-cpu" class="marcador"></div>
                 </div>
                 <hr>
@@ -113,6 +115,7 @@
             <h2 id="modal-title">Resultado del Envido</h2>
             <div id="modal-body"></div>
             <button id="modal-close-btn" class="btn btn-primary">Cerrar</button>
+            <button id="btn-revancha" class="btn btn-secondary" style="display: none;">Revancha</button>
         </div>
     </div>
 

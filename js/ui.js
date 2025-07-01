@@ -10,7 +10,7 @@ const btnRevancha = document.getElementById('btn-revancha');
 // --- Funciones de renderizado ---
 
 /**
- * Crea y dibuja una carta en el DOM con gráficos SVG.
+ * Crea y dibuja una carta en el DOM.
  * @param {object} carta - El objeto carta a dibujar.
  * @param {HTMLElement} elementoPadre - El elemento donde se añadirá la carta.
  * @param {boolean} esOculta - Si la carta debe mostrarse boca abajo.
@@ -23,11 +23,10 @@ export function dibujarCarta(carta, elementoPadre, esOculta, esJugable, alClick)
     if (esOculta) {
         cartaDiv.classList.add('oculta');
     } else {
-        // *** FIX: Usar SVG para dibujar los palos según el número ***
+        // *** FIX: Revertir al estilo de cartas con texto/emojis ***
         cartaDiv.innerHTML = `
-            <div class="valor-carta-esquina top-left">${carta.valor}</div>
-            <div class="carta-svg-container">${crearSvgCarta(carta)}</div>
-            <div class="valor-carta-esquina bottom-right">${carta.valor}</div>
+            <span class="valor-carta">${carta.valor}</span>
+            <span class="palo-carta">${obtenerSimboloPalo(carta.palo)}</span>
         `;
     }
     if (esJugable) {
@@ -165,6 +164,8 @@ export function togglePantallas() {
 export function actualizarBotones(estadoBotones) {
     document.querySelectorAll('.botonera .btn').forEach(btn => btn.disabled = true);
     
+    if (estadoBotones.jugadaEnProgreso) return; // Si hay una jugada en curso, no habilitar nada
+
     if (estadoBotones.esperandoRespuesta) {
         document.getElementById('btn-quiero').disabled = false;
         document.getElementById('btn-no-quiero').disabled = false;
@@ -228,57 +229,13 @@ export function resaltarManoGanadora(ganador, manoNum) {
     }
 }
 
-// --- Helpers de SVG ---
-
-/**
- * Genera el contenido SVG para una carta específica.
- * @param {object} carta - La carta para la que se generará el SVG.
- * @returns {string} - El string HTML del SVG.
- */
-function crearSvgCarta(carta) {
-    const { valor, palo } = carta;
-    let contenidoCentral = '';
-
-    const paloInfo = {
-        oro: { class: 'palo-oro', path: '<path d="M25 50 C 10 55, 5 30, 15 20 S 20 0, 25 0 S 30 0, 35 20 S 40 55, 25 50 Z M 20 15 C 20 12, 30 12, 30 15 S 20 18, 20 15 Z" />' },
-        copa: { class: 'palo-copa', path: '<path d="M10 0 H 40 V 15 C 40 25, 32.5 30, 25 30 S 10 25, 10 15 Z M 20 32 H 30 V 45 H 38 V 50 H 12 V 45 H 20 Z" />' },
-        espada: { class: 'palo-espada', path: '<path d="M25 0 L 35 20 C 40 30, 35 40, 25 50 S 10 30, 15 20 Z M 20 45 H 30 V 50 H 20 Z" />' },
-        basto: { class: 'palo-basto', path: '<path d="M25 0 C 30 5, 32 15, 30 25 S 28 40, 25 50 S 22 40, 20 25 S 20 5, 25 0 Z M 22 10 L 18 15 M 32 20 L 28 25 M 18 35 L 12 40" />' }
-    };
-
-    const figuraInfo = { 10: 'S', 11: 'C', 12: 'R' };
-    const simbolo = `<g transform="scale(0.8)">${paloInfo[palo].path}</g>`;
-
-    // Posiciones predefinidas para los símbolos en la carta
-    const layouts = {
-        1: [[50, 50]],
-        2: [[50, 25], [50, 75]],
-        3: [[50, 20], [50, 50], [50, 80]],
-        4: [[30, 25], [70, 25], [30, 75], [70, 75]],
-        5: [[30, 25], [70, 25], [50, 50], [30, 75], [70, 75]],
-        6: [[30, 25], [70, 25], [30, 50], [70, 50], [30, 75], [70, 75]],
-        7: [[30, 20], [70, 20], [50, 35], [30, 50], [70, 50], [30, 80], [70, 80]]
-    };
-
-    if (valor >= 10) {
-        contenidoCentral = `
-            <text x="50" y="65" text-anchor="middle" class="figura-letra">${figuraInfo[valor]}</text>
-            <g transform="translate(37.5, 70) scale(0.25)">${paloInfo[palo].path}</g>
-        `;
-    } else {
-        const positions = layouts[valor] || [];
-        contenidoCentral = positions.map(([x, y], i) => {
-            // Invertir los símbolos de la mitad inferior
-            const transform = y > 50 ? `translate(${x}, ${y}) scale(1, -1)` : `translate(${x}, ${y})`;
-            return `<g transform="${transform} translate(-25, -25)">${simbolo}</g>`;
-        }).join('');
+// --- Helpers ---
+function obtenerSimboloPalo(palo) {
+    switch (palo) {
+        case 'espada': return '⚔️';
+        case 'basto': return '🌲';
+        case 'oro': return '💰';
+        case 'copa': return '🍷';
+        default: return '';
     }
-
-    return `
-        <svg class="carta-svg-container" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-            <g class="${paloInfo[palo].class}">
-                ${contenidoCentral}
-            </g>
-        </svg>
-    `;
 }
