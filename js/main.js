@@ -396,27 +396,25 @@ function resolverEnvido() {
 // --- Ligar eventos a los botones ---
 document.addEventListener('DOMContentLoaded', () => {
     // Inicializar el objeto 'botones'
-    Object.assign(window, {
-        botones: {
-            log: document.getElementById('log-juego'),
-            marcadorGrafico: document.getElementById('marcador-grafico'),
-            info: document.getElementById('info-juego'),
-            mano: document.getElementById('mano-humano'),
-            manoCPU: document.getElementById('mano-cpu'),
-            nuevoJuego: document.getElementById('btn-nuevo-juego'),
-            flor: document.getElementById('btn-flor'),
-            contraflor: document.getElementById('btn-contraflor'),
-            contraflorResto: document.getElementById('btn-contraflor-resto'),
-            envido: document.getElementById('btn-envido'),
-            realEnvido: document.getElementById('btn-real-envido'),
-            faltaEnvido: document.getElementById('btn-falta-envido'),
-            truco: document.getElementById('btn-truco'),
-            quiero: document.getElementById('btn-quiero'),
-            noQuiero: document.getElementById('btn-no-quiero'),
-            reTruco: document.getElementById('btn-re-truco'),
-            valeCuatro: document.getElementById('btn-vale-cuatro')
-        }
-    });
+    botones = {
+        log: document.getElementById('log-juego'),
+        marcadorGrafico: document.getElementById('marcador-grafico'),
+        info: document.getElementById('info-juego'),
+        mano: document.getElementById('mano-humano'),
+        manoCPU: document.getElementById('mano-cpu'),
+        nuevoJuego: document.getElementById('btn-nuevo-juego'),
+        flor: document.getElementById('btn-flor'),
+        contraflor: document.getElementById('btn-contraflor'),
+        contraflorResto: document.getElementById('btn-contraflor-resto'),
+        envido: document.getElementById('btn-envido'),
+        realEnvido: document.getElementById('btn-real-envido'),
+        faltaEnvido: document.getElementById('btn-falta-envido'),
+        truco: document.getElementById('btn-truco'),
+        quiero: document.getElementById('btn-quiero'),
+        noQuiero: document.getElementById('btn-no-quiero'),
+        reTruco: document.getElementById('btn-re-truco'),
+        valeCuatro: document.getElementById('btn-vale-cuatro')
+    };
 
     // Asignar los eventos
     document.getElementById('btn-comenzar').addEventListener('click', comenzarPartida);
