@@ -148,7 +148,8 @@ function turnoCPU() {
     r.jugadaEnProgreso = true;
 
     // 1. IA decide si canta algo
-    const canto = ia.decidirCanto(r.manoCpu, r);
+    // *** FIX: Pasar config a decidirCanto para evitar ReferenceError ***
+    const canto = ia.decidirCanto(r.manoCpu, r, gameState.config);
     if (canto) {
         procesarCanto('cpu', canto.tipo, canto.nivel);
         return;

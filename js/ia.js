@@ -78,13 +78,18 @@ export function decidirJugada(manoCpu, rondaState) {
 
 /**
  * Decide si la IA debe cantar algo al inicio de su turno.
+ * @param {Array} manoCpu - La mano de la IA.
+ * @param {object} rondaState - El estado actual de la ronda.
+ * @param {object} config - La configuración del juego (ej. conFlor).
+ * @returns {object|null} El canto a realizar o null.
  */
-export function decidirCanto(manoCpu, rondaState) {
+export function decidirCanto(manoCpu, rondaState, config) {
     const puntosEnvido = calcularPuntosEnvido(manoCpu);
     const puntosFlor = calcularFlor(manoCpu);
 
     // 1. Decisión de Flor (prioridad máxima)
-    if (rondaState.etapa === 'inicio' && gameState.config.conFlor && puntosFlor > 0) {
+    // *** FIX: Corregido el ReferenceError a gameState ***
+    if (rondaState.etapa === 'inicio' && config.conFlor && puntosFlor > 0) {
         return { tipo: 'FLOR', nivel: 'FLOR' };
     }
 
