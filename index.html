@@ -50,7 +50,7 @@
         </button>
         <hr class="my-6 border-gray-700">
         <div class="flex flex-col md:flex-row md:justify-between md:items-center text-sm text-gray-400 mt-4 gap-2">
-            <span>Versión: <b>beta 2.0 gemini 2.5 PRO con deep research</b></span>
+            <span>Versión: <b>Beta 3.0 Copilot</b></span>
             <span>PC / Celular (próximamente)</span>
         </div>
     </div>
@@ -58,42 +58,34 @@
     <!-- Pantalla de juego -->
     <div id="game-screen" class="hidden w-full h-screen flex flex-col lg:flex-row bg-gray-900 text-white p-4 gap-4">
         <!-- Columna 1: Botonera de cantos -->
-        <div class="flex flex-col gap-2 w-32">
-            <button class="game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-2 rounded" data-canto="Truco">Truco</button>
-            <button class="game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-2 rounded" data-canto="ReTruco">ReTruco</button>
-            <button class="game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-2 rounded" data-canto="Vale Cuatro">Vale Cuatro</button>
-            <button class="game-canto-btn bg-blue-700 hover:bg-blue-800 py-2 rounded" data-canto="Envido">Envido</button>
-            <button class="game-canto-btn bg-blue-700 hover:bg-blue-800 py-2 rounded" data-canto="Real Envido">Real Envido</button>
-            <button class="game-canto-btn bg-blue-700 hover:bg-blue-800 py-2 rounded" data-canto="Falta Envido">Falta Envido</button>
-            <button class="game-canto-btn bg-green-700 hover:bg-green-800 py-2 rounded" data-canto="Flor">Flor</button>
-            <button class="game-canto-btn bg-green-700 hover:bg-green-800 py-2 rounded" data-canto="Contra Flor">Contra Flor</button>
-            <button class="game-canto-btn bg-green-700 hover:bg-green-800 py-2 rounded" data-canto="Contra Flor al Resto">Contra Flor al Resto</button>
-            <button id="btn-mazo" class="bg-red-700 hover:bg-red-800 py-2 rounded mt-4">Ir al Mazo</button>
-            <button id="backToMenuBtn" class="bg-gray-700 hover:bg-gray-800 py-2 rounded mt-4">Volver al Menú</button>
+        <div class="flex flex-col gap-2 w-40" id="cantos-col">
+            <!-- Botones de canto generados dinámicamente -->
         </div>
-        <!-- Columna 2: Área de juego principal -->
-        <div class="flex-1 flex flex-col items-center justify-between">
-            <div id="ia-hand" class="flex justify-center gap-2 mb-4"></div>
-            <div id="mesa" class="flex justify-center items-center gap-8 mb-4"></div>
-            <div id="player-hand" class="flex justify-center gap-2 mt-4"></div>
+        <!-- Columna 2: Área de juego principal (mesa) -->
+        <div class="flex-1 flex flex-col items-center justify-center">
+            <div id="mesa-paño" class="bg-green-900 rounded-2xl shadow-lg flex flex-col items-center justify-center p-4" style="min-width:420px;min-height:340px;">
+                <div id="mesa-ia" class="flex justify-center gap-4 mb-6"></div>
+                <div id="mesa-rondas" class="flex flex-col gap-2"></div>
+                <div id="mesa-player" class="flex justify-center gap-4 mt-6"></div>
+            </div>
         </div>
         <!-- Columna 3: Marcador de puntos -->
-        <div class="flex flex-col w-48 items-center justify-between">
+        <div class="flex flex-col w-56 items-center justify-between">
             <div id="canto-actual" class="h-12 flex items-center justify-center text-yellow-400 text-xl font-bold"></div>
-            <div id="marcador" class="flex flex-col items-center justify-center"></div>
+            <div id="marcador" class="flex flex-col items-center justify-center text-3xl font-bold"></div>
             <div id="canto-ia" class="h-12 flex items-center justify-center text-blue-400 text-xl font-bold"></div>
         </div>
         <!-- Columna 4: Historial -->
-        <div class="flex flex-col w-80 bg-gray-800 rounded-lg shadow-lg p-2">
+        <div class="flex flex-col w-96 bg-gray-800 rounded-lg shadow-lg p-2">
             <div class="font-bold text-center mb-2">Historial</div>
-            <div id="historial" class="flex-1 overflow-y-auto h-64 text-sm select-text"></div>
+            <div id="historial" class="flex-1 overflow-y-auto h-80 text-base select-text"></div>
         </div>
     </div>
 
     <!-- Popup de resultado de Envido/Flor -->
     <div id="popup-envido" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
         <div class="bg-white text-black rounded-lg shadow-xl p-8 text-center">
-            <h2 class="text-2xl font-bold mb-4" id="popup-envido-title">Resultado Envido</h2>
+            <h2 class="text-2xl font-bold mb-4" id="popup-envido-title">Resultado</h2>
             <div class="mb-2" id="popup-envido-content"></div>
         </div>
     </div>

@@ -11,7 +11,6 @@ export const GAME_CONSTANTS = {
     },
     CARTAS: [1,2,3,4,5,6,7,10,11,12],
     CARTA_VALOR_TRUCO: [
-        // [numero, palo, valor]
         [1, 'espada', 14],
         [1, 'basto', 13],
         [7, 'espada', 12],
@@ -29,5 +28,5 @@ export const GAME_CONSTANTS = {
         [5, '', 2],
         [4, '', 1]
     ],
-    VERSION: 'beta 2.0 gemini 2.5 PRO con deep research'
+    VERSION: 'Beta 3.0 Copilot'
 };

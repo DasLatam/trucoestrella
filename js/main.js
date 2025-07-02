@@ -1,6 +1,6 @@
 import { GAME_CONSTANTS } from './config.js';
-import { renderPlayerHand, renderIAHand, renderMesa, renderMarcador, addMessageToHistory, clearPlayedCards } from './ui.js';
-import { iaElegirCarta, iaResponderCanto } from './ia.js';
+import { renderPlayerHand, renderIAHand, renderMesaRondas, renderMarcador, addMessageToHistory } from './ui.js';
+import { iaElegirCarta, iaResponderCanto, iaCantarCanto } from './ia.js';
 
 // --- Estado global del juego ---
 export let gameState = {
@@ -22,7 +22,8 @@ export let gameState = {
     trucoCantado: false,
     cantoActual: null,
     iaCantoActual: null,
-    partidaTerminada: false
+    partidaTerminada: false,
+    rondaActual: 1
 };
 
 // --- Utilidades ---
@@ -50,7 +51,6 @@ function getValorTruco(numero, palo) {
     for (let [n, p, v] of GAME_CONSTANTS.CARTA_VALOR_TRUCO) {
         if (n === numero && (p === '' || p === palo)) return v;
     }
-    // Si no está en la tabla, valor bajo
     return 0;
 }
 
@@ -77,6 +77,10 @@ export function calcularEnvido(mano) {
         }
     }
     return max;
+}
+
+function tieneFlor(mano) {
+    return mano[0].palo === mano[1].palo && mano[1].palo === mano[2].palo;
 }
 
 // --- Pantalla de inicio ---
@@ -112,10 +116,11 @@ function initializeGame() {
     gameState.cantoActual = null;
     gameState.iaCantoActual = null;
     gameState.partidaTerminada = false;
+    gameState.rondaActual = 1;
 
-    renderPlayerHand(gameState.playerHand, 'player-hand', true, onPlayerCardClick);
-    renderIAHand(GAME_CONSTANTS.CARDS_PER_PLAYER, 'ia-hand');
-    clearPlayedCards();
+    renderPlayerHand(gameState.playerHand, 'mesa-player', true, onPlayerCardClick);
+    renderIAHand(gameState.iaHand, 'mesa-ia');
+    renderMesaRondas(gameState.playedCards, gameState.playerName);
     renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
     addMessageToHistory('Cartas repartidas.', 'system');
     addMessageToHistory(`Ronda 1. Mano: ${gameState.manoPlayerId === 'player' ? gameState.playerName : 'TrucoEstrella'}.`, 'system');
@@ -133,9 +138,9 @@ function onPlayerCardClick(idx) {
     let carta = gameState.playerHand[idx];
     if (carta.jugada) return;
     carta.jugada = true;
-    gameState.playedCards.push({ jugador: gameState.playerName, carta });
-    renderPlayerHand(gameState.playerHand, 'player-hand', true, onPlayerCardClick);
-    renderMesa(gameState.playedCards);
+    gameState.playedCards.push({ jugador: gameState.playerName, carta, ronda: gameState.rondaActual });
+    renderPlayerHand(gameState.playerHand, 'mesa-player', true, onPlayerCardClick);
+    renderMesaRondas(gameState.playedCards, gameState.playerName);
     addMessageToHistory(`${gameState.playerName} jugó ${carta.numero} ${carta.palo}`, 'player');
     gameState.turno = 'ia';
     checkFinRonda();
@@ -144,30 +149,41 @@ function onPlayerCardClick(idx) {
 
 function iaTurno() {
     if (gameState.turno !== 'ia' || gameState.partidaTerminada) return;
+    // IA puede cantar envido/flor/truco si corresponde
+    if (!gameState.envidoCantado && !gameState.florCantada && gameState.currentRound === 1) {
+        let canto = iaCantarCanto(gameState);
+        if (canto) {
+            handleCanto(canto, true);
+            return;
+        }
+    }
     let idx = iaElegirCarta(gameState.iaHand, gameState.playedCards);
     let carta = gameState.iaHand[idx];
     carta.jugada = true;
-    gameState.playedCards.push({ jugador: 'TrucoEstrella', carta });
-    renderIAHand(GAME_CONSTANTS.CARDS_PER_PLAYER, 'ia-hand');
-    renderMesa(gameState.playedCards);
+    gameState.playedCards.push({ jugador: 'TrucoEstrella', carta, ronda: gameState.rondaActual });
+    renderIAHand(gameState.iaHand, 'mesa-ia');
+    renderMesaRondas(gameState.playedCards, gameState.playerName);
     addMessageToHistory(`TrucoEstrella jugó ${carta.numero} ${carta.palo}`, 'ia');
     gameState.turno = 'player';
     checkFinRonda();
 }
 
 function checkFinRonda() {
-    let jugadasRonda = gameState.playedCards.length % 2 === 0;
+    let jugadasRonda = gameState.playedCards.filter(pc => pc.ronda === gameState.rondaActual).length === 2;
     if (jugadasRonda) {
         // Determinar ganador de la ronda
-        let idx = gameState.playedCards.length - 2;
-        let carta1 = gameState.playedCards[idx].carta;
-        let carta2 = gameState.playedCards[idx + 1].carta;
+        let jugadas = gameState.playedCards.filter(pc => pc.ronda === gameState.rondaActual);
+        let carta1 = jugadas[0].carta;
+        let carta2 = jugadas[1].carta;
         let ganador = null;
-        if (carta1.valorTruco > carta2.valorTruco) ganador = gameState.playedCards[idx].jugador;
-        else if (carta2.valorTruco > carta1.valorTruco) ganador = gameState.playedCards[idx + 1].jugador;
+        if (carta1.valorTruco > carta2.valorTruco) ganador = jugadas[0].jugador;
+        else if (carta2.valorTruco > carta1.valorTruco) ganador = jugadas[1].jugador;
         else ganador = 'parda';
         gameState.rondaGanada.push(ganador);
         addMessageToHistory(`Ganador de la ronda: ${ganador === 'parda' ? 'Empate' : ganador}`, 'system');
+        if (gameState.rondaActual < 3) {
+            gameState.rondaActual++;
+        }
         if (gameState.rondaGanada.length === 2) {
             // Determinar ganador de la mano
             let manoGanador = determinarGanadorMano();
@@ -198,34 +214,48 @@ function sumarPuntosMano(ganador) {
     }
 }
 
-// --- Cantos ---
+// --- Cantos y opciones dinámicas ---
 function updateCantosUI() {
-    document.querySelectorAll('.game-canto-btn').forEach(btn => {
-        btn.disabled = false;
-        btn.classList.remove('opacity-50', 'cursor-not-allowed');
-    });
-    if (gameState.envidoCantado) {
-        document.querySelectorAll('.game-canto-btn[data-canto="Envido"],.game-canto-btn[data-canto="Real Envido"],.game-canto-btn[data-canto="Falta Envido"]').forEach(btn => {
-            btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-        });
+    const cantosCol = document.getElementById('cantos-col');
+    cantosCol.innerHTML = '';
+    let opciones = [];
+    if (!gameState.trucoCantado && !gameState.envidoCantado && !gameState.florCantada && gameState.currentRound === 1) {
+        opciones = ['Truco', 'Envido', 'Real Envido', 'Falta Envido'];
+        if (gameState.flor) opciones.push('Flor');
+    }
+    if (gameState.florCantada && !gameState.envidoCantado) {
+        opciones = ['Flor'];
+        // Si ambos tienen flor, permitir Contra Flor y Contra Flor al Resto
+        if (tieneFlor(gameState.playerHand) && tieneFlor(gameState.iaHand)) {
+            opciones.push('Contra Flor', 'Contra Flor al Resto');
+        }
     }
     if (gameState.trucoCantado) {
-        document.querySelectorAll('.game-canto-btn[data-canto="Truco"],.game-canto-btn[data-canto="ReTruco"],.game-canto-btn[data-canto="Vale Cuatro"]').forEach(btn => {
-            btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-        });
+        opciones = ['ReTruco', 'Vale Cuatro'];
     }
+    opciones.push('Ir al Mazo', 'Volver al Menú');
+    opciones.forEach(canto => {
+        const btn = document.createElement('button');
+        btn.className = 'game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-3 rounded text-lg font-bold mb-1';
+        btn.textContent = canto;
+        btn.setAttribute('data-canto', canto);
+        btn.addEventListener('click', () => handleCanto(canto, false));
+        cantosCol.appendChild(btn);
+    });
 }
 
-function handleCanto(canto) {
+function handleCanto(canto, esIA = false) {
     if (gameState.partidaTerminada) return;
     gameState.cantoActual = canto;
-    addMessageToHistory(`${gameState.playerName} canta ${canto.toUpperCase()}!`, 'player');
-    document.getElementById('canto-actual').textContent = canto.toUpperCase() + '!';
+    addMessageToHistory(`${esIA ? 'TrucoEstrella' : gameState.playerName} canta ${canto.toUpperCase()}!`, esIA ? 'ia' : 'player');
+    document.getElementById(esIA ? 'canto-ia' : 'canto-actual').textContent = canto.toUpperCase() + '!';
     if (['Envido', 'Real Envido', 'Falta Envido'].includes(canto)) {
         gameState.envidoCantado = true;
-        showEnvidoPopup();
+        showEnvidoPopup(canto, esIA);
+    }
+    if (['Flor', 'Contra Flor', 'Contra Flor al Resto'].includes(canto)) {
+        gameState.florCantada = true;
+        showFlorPopup(canto, esIA);
     }
     if (['Truco', 'ReTruco', 'Vale Cuatro'].includes(canto)) {
         gameState.trucoCantado = true;
@@ -244,11 +274,14 @@ function handleCanto(canto) {
     updateCantosUI();
 }
 
-// --- Popup Envido/Flor ---
-function showEnvidoPopup() {
+// --- Popup Envido ---
+function showEnvidoPopup(tipo, esIA) {
     const playerEnvido = calcularEnvido(gameState.playerHand);
     const iaEnvido = calcularEnvido(gameState.iaHand);
     let winner = playerEnvido > iaEnvido ? gameState.playerName : 'TrucoEstrella';
+    let puntos = 2;
+    if (tipo === 'Real Envido') puntos = 3;
+    if (tipo === 'Falta Envido') puntos = gameState.puntosMax - Math.max(gameState.playerScore, gameState.iaScore);
     let html = `
         <div><b>${gameState.playerName}:</b> ${playerEnvido} puntos</div>
         <div><b>TrucoEstrella:</b> ${iaEnvido} puntos</div>
@@ -259,11 +292,39 @@ function showEnvidoPopup() {
     document.getElementById('popup-envido').classList.remove('hidden');
     setTimeout(() => {
         document.getElementById('popup-envido').classList.add('hidden');
-        if (winner === gameState.playerName) gameState.playerScore += 2;
-        else gameState.iaScore += 2;
+        if (winner === gameState.playerName) gameState.playerScore += puntos;
+        else gameState.iaScore += puntos;
         renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
-        addMessageToHistory(`Envido: ${gameState.playerName} ${playerEnvido} - TrucoEstrella ${iaEnvido}. Gana ${winner}`, 'system');
-        setTimeout(initializeGame, 2000);
+        addMessageToHistory(`Envido: ${gameState.playerName} ${playerEnvido} - TrucoEstrella ${iaEnvido}. Gana ${winner} (+${puntos})`, 'system');
+        // NO reiniciar la mano, seguir con el Truco
+        updateCantosUI();
+    }, 3000);
+}
+
+// --- Popup Flor ---
+function showFlorPopup(tipo, esIA) {
+    const playerFlor = tieneFlor(gameState.playerHand) ? calcularEnvido(gameState.playerHand) : 0;
+    const iaFlor = tieneFlor(gameState.iaHand) ? calcularEnvido(gameState.iaHand) : 0;
+    let winner = playerFlor > iaFlor ? gameState.playerName : 'TrucoEstrella';
+    let puntos = 3;
+    if (tipo === 'Contra Flor') puntos = 6;
+    if (tipo === 'Contra Flor al Resto') puntos = gameState.puntosMax - Math.max(gameState.playerScore, gameState.iaScore);
+    let html = `
+        <div><b>${gameState.playerName}:</b> ${playerFlor ? playerFlor + ' (Flor)' : 'No tiene Flor'}</div>
+        <div><b>TrucoEstrella:</b> ${iaFlor ? iaFlor + ' (Flor)' : 'No tiene Flor'}</div>
+        <div class="mt-2 font-bold text-green-700">¡Gana ${winner}!</div>
+    `;
+    document.getElementById('popup-envido-title').textContent = 'Resultado Flor';
+    document.getElementById('popup-envido-content').innerHTML = html;
+    document.getElementById('popup-envido').classList.remove('hidden');
+    setTimeout(() => {
+        document.getElementById('popup-envido').classList.add('hidden');
+        if (winner === gameState.playerName) gameState.playerScore += puntos;
+        else gameState.iaScore += puntos;
+        renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
+        addMessageToHistory(`Flor: ${gameState.playerName} ${playerFlor} - TrucoEstrella ${iaFlor}. Gana ${winner} (+${puntos})`, 'system');
+        // NO reiniciar la mano, seguir con el Truco
+        updateCantosUI();
     }, 3000);
 }
 
@@ -289,24 +350,9 @@ function setupEventListeners() {
             location.reload();
         }
     });
-    document.getElementById('backToMenuBtn').addEventListener('click', () => {
-        showStartScreen();
-    });
     document.getElementById('btn-revancha').addEventListener('click', () => {
         document.getElementById('modal-fin-partida').classList.add('hidden');
         initializeGame();
-    });
-    document.querySelectorAll('.game-canto-btn').forEach(btn => {
-        btn.addEventListener('click', (event) => {
-            const canto = btn.getAttribute('data-canto');
-            handleCanto(canto);
-        });
-    });
-    document.getElementById('btn-mazo').addEventListener('click', () => {
-        addMessageToHistory(`${gameState.playerName} se fue al mazo.`, 'player');
-        gameState.iaScore += 1;
-        renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
-        setTimeout(initializeGame, 2000);
     });
 }
 
