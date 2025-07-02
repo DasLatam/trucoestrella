@@ -79,8 +79,74 @@
         </div>
     </div>
 
-    <div id="game-screen" class="hidden w-full h-full">
+    <div id="game-screen" class="hidden w-full h-screen flex flex-col lg:flex-row bg-gray-900 text-white p-4 gap-4">
+
+        <div id="game-controls" class="flex flex-col gap-2 p-3 bg-gray-800 rounded-lg shadow-lg lg:w-1/6 min-w-[120px] max-w-[200px] mx-auto lg:mx-0">
+            <h3 class="text-xl font-bold text-yellow-400 mb-2 text-center">Cantos</h3>
+            <button class="game-btn bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200">Truco</button>
+            <button class="game-btn bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200">Envido</button>
+            <button class="game-btn bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200">Real Envido</button>
+            <button class="game-btn bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200">Falta Envido</button>
+            <button class="game-btn bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded transition duration-200">Flor</button>
+            <button class="game-btn bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded transition duration-200">Contra Flor</button>
+            <button class="game-btn bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded transition duration-200">Contra Flor al Resto</button>
+            <button class="game-btn bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-200 mt-auto">Quiero</button>
+            <button class="game-btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-200">No Quiero</button>
+            <button class="game-btn bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded transition duration-200">Ir al Mazo</button>
         </div>
+
+        <div id="game-area" class="flex flex-col justify-between flex-grow bg-gray-800 rounded-lg shadow-lg p-4 relative overflow-hidden">
+            <div id="ia-hand" class="flex justify-center mb-4 gap-2">
+                <div class="card bg-gray-700 border border-gray-600 rounded-lg w-20 h-28 flex items-center justify-center text-5xl opacity-80 shadow-md">?</div>
+                <div class="card bg-gray-700 border border-gray-600 rounded-lg w-20 h-28 flex items-center justify-center text-5xl opacity-80 shadow-md">?</div>
+                <div class="card bg-gray-700 border border-gray-600 rounded-lg w-20 h-28 flex items-center justify-center text-5xl opacity-80 shadow-md">?</div>
+            </div>
+
+            <div id="play-area" class="flex flex-col items-center justify-center h-full mb-4 relative">
+                <div id="ia-played-cards" class="flex justify-center gap-2 mb-4 absolute top-1/4">
+                    </div>
+                <div id="player-played-cards" class="flex justify-center gap-2 absolute bottom-1/4">
+                    </div>
+            </div>
+
+            <div id="player-hand" class="flex justify-center gap-2 mt-auto">
+                </div>
+            <div id="player-name-display" class="absolute bottom-1 left-1/2 -translate-x-1/2 bg-gray-700 px-3 py-1 rounded-full text-sm font-semibold text-gray-200 z-10 shadow-md">
+                <span id="player-name-text"></span>
+            </div>
+        </div>
+
+        <div id="scoreboard" class="flex flex-col p-4 bg-gray-800 rounded-lg shadow-lg lg:w-1/6 min-w-[120px] max-w-[200px] mx-auto lg:mx-0">
+            <div id="top-message" class="text-lg font-bold text-center h-12 flex items-center justify-center text-red-400">
+                </div>
+            <div id="points-display" class="flex flex-col items-center justify-around flex-grow border-y border-gray-700 py-2">
+                <div class="flex flex-col items-center mb-4">
+                    <span class="text-lg font-semibold text-blue-300 mb-2" id="opponent-score-name">YO</span>
+                    <div id="opponent-score-matches" class="flex flex-wrap gap-1 justify-center">
+                        </div>
+                </div>
+                <hr class="w-2/3 border-gray-600 my-2"> <div class="flex flex-col items-center mt-4">
+                    <span class="text-lg font-semibold text-green-300 mb-2" id="player-score-name">VOS</span>
+                    <div id="player-score-matches" class="flex flex-wrap gap-1 justify-center">
+                        </div>
+                </div>
+            </div>
+            <div id="bottom-message" class="text-lg font-bold text-center h-12 flex items-center justify-center text-green-400">
+                </div>
+        </div>
+
+        <div id="game-history" class="flex flex-col bg-gray-800 rounded-lg shadow-lg p-4 lg:w-2/6 min-w-[250px] mx-auto lg:mx-0">
+            <h3 class="text-xl font-bold text-yellow-400 mb-2 text-center">Historial de Partida</h3>
+            <div id="history-content" class="flex-grow overflow-y-auto border border-gray-700 p-2 rounded text-sm leading-relaxed max-h-[calc(15*1.5em)] lg:max-h-full">
+                <p class="text-gray-400">Bienvenido a TrucoEstrellas!</p>
+                <p class="text-gray-400">La partida ha comenzado.</p>
+            </div>
+            <button id="backToMenuBtn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded mt-4 transition duration-200">
+                Volver al Menú
+            </button>
+        </div>
+
+    </div>
 
     <script type="module" src="js/main.js"></script>
 </body>
