@@ -144,16 +144,10 @@
             pointer-events: none;
         }
         .player-area {
-            display: flex;
-            align-items: center;
-            justify-content: center;
             width: 100%;
         }
         .player-name {
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            transform: rotate(180deg);
-            margin: 0 1rem;
+            text-align: center;
             font-size: 1.5rem;
             font-weight: bold;
             color: #FFD700;
@@ -228,8 +222,8 @@
                 <div id="canto-display-ia" class="canto-display hidden" style="top: 25%;"></div>
                 <!-- Area IA -->
                 <div class="player-area">
+                    <h2 id="nombre-ia" class="player-name mb-1">TrucoEstrella</h2>
                     <div id="mano-ia" class="flex justify-center items-center space-x-2 h-[140px]"></div>
-                    <h2 id="nombre-ia" class="player-name">TrucoEstrella</h2>
                 </div>
 
                 <!-- Mesa -->
@@ -248,8 +242,8 @@
                 <div id="canto-display-jugador" class="canto-display hidden" style="bottom: 25%;"></div>
                 <!-- Area Jugador -->
                 <div class="player-area">
+                     <h2 id="nombre-jugador-display" class="player-name mt-1">Jugador</h2>
                     <div id="mano-jugador" class="flex justify-center items-center space-x-2 h-[140px]"></div>
-                    <h2 id="nombre-jugador-display" class="player-name">Jugador</h2>
                 </div>
             </div>
 
@@ -450,20 +444,17 @@
                     
                     const esperandoRespuesta = accion === 'esperando_respuesta';
                     
-                    // Ocultar todos los botones de canto por defecto
                     Object.values(botonesCanto).forEach(btn => btn.classList.add('hidden'));
                     
                     if (esTurnoJugador) {
                         if (!esperandoRespuesta) {
-                             // Lógica de Truco
                             if (truco.puedeSubirElJugador && truco.estado !== CANTOS.VALE_CUATRO) {
                                 botonesCanto.truco.textContent = truco.estado === 'no_cantado' ? 'TRUCO' : (truco.estado === CANTOS.TRUCO ? 'RETRUCO' : 'VALE CUATRO');
                                 botonesCanto.truco.classList.remove('hidden');
                             }
                         }
 
-                        // Lógica de Envido (siempre primero)
-                        const puedeCantarEnvido = ronda === 1 && !envido.cantado;
+                        const puedeCantarEnvido = ronda === 1 && !envido.cantado && !flor.cantado;
                         if (puedeCantarEnvido) {
                              botonesCanto.envido.classList.remove('hidden');
                              botonesCanto.realEnvido.classList.remove('hidden');
@@ -605,6 +596,7 @@
         }
 
         function calcularEnvido(mano, conFlor, esParaFlor = false) {
+            if (mano.length === 0) return 0;
             const palosContador = {};
             mano.forEach(c => { palosContador[c.palo.nombre] = (palosContador[c.palo.nombre] || 0) + 1; });
             const paloDominante = Object.keys(palosContador).find(p => palosContador[p] >= 2);
@@ -642,8 +634,8 @@
                 ronda: 0, 
                 ganadorRonda: [],
                 mesa: { jugador: [], ia: [] },
-                accion: 'jugando', // 'jugando', 'esperando_respuesta', 'resolviendo_envido'
-                cantoActual: null, // { tipo: 'envido'/'truco', valor: 'ENVIDO' }
+                accion: 'jugando',
+                cantoActual: null,
                 trucoPendiente: null,
                 envido: null, flor: null, truco: null,
                 juegoTerminado: false,
@@ -1068,4 +1060,3 @@
     </script>
 </body>
 </html>
-
