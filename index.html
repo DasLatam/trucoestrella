@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gran Truco Argentino</title>
     <style>
-        /* style.css */
         :root {
             --color-fondo: #0a3d20;
             --color-mesa: #006400;
@@ -18,247 +17,101 @@
             --color-historial-jugador: rgba(255, 255, 255, 0.1);
             --color-historial-ia: rgba(0, 0, 0, 0.1);
         }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-        }
-
-        body {
-            background-color: var(--color-fondo);
-            color: var(--color-texto);
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-        }
-
-       .pantalla {
-            display: none;
-            width: 100%;
-            height: 100%;
-        }
-
-       .pantalla.activa {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        #pantalla-inicio.modal-contenido {
-            background-color: var(--color-mesa);
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            text-align: center;
-        }
-
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; }
+        body { background-color: var(--color-fondo); color: var(--color-texto); overflow: hidden; height: 100vh; width: 100vw; }
+       .pantalla { display: none; width: 100%; height: 100%; }
+       .pantalla.activa { display: flex; justify-content: center; align-items: center; }
+        #pantalla-inicio.modal-contenido { background-color: var(--color-mesa); padding: 40px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); text-align: center; }
         #form-inicio.form-grupo { margin-bottom: 20px; text-align: left; }
         #form-inicio label { display: block; margin-bottom: 5px; }
-        #form-inicio input[type="text"] {
-            width: 100%; padding: 10px; border-radius: 5px; border: 1px solid var(--color-texto);
-            background-color: var(--color-fondo); color: var(--color-texto);
-        }
+        #form-inicio input[type="text"] { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid var(--color-texto); background-color: var(--color-fondo); color: var(--color-texto); }
         #form-inicio input[type="radio"], #form-inicio input[type="checkbox"] { margin-right: 10px; }
-
-       .btn-primario,.btn-secundario,.btn-peligro {
-            padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer;
-            font-weight: bold; transition: background-color 0.2s; width: 100%; margin-top: 10px;
-        }
+       .btn-primario,.btn-secundario,.btn-peligro { padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; width: 100%; margin-top: 10px; }
        .btn-primario { background-color: var(--color-primario); color: white; }
        .btn-primario:hover { background-color: #e04a4a; }
        .btn-secundario { background-color: var(--color-secundario); color: white; }
        .btn-secundario:hover { background-color: #6a6a6a; }
        .btn-peligro { background-color: #f44336; color: white; }
        .btn-peligro:hover { background-color: #da190b; }
-
-        #pantalla-juego {
-            display: grid; grid-template-columns: 180px 1fr 220px 240px;
-            grid-template-rows: 1fr; height: 100vh; padding: 15px; gap: 15px;
-        }
-
-       .columna-lateral {
-            background-color: rgba(0,0,0,0.2); border-radius: 8px;
-            padding: 15px; display: flex; flex-direction: column;
-        }
-
+        #pantalla-juego { display: grid; grid-template-columns: 180px 1fr 220px 240px; grid-template-rows: 1fr; height: 100vh; padding: 15px; gap: 15px; }
+       .columna-lateral { background-color: rgba(0,0,0,0.2); border-radius: 8px; padding: 15px; display: flex; flex-direction: column; }
         #canto-buttons { gap: 10px; }
-        #canto-buttons button {
-            width: 100%; padding: 12px; font-size: 16px; background-color: var(--color-acento);
-            color: #333; border: none; border-radius: 5px; cursor: pointer; transition: all 0.2s;
-        }
+        #canto-buttons button { width: 100%; padding: 12px; font-size: 16px; background-color: var(--color-acento); color: #333; border: none; border-radius: 5px; cursor: pointer; transition: all 0.2s; }
         #canto-buttons button:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
         #canto-buttons button:disabled { background-color: var(--color-secundario); color: #888; cursor: not-allowed; }
-        #canto-buttons.btn-peligro { margin-top: auto; background-color: var(--color-primario); color: white; }
+        #canto-buttons.btn-peligro { margin-top: auto; }
         #canto-acciones-respuesta { margin-top: 20px; border-top: 2px solid var(--color-acento); padding-top: 20px; }
-
-        #game-table-area {
-            background-color: var(--color-mesa); border-radius: 10px; display: flex;
-            flex-direction: column; justify-content: space-between; padding: 20px;
-        }
+        #game-table-area { background-color: var(--color-mesa); border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
        .zona-jugador { text-align: center; padding: 10px; border-radius: 10px; transition: background-color 0.3s; }
        .turno-activo { background-color: rgba(255, 255, 255, 0.15); }
        .mano-container { display: flex; justify-content: center; gap: 10px; min-height: 140px; align-items: center; }
         #mesa { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 30px; }
        .mesa-fila { display: flex; justify-content: center; gap: 20px; }
        .slot { width: 90px; height: 130px; border: 2px dashed rgba(255,255,255,0.3); border-radius: 8px; }
-
-       .carta {
-            width: 90px; height: 130px; background-color: var(--color-carta-fondo);
-            border: 1px solid var(--color-carta-borde); border-radius: 8px; color: #333;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            font-size: 28px; font-weight: bold; box-shadow: 3px 3px 5px rgba(0,0,0,0.3); user-select: none;
-        }
+       .carta { width: 90px; height: 130px; background-color: var(--color-carta-fondo); border: 1px solid var(--color-carta-borde); border-radius: 8px; color: #333; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 28px; font-weight: bold; box-shadow: 3px 3px 5px rgba(0,0,0,0.3); user-select: none; }
         #mano-jugador.carta { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
         #mano-jugador.carta:hover { transform: translateY(-15px) scale(1.05); box-shadow: 5px 15px 15px rgba(0,0,0,0.4); }
        .carta.simbolo { font-size: 36px; }
-       .carta.dorso {
-            background-color: var(--color-primario);
-            background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.1) 5px, rgba(255,255,255,0.1) 10px);
-        }
-
+       .carta.dorso { background-color: var(--color-primario); background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.1) 5px, rgba(255,255,255,0.1) 10px); }
         #score-board h3 { text-align: center; margin-bottom: 20px; }
        .marcador { display: flex; flex-direction: column; gap: 20px; position: relative; }
-       .marcador.a30::after {
-            content: ''; position: absolute; left: 0; right: 0; top: 50%;
-            transform: translateY(-50%); height: 2px; background-color: rgba(255,255,255,0.5);
-        }
+       .marcador.a30::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); height: 2px; background-color: rgba(255,255,255,0.5); }
        .marcador-equipo { display: flex; justify-content: space-between; align-items: center; }
-       .marcador-equipo h4 { margin-bottom: 10px; }
-       .porotos-container { display: flex; flex-wrap: wrap; gap: 8px; min-height: 50px; }
-       .poroto-grupo-5 {
-            width: 20px; height: 20px; border: 2px solid var(--color-texto);
-            position: relative; margin: 2px;
-        }
-       .poroto-grupo-5::after {
-            content: ''; position: absolute; top: -2px; left: 7px;
-            width: 2px; height: 20px; background-color: var(--color-texto);
-            transform: rotate(45deg); transform-origin: center;
-        }
+       .marcador-equipo h4 { margin-right: 10px; }
+       .porotos-container { display: flex; flex-wrap: wrap; gap: 8px; min-height: 50px; align-items: center; }
+       .poroto-grupo-5 { width: 20px; height: 20px; border: 2px solid var(--color-texto); position: relative; margin: 2px; }
+       .poroto-grupo-5::after { content: ''; position: absolute; top: 50%; left: 50%; width: 2px; height: 120%; background-color: var(--color-texto); transform: translate(-50%, -50%) rotate(45deg); }
        .poroto-individual { font-family: 'Courier New', Courier, monospace; font-size: 24px; letter-spacing: -2px; }
         #volver-menu { margin-top: auto; }
-
         #chat-log h3 { text-align: center; margin-bottom: 10px; }
-        #chat-display {
-            flex-grow: 1; overflow-y: auto; background-color: rgba(0,0,0,0.2);
-            padding: 10px; border-radius: 5px; user-select: text;
-            max-height: calc(100vh - 150px); /* Altura fija con scroll */
-        }
-        #chat-display p { padding: 5px; border-radius: 3px; margin-bottom: 5px; }
+        #chat-display { flex-grow: 1; overflow-y: auto; background-color: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; user-select: text; max-height: calc(100vh - 150px); }
+        #chat-display p { padding: 5px; border-radius: 3px; margin-bottom: 5px; word-break: break-word; }
        .historial-jugador { background-color: var(--color-historial-jugador); }
        .historial-ia { background-color: var(--color-historial-ia); }
        .historial-sistema { font-style: italic; color: var(--color-acento); }
         #chat-input-container { display: flex; margin-top: 10px; gap: 5px; }
         #chat-input { flex-grow: 1; padding: 8px; border-radius: 5px; border: none; background-color: #f0f0f0; color: #333; }
         #chat-send { padding: 8px 12px; border-radius: 5px; border: none; background-color: var(--color-acento); color: #333; cursor: pointer; }
-
-       .modal {
-            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
-            width: 100%; height: 100%; background-color: rgba(0,0,0,0.7);
-            justify-content: center; align-items: center;
-        }
-       .modal-contenido {
-            background-color: var(--color-mesa); padding: 30px; border-radius: 10px;
-            text-align: center; min-width: 400px;
-        }
+       .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
+       .modal-contenido { background-color: var(--color-mesa); padding: 30px; border-radius: 10px; text-align: center; min-width: 400px; }
        .modal-acciones { margin-top: 20px; display: flex; gap: 15px; }
     </style>
 </head>
 <body>
-
     <div id="pantalla-inicio" class="pantalla activa">
         <div class="modal-contenido">
             <h1>Gran Truco Argentino</h1>
             <form id="form-inicio">
-                <div class="form-grupo">
-                    <label for="nombre-jugador">Tu Nombre:</label>
-                    <input type="text" id="nombre-jugador" placeholder="Jugador" maxlength="15">
-                </div>
-                <div class="form-grupo">
-                    <p>Jugar a:</p>
-                    <label><input type="radio" name="puntos" value="15"> 15 Puntos</label>
-                    <label><input type="radio" name="puntos" value="30" checked> 30 Puntos</label>
-                </div>
-                <div class="form-grupo">
-                    <label><input type="checkbox" id="con-flor"> Jugar con flor</label>
-                </div>
-                <button type="submit" class="btn-primario">Comenzar Partida</button>
-                <button type="button" id="limpiar-cache" class="btn-secundario">Limpiar Cache y Recargar</button>
+                <div class="form-grupo"><label for="nombre-jugador">Tu Nombre:</label><input type="text" id="nombre-jugador" placeholder="Jugador" maxlength="15"></div>
+                <div class="form-grupo"><p>Jugar a:</p><label><input type="radio" name="puntos" value="15"> 15 Puntos</label><label><input type="radio" name="puntos" value="30" checked> 30 Puntos</label></div>
+                <div class="form-grupo"><label><input type="checkbox" id="con-flor"> Jugar con flor</label></div>
+                <button type="submit" class="btn-primario">Comenzar Partida</button><button type="button" id="limpiar-cache" class="btn-secundario">Limpiar Cache y Recargar</button>
             </form>
         </div>
     </div>
-
     <div id="pantalla-juego" class="pantalla">
         <div id="canto-buttons" class="columna-lateral">
-            <div id="canto-acciones-principales">
-                <button data-canto="truco">Truco</button>
-                <button data-canto="retruco" disabled>Retruco</button>
-                <button data-canto="vale-cuatro" disabled>Vale Cuatro</button>
-                <button data-canto="envido">Envido</button>
-                <button data-canto="real-envido">Real Envido</button>
-                <button data-canto="falta-envido">Falta Envido</button>
-            </div>
-            <div id="canto-acciones-respuesta" style="display: none;">
-                <button data-canto="quiero" class="btn-primario">Quiero</button>
-                <button data-canto="no-quiero" class="btn-peligro">No Quiero</button>
-            </div>
+            <div id="canto-acciones-principales"><button data-canto="truco">Truco</button><button data-canto="retruco" disabled>Retruco</button><button data-canto="vale-cuatro" disabled>Vale Cuatro</button><button data-canto="envido">Envido</button><button data-canto="real-envido">Real Envido</button><button data-canto="falta-envido">Falta Envido</button></div>
+            <div id="canto-acciones-respuesta" style="display: none;"><button data-canto="quiero" class="btn-primario">Quiero</button><button data-canto="no-quiero" class="btn-peligro">No Quiero</button></div>
             <button data-canto="me-voy-al-mazo" class="btn-peligro">Ir al Mazo</button>
         </div>
-
         <div id="game-table-area">
-            <div id="zona-ia" class="zona-jugador">
-                <h2 id="nombre-ia-display">TrucoEstrella</h2>
-                <div id="mano-ia" class="mano-container"></div>
-            </div>
-            <div id="mesa">
-                <div id="mesa-ia" class="mesa-fila">
-                    <div class="slot" data-ronda="1"></div> <div class="slot" data-ronda="2"></div> <div class="slot" data-ronda="3"></div>
-                </div>
-                <div id="mesa-jugador" class="mesa-fila">
-                    <div class="slot" data-ronda="1"></div> <div class="slot" data-ronda="2"></div> <div class="slot" data-ronda="3"></div>
-                </div>
-            </div>
-            <div id="zona-jugador" class="zona-jugador">
-                <div id="mano-jugador" class="mano-container"></div>
-                <h2 id="nombre-jugador-display">Jugador</h2>
-            </div>
+            <div id="zona-ia" class="zona-jugador"><h2 id="nombre-ia-display">TrucoEstrella</h2><div id="mano-ia" class="mano-container"></div></div>
+            <div id="mesa"><div id="mesa-ia" class="mesa-fila"><div class="slot" data-ronda="1"></div><div class="slot" data-ronda="2"></div><div class="slot" data-ronda="3"></div></div><div id="mesa-jugador" class="mesa-fila"><div class="slot" data-ronda="1"></div><div class="slot" data-ronda="2"></div><div class="slot" data-ronda="3"></div></div></div>
+            <div id="zona-jugador" class="zona-jugador"><div id="mano-jugador" class="mano-container"></div><h2 id="nombre-jugador-display">Jugador</h2></div>
         </div>
-
         <div id="score-board" class="columna-lateral">
             <h3>Puntos</h3>
-            <div class="marcador">
-                <div class="marcador-equipo">
-                    <h4 id="marcador-nombre-nosotros">Nosotros</h4>
-                    <div id="marcador-nosotros" class="porotos-container"></div>
-                </div>
-                <div class="marcador-equipo">
-                    <h4 id="marcador-nombre-ellos">Ellos</h4>
-                    <div id="marcador-ellos" class="porotos-container"></div>
-                </div>
-            </div>
+            <div class="marcador"><div class="marcador-equipo"><h4 id="marcador-nombre-nosotros">Nosotros</h4><div id="marcador-nosotros" class="porotos-container"></div></div><div class="marcador-equipo"><h4 id="marcador-nombre-ellos">Ellos</h4><div id="marcador-ellos" class="porotos-container"></div></div></div>
             <button id="volver-menu" class="btn-secundario">Volver al Menú</button>
         </div>
-
         <div id="chat-log" class="columna-lateral">
-            <h3>Chat</h3>
-            <div id="chat-display"></div>
-            <div id="chat-input-container">
-                <input type="text" id="chat-input" placeholder="Escribe un mensaje...">
-                <button id="chat-send">Enviar</button>
-            </div>
+            <h3>Chat</h3><div id="chat-display"></div>
+            <div id="chat-input-container"><input type="text" id="chat-input" placeholder="Escribe un mensaje..."><button id="chat-send">Enviar</button></div>
         </div>
     </div>
-
     <div id="modal-fin-partida" class="modal">
-        <div class="modal-contenido">
-            <h2 id="mensaje-ganador"></h2>
-            <p id="puntaje-final"></p>
-            <div class="modal-acciones">
-                <button id="btn-revancha" class="btn-primario">Revancha</button>
-                <button id="btn-menu-principal" class="btn-secundario">Menú Principal</button>
-            </div>
-        </div>
+        <div class="modal-contenido"><h2 id="mensaje-ganador"></h2><p id="puntaje-final"></p><div class="modal-acciones"><button id="btn-revancha" class="btn-primario">Revancha</button><button id="btn-menu-principal" class="btn-secundario">Menú Principal</button></div></div>
     </div>
 
     <script type="module">
@@ -298,11 +151,9 @@
             function decidirJugada(estadoJuego) {
                 const manoIA = estadoJuego.jugadores.mano;
                 const evaluacion = evaluarMano(manoIA);
-                // Lógica de canto (simplificada)
                 if (estadoJuego.ronda.numero === 1 &&!estadoJuego.envido.cantado) {
                     if (evaluacion.puntosEnvido >= 28) return { tipo: 'cantar', valor: config.CANTOS.ENVIDO };
                 }
-                // Lógica de juego de carta
                 const cartasEnMesaRondaActual = estadoJuego.ronda.cartasEnMesa.slice((estadoJuego.ronda.numero - 1) * 2);
                 if (cartasEnMesaRondaActual.length === 0 |
 
@@ -401,7 +252,7 @@
                 DOMElements.cantoButtons.addEventListener('click', (e) => {
                     if (e.target.tagName === 'BUTTON' &&!e.target.disabled) {
                         const canto = e.target.dataset.canto;
-                        const esRespuesta = e.target.parentElement.id === 'canto-acciones-respuesta';
+                        const esRespuesta = e.target.closest('#canto-acciones-respuesta');
                         procesarAccionCallback({ tipo: esRespuesta? 'responder_canto' : 'cantar', valor: canto });
                     }
                 });
@@ -454,7 +305,7 @@
                     const cartaEnMano = manoContainer.querySelector(`[data-id="${carta.id}"]`);
                     if (cartaEnMano) cartaEnMano.remove();
                 } else {
-                    if(manoContainer.firstChild) manoContainer.firstChild.remove();
+                    if (manoContainer.firstChild) manoContainer.firstChild.remove();
                 }
             }
             function limpiarMesa() { document.querySelectorAll('.slot').forEach(slot => slot.innerHTML = ''); }
@@ -482,7 +333,7 @@
                 DOMElements.chatDisplay.scrollTop = DOMElements.chatDisplay.scrollHeight;
             }
             function actualizarBotones(estadoJuego) {
-                const enModoRespuesta = estadoJuego.estado === config.ESTADOS_JUEGO.ESPERANDO_RESPUESTA_CANTO;
+                const enModoRespuesta = estadoJuego.estado === config.ESTADOS_JUEGO.ESPERANDO_RESPUESTA_CANTO && estadoJuego.turnoActual === config.JUGADORES.JUGADOR;
                 DOMElements.cantoAccionesPrincipales.style.display = enModoRespuesta? 'none' : 'flex';
                 DOMElements.cantoAccionesPrincipales.style.flexDirection = 'column';
                 DOMElements.cantoAccionesPrincipales.style.gap = '10px';
@@ -493,7 +344,6 @@
                     document.querySelector('[data-canto="envido"]').disabled =!puedeCantarEnvido;
                     document.querySelector('[data-canto="real-envido"]').disabled =!puedeCantarEnvido;
                     document.querySelector('[data-canto="falta-envido"]').disabled =!puedeCantarEnvido;
-                    // Lógica para truco
                     const trucoCantado = estadoJuego.truco.nivel > 0;
                     const puedeSubir = estadoJuego.truco.ultimoEnQuerer === estadoJuego.jugadores.equipo;
                     document.querySelector('[data-canto="truco"]').disabled = trucoCantado;
@@ -588,31 +438,31 @@
                     estadoJuego.envido.cantado = true;
                     const puntosJugador = ia.calcularEnvido(estadoJuego.jugadores.mano);
                     const puntosIA = ia.calcularEnvido(estadoJuego.jugadores.mano);
-                    agregarAlHistorial(`Tus puntos de envido: ${puntosJugador}`);
-                    agregarAlHistorial(`Puntos de envido de IA: ${puntosIA}`);
+                    agregarAlHistorial(`Tus puntos de envido: ${puntosJugador}`, 'sistema');
+                    agregarAlHistorial(`Puntos de envido de IA: ${puntosIA}`, 'sistema');
                     let ganadorEnvido;
                     if (puntosJugador > puntosIA) ganadorEnvido = config.JUGADORES.JUGADOR;
                     else if (puntosIA > puntosJugador) ganadorEnvido = config.JUGADORES.IA;
-                    else ganadorEnvido = estadoJuego.mano; // Empate gana el mano
-                    const puntosGanados = config.PUNTOS.ENVIDO.QUERIDO; // Simplificado
+                    else ganadorEnvido = estadoJuego.mano;
+                    const puntosGanados = config.PUNTOS.ENVIDO.QUERIDO;
                     const equipoGanador = estadoJuego.jugadores[ganadorEnvido].equipo;
                     estadoJuego.puntuacion[equipoGanador] += puntosGanados;
-                    agregarAlHistorial(`${ganadorEnvido} gana el envido y suma ${puntosGanados} puntos.`);
-                    ui.actualizarMarcador(estadoJuego.puntuacion.nosotros, estadoJuego.puntuacion.ellos, estadoJuego.configuracion.puntosVictoria);
+                    agregarAlHistorial(`${ganadorEnvido} gana el envido y suma ${puntosGanados} puntos.`, 'sistema');
+                    ui.actualizarMarcador(estadoJuego.puntuacion, estadoJuego.puntuacion, estadoJuego.configuracion.puntosVictoria);
                 }
             } else { // NO QUIERO
                 if (cantoInfo.tipo.includes('envido')) {
                     const puntosGanados = config.PUNTOS.ENVIDO.NO_QUERIDO;
                     const equipoGanador = estadoJuego.jugadores[cantoInfo.cantor].equipo;
                     estadoJuego.puntuacion[equipoGanador] += puntosGanados;
-                    agregarAlHistorial(`${cantoInfo.cantor} suma ${puntosGanados} por envido no querido.`);
-                    ui.actualizarMarcador(estadoJuego.puntuacion.nosotros, estadoJuego.puntuacion.ellos, estadoJuego.configuracion.puntosVictoria);
+                    agregarAlHistorial(`${cantoInfo.cantor} suma ${puntosGanados} por envido no querido.`, 'sistema');
+                    ui.actualizarMarcador(estadoJuego.puntuacion, estadoJuego.puntuacion, estadoJuego.configuracion.puntosVictoria);
                 }
             }
             estadoJuego.cantoActual = null;
             estadoJuego.estado = config.ESTADOS_JUEGO.ESPERANDO_JUGADA;
-            // El turno vuelve al que cantó originalmente o al que debe jugar
-            estadoJuego.turnoActual = cantoInfo.cantor;
+            estadoJuego.turnoActual = cantoInfo.cantor; // El turno vuelve al que cantó
+            cambiarTurno(); // Para que juegue el siguiente
             gestionarTurno();
         }
         function jugarCarta(jugador, idCarta) {
@@ -620,12 +470,16 @@
             const manoJugador = estadoJuego.jugadores[jugador].mano;
             const indiceCarta = manoJugador.findIndex(c => c.id === idCarta);
             if (indiceCarta === -1) return;
-            const cartaJugada = manoJugador.splice(indiceCarta, 1);
+            const [cartaJugada] = manoJugador.splice(indiceCarta, 1);
             estadoJuego.ronda.cartasEnMesa.push({ jugador, carta: cartaJugada });
             ui.jugarCarta(jugador, cartaJugada, estadoJuego.ronda.numero);
-            const cartasJugadasEnRonda = estadoJuego.ronda.cartasEnMesa.filter(j => j.carta).length;
-            if (cartasJugadasEnRonda % 2 === 0) resolverRonda();
-            else { cambiarTurno(); gestionarTurno(); }
+            const cartasJugadasEnRonda = estadoJuego.ronda.cartasEnMesa.length;
+            if (cartasJugadasEnRonda % 2 === 0) {
+                setTimeout(resolverRonda, 500);
+            } else {
+                cambiarTurno();
+                gestionarTurno();
+            }
         }
         function resolverRonda() {
             const inicioSlice = (estadoJuego.ronda.numero - 1) * 2;
@@ -637,7 +491,7 @@
             else if (valor2 > valor1) ganadorRonda = jugada2.jugador;
             else { parda = true; ganadorRonda = 'parda'; }
             estadoJuego.ronda.resultado.push({ ganador: ganadorRonda, parda });
-            agregarAlHistorial(`Fin ronda ${estadoJuego.ronda.numero}. ${parda? 'Parda.' : `Gana ${ganadorRonda}.`}`);
+            agregarAlHistorial(`Fin ronda ${estadoJuego.ronda.numero}. ${parda? 'Parda.' : `Gana ${ganadorRonda}.`}`, 'sistema');
             if (parda) estadoJuego.turnoActual = estadoJuego.mano;
             else estadoJuego.turnoActual = ganadorRonda;
             if (verificarFinDeMano()) setTimeout(terminarMano, 1000);
@@ -652,7 +506,7 @@
 
 | ellos === 2) return true;
             if (res.length === 3) return true;
-            if (res.parda &&!res.[1]parda) return true;
+            if (res.parda && res[1] &&!res.[1]parda) return true;
             return false;
         }
         function terminarMano() {
@@ -662,14 +516,14 @@
             if (ganadorMano && ganadorMano!== 'parda') {
                 const equipoGanador = estadoJuego.jugadores[ganadorMano].equipo;
                 estadoJuego.puntuacion[equipoGanador] += puntosGanados;
-                agregarAlHistorial(`Mano ganada por ${ganadorMano}. Suma ${puntosGanados} punto(s) de truco.`);
+                agregarAlHistorial(`Mano ganada por ${ganadorMano}. Suma ${puntosGanados} punto(s) de truco.`, 'sistema');
             } else {
-                agregarAlHistorial('La mano terminó en parda total.');
+                agregarAlHistorial('La mano terminó en parda total.', 'sistema');
             }
-            ui.actualizarMarcador(estadoJuego.puntuacion.nosotros, estadoJuego.puntuacion.ellos, estadoJuego.configuracion.puntosVictoria);
-            if (estadoJuego.puntuacion.nosotros >= estadoJuego.configuracion.puntosVictoria |
+            ui.actualizarMarcador(estadoJuego.puntuacion, estadoJuego.puntuacion, estadoJuego.configuracion.puntosVictoria);
+            if (estadoJuego.puntuacion >= estadoJuego.configuracion.puntosVictoria |
 
-| estadoJuego.puntuacion.ellos >= estadoJuego.configuracion.puntosVictoria) {
+| estadoJuego.puntuacion >= estadoJuego.configuracion.puntosVictoria) {
                 terminarPartida();
             } else {
                 setTimeout(jugarMano, 3000);
@@ -681,12 +535,12 @@
             const victoriasEllos = res.filter(r => r.ganador === config.JUGADORES.IA).length;
             if (victoriasNosotros > victoriasEllos) return config.JUGADORES.JUGADOR;
             if (victoriasEllos > victoriasNosotros) return config.JUGADORES.IA;
-            if (res.parda) return res.length > 1 &&!res.[1]parda? res.[1]ganador : estadoJuego.mano;
+            if (res.parda) return (res.length > 1 && res[1] &&!res.[1]parda)? res.[1]ganador : estadoJuego.mano;
             return res.ganador;
         }
         function terminarPartida() {
             estadoJuego.estado = config.ESTADOS_JUEGO.PARTIDA_TERMINADA;
-            const ganador = estadoJuego.puntuacion.nosotros >= estadoJuego.configuracion.puntosVictoria? estadoJuego.configuracion.nombreJugador : 'TrucoEstrella';
+            const ganador = estadoJuego.puntuacion >= estadoJuego.configuracion.puntosVictoria? estadoJuego.configuracion.nombreJugador : 'TrucoEstrella';
             ui.mostrarModalFinPartida(ganador, estadoJuego.puntuacion);
         }
         function cambiarTurno() { estadoJuego.turnoActual = (estadoJuego.turnoActual === config.JUGADORES.JUGADOR)? config.JUGADORES.IA : config.JUGADORES.JUGADOR; }
@@ -702,24 +556,3 @@
     </script>
 </body>
 </html>
-```
-
-He implementado los siguientes cambios para abordar tus comentarios:
-
-1.  **Lógica de Cantos Funcional:**
-    *   He reestructurado el motor del juego (`main.js`) para que ahora tenga un estado de `cantoActual`. Cuando un jugador canta, el juego entra en modo `ESPERANDO_RESPUESTA_CANTO`.
-    *   El oponente (la IA) ahora responde a los cantos con "Quiero" o "No Quiero" basándose en una evaluación simple de su mano.
-    *   Se calculan y asignan los puntos del envido correctamente. Si se canta "Envido" y el rival "Quiere", se comparan los tantos y se suman los puntos al ganador. Si dice "No Quiero", el que cantó se lleva 1 punto. [11, 8]
-    *   Los botones de "Quiero" y "No Quiero" ahora aparecen cuando te cantan algo, y los botones de canto principales se ocultan para evitar acciones inválidas.
-
-2.  **Interfaz del Chat y el Historial:**
-    *   El "Historial" ahora se llama **"Chat"**.
-    *   Le he dado una **altura fija y un scroll vertical**, por lo que ya no deformará la página sin importar cuántos eventos ocurran.
-    *   He añadido un **cuadro de texto y un botón "Enviar"** para que puedas escribir mensajes, sentando las bases para el futuro juego multijugador.
-
-3.  **Diseño del Marcador de Puntos:**
-    *   Los marcadores de ambos jugadores ahora están **uno al lado del otro** para una mejor visualización.
-    *   Los nombres de los equipos ahora son **"Vos"** y **"IA"**, como solicitaste para el modo de dos jugadores.
-    *   He rediseñado completamente cómo se dibujan los "porotos". Ahora, cada grupo de 5 puntos se representa como un **cuadrado con una línea diagonal**, tal como describiste.
-
-El juego ahora debería ser mucho más interactivo y fiel a las reglas. ¡Pruébalo y dime qué te parece esta nueva versi
