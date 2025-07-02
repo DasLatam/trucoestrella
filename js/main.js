@@ -272,7 +272,7 @@ const handlePlayerCardPlay = (event) => {
     if (gameState.cardsPlayedInRound.ia === null) {
         setTimeout(playIACard, 1000); // IA juega después de 1 segundo
     } else {
-        // Ambas cartas jugadas, determinar ganador (esto ocurre si la IA fue mano)
+        // Ambas cartas jugadas, determinar ganador (esto ocurre si la IA fue mano y jugó primero)
         determineRoundWinner();
     }
 };
@@ -339,14 +339,10 @@ const determineRoundWinner = () => {
         addMessageToHistory(`Ronda ${gameState.currentRound} fue parda.`, 'system');
     }
     
-    // Las cartas permanecen en la mesa por ahora, solo limpiamos los contenedores de jugadas.
-    // En futuras versiones, quizás animemos el "recojo" o las deshabilitamos.
-
-    // Llamar a endRound sin limpiar visualmente las cartas de la mesa inmediatamente
+    // Llamar a endRound después de un breve retraso para que los jugadores vean el resultado
     setTimeout(() => {
-        // Aquí no llamamos a clearPlayedCards(), las cartas se quedan.
         endRound(roundWinner);
-    }, 1500); // Esperar 1.5 segundos para que los jugadores vean el resultado
+    }, 1500); 
 };
 
 /**

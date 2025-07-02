@@ -73,7 +73,7 @@ export function renderIAHand(numCards, containerId) {
     for (let i = 0; i < numCards; i++) {
         const cardElement = createCardElement({value:0, suit:''}, true, false); // Carta boca abajo, no jugable
         container.appendChild(cardElement);
-    });
+    }
 }
 
 // Función para añadir un mensaje al historial/chat
@@ -173,13 +173,12 @@ export function renderScore(score, maxPoints, containerId) {
     }
 }
 
-// Función para limpiar las cartas jugadas en la mesa
-// NO VACÍA EL CONTENEDOR, SINO QUE LO ESCONDE TEMPORALMENTE SI ES NECESARIO
+// Función para limpiar las cartas jugadas en la mesa (limpia los contenedores visualmente)
 export function clearPlayedCards() {
-    // Para esta versión, las cartas permanecerán visibles hasta el final de la mano.
-    // Esta función se puede expandir si en el futuro se desea una animación de "recojo"
-    // o una lógica más compleja para las rondas.
-    // Por ahora, solo nos aseguramos de que los contenedores estén listos para nuevas cartas.
+    const iaPlayedCardsContainer = document.getElementById('ia-played-cards');
+    const playerPlayedCardsContainer = document.getElementById('player-played-cards');
+    if (iaPlayedCardsContainer) iaPlayedCardsContainer.innerHTML = '';
+    if (playerPlayedCardsContainer) playerPlayedCardsContainer.innerHTML = '';
 }
 
 // Función para añadir una carta a la mesa
@@ -187,22 +186,21 @@ export function addCardToPlayedArea(card, playerType, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // Limpiar el contenedor antes de añadir la nueva carta para que solo muestre la última jugada por ese lado
-    // Esto es para 1v1 y para mostrar solo la carta de la ronda actual
+    // Se limpia el contenedor antes de añadir la nueva carta para solo mostrar la última jugada por ese lado.
+    // Esto es funcional para una ronda 1v1 donde solo hay una carta por lado en juego.
     container.innerHTML = ''; 
 
     const cardElement = createCardElement(card, false, false); // No jugable una vez en mesa
     
     cardElement.classList.add('relative', 'z-0');
 
-    // Animación básica de entrada (opcional, puede ajustarse)
     cardElement.style.opacity = '0';
     cardElement.style.transform = 'translateY(20px)';
     setTimeout(() => {
         cardElement.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
         cardElement.style.opacity = '1';
         cardElement.style.transform = 'translateY(0)';
-    }, 50); // Pequeño retraso para la animación
+    }, 50);
 
     container.appendChild(cardElement);
 }

@@ -47,17 +47,18 @@
 
         <div class="mb-8">
             <span class="block text-gray-300 text-sm font-bold mb-2">Modo de Juego:</span>
-            <div class="flex flex-wrap gap-2 justify-center"> <button id="btnPlayVsIA" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200 flex-grow">
-                    Retar a TrucoEstrella (1 vs IA)
+            <div class="flex flex-wrap gap-2 justify-around">
+                <button id="btnPlayVsIA" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200">
+                    1 vs IA
                 </button>
-                <button id="btnPlay1v1" class="bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded cursor-not-allowed opacity-70 flex-grow" disabled>
-                    Uno a Uno (Próximamente)
+                <button id="btnPlay1v1" class="bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded cursor-not-allowed opacity-70" disabled>
+                    1 vs 1
                 </button>
-                <button id="btnPlay2v2" class="bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded cursor-not-allowed opacity-70 flex-grow" disabled>
-                    Dos a Dos (Próximamente)
+                <button id="btnPlay2v2" class="bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded cursor-not-allowed opacity-70" disabled>
+                    2 vs 2
                 </button>
-                <button id="btnPlay3v3" class="bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded cursor-not-allowed opacity-70 flex-grow" disabled>
-                    Tres a Tres (Próximamente)
+                <button id="btnPlay3v3" class="bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded cursor-not-allowed opacity-70" disabled>
+                    3 vs 3
                 </button>
             </div>
         </div>
@@ -68,18 +69,20 @@
 
         <hr class="my-6 border-gray-700">
 
-        <div class="flex justify-between items-center text-sm text-gray-400 mt-4">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center text-sm text-gray-400 mt-4 gap-2">
             <button id="clearCacheBtn" class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-xs transition duration-200">
                 Limpiar Cache
             </button>
-            <span id="app-version">Versión: Beta 1.2</span>
-            <div class="text-right">
-                <p>Versión: PC</p>
-                <p class="text-xs mt-1">
-                    <a href="#" class="hover:underline opacity-50 cursor-not-allowed">Autenticar con Gmail</a> |
+            <div class="flex items-center space-x-2 text-center md:text-left text-xs md:text-sm">
+                <span id="app-version">Versión: Beta 1.3</span>
+                <span>|</span>
+                <span>Versión: PC</span>
+                <span>|</span>
+                <span class="whitespace-nowrap">
+                    <a href="#" class="hover:underline opacity-50 cursor-not-allowed">Gmail</a> |
                     <a href="#" class="hover:underline opacity-50 cursor-not-allowed">Facebook</a> |
                     <a href="#" class="hover:underline opacity-50 cursor-not-allowed">Registrarse</a>
-                </p>
+                </span>
             </div>
         </div>
     </div>
