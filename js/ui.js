@@ -75,6 +75,7 @@ export function renderMarcador(playerScore, iaScore, puntosMax) {
             <span class="text-5xl">${iaScore}</span>
         </div>
         <div class="text-base text-gray-400 mt-2">A ${puntosMax} puntos</div>
+        <div class="text-xs text-gray-500 mt-1">Versión: <b>Beta 3.4 Copilot</b></div>
     `;
 }
 
@@ -130,7 +131,6 @@ export function renderCantoBotonera(gameState) {
         btn.setAttribute('data-canto', canto);
         btn.onclick = () => {
             if (canto === 'Me voy al Mazo') {
-                // Sumar puntos en disputa al rival y reiniciar mano
                 const rival = 'TrucoEstrella';
                 addMessageToHistory(`${gameState.playerName} se fue al mazo. Punto para ${rival}`, 'system');
                 gameState.iaScore += puntosEnDisputa(gameState);
@@ -139,7 +139,7 @@ export function renderCantoBotonera(gameState) {
                     document.getElementById('modal-fin-partida-content').textContent = `Ganador: TrucoEstrella`;
                     document.getElementById('modal-fin-partida').classList.remove('hidden');
                 } else {
-                    setTimeout(() => window.location.reload(), 1500);
+                    window.initializeGame();
                 }
             } else if (canto === 'Volver al Menú') {
                 window.location.reload();
@@ -155,13 +155,12 @@ function tieneFlor(mano) {
     return mano[0].palo === mano[1].palo && mano[1].palo === mano[2].palo;
 }
 
-// Calcula los puntos en disputa según el canto actual (truco, retruco, vale cuatro)
 function puntosEnDisputa(gameState) {
     if (gameState.cantoPendiente) {
         const tipo = gameState.cantoPendiente.tipo;
-        if (tipo === 'Truco') return 1;
-        if (tipo === 'ReTruco') return 2;
-        if (tipo === 'Vale Cuatro') return 3;
+        if (tipo === 'Truco') return 2;
+        if (tipo === 'ReTruco') return 3;
+        if (tipo === 'Vale Cuatro') return 4;
     }
     return 1;
 }

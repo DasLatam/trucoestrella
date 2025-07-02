@@ -24,7 +24,7 @@ export let gameState = {
     iaCantoActual: null,
     partidaTerminada: false,
     rondaActual: 1,
-    cantoPendiente: null, // { tipo, quien, estado, historial, opciones }
+    cantoPendiente: null,
     esperandoRespuesta: false,
     quienDebeResponder: null,
     rondaEmpieza: 'player'
@@ -188,12 +188,18 @@ function checkFinRonda() {
         else ganador = 'parda';
         gameState.rondaGanada.push(ganador);
         addMessageToHistory(`Ganador de la ronda: ${ganador === 'parda' ? 'Empate' : ganador}`, 'system');
-        if (gameState.rondaActual < 3) {
+        // Si alguien ganó dos rondas, termina la mano
+        let ganadorMano = determinarGanadorMano();
+        if (ganadorMano) {
+            sumarPuntosMano(ganadorMano);
+        } else if (gameState.rondaGanada.length < 3) {
+            // Si no hay ganador, sigue la siguiente ronda
             gameState.rondaActual++;
-        }
-        if (gameState.rondaGanada.length === 2) {
-            let manoGanador = determinarGanadorMano();
-            sumarPuntosMano(manoGanador);
+            // El que ganó la ronda anterior empieza la siguiente, si fue parda sigue el que empezó la ronda
+            gameState.turno = ganador === 'parda'
+                ? gameState.rondaEmpieza
+                : (ganador === gameState.playerName ? 'player' : 'ia');
+            if (gameState.turno === 'ia') setTimeout(iaTurno, 1200);
         }
     }
     renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
@@ -204,7 +210,14 @@ function determinarGanadorMano() {
     if (r1 === r2 && r1 !== 'parda') return r1;
     if (r1 !== 'parda' && r2 === 'parda') return r1;
     if (r2 !== 'parda' && r1 === 'parda') return r2;
-    return gameState.manoPlayerId === 'player' ? gameState.playerName : 'TrucoEstrella';
+    if (gameState.rondaGanada.length === 3) {
+        // Tercera ronda define
+        let r3 = gameState.rondaGanada[2];
+        if (r3 !== 'parda') return r3;
+        // Si la tercera también es parda, gana el que fue mano
+        return gameState.manoPlayerId === 'player' ? gameState.playerName : 'TrucoEstrella';
+    }
+    return null;
 }
 
 function sumarPuntosMano(ganador) {
@@ -423,3 +436,4 @@ document.addEventListener('DOMContentLoaded', () => {
 window.iniciarCanto = iniciarCanto;
 window.aceptarCanto = aceptarCanto;
 window.rechazarCanto = rechazarCanto;
+window.initializeGame = initializeGame;
