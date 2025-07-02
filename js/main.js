@@ -23,6 +23,12 @@ let gameState = {
         player: null,
         ia: null
     },
+    // Almacena las cartas jugadas en la mesa para cada ronda (para 1v1, solo 2 cartas por ronda)
+    playedCardsOnTable: {
+        round1: { player: null, ia: null },
+        round2: { player: null, ia: null },
+        round3: { player: null, ia: null }
+    },
     playerRoundWins: 0, // Victorias del jugador en la mano actual
     iaRoundWins: 0,     // Victorias de la IA en la mano actual
     manoPlayerId: null // 'player' o 'ia', quien es "mano" en la mano actual (para desempates y alternancia de manos)
@@ -131,6 +137,7 @@ const showStartScreen = () => {
         currentRound: 0,
         playerTurn: false,
         cardsPlayedInRound: { player: null, ia: null },
+        playedCardsOnTable: { round1: { player: null, ia: null }, round2: { player: null, ia: null }, round3: { player: null, ia: null } }, // Reiniciar también las cartas en mesa
         playerRoundWins: 0,
         iaRoundWins: 0,
         manoPlayerId: null // Se reinicia para que la primera mano sea aleatoria
@@ -193,10 +200,7 @@ const dealCards = (deck, numCards) => {
 const clearGameUI = () => {
     DOMElements.playerHandContainer.innerHTML = '';
     DOMElements.iaHandContainer.innerHTML = '';
-    // Los contenedores de cartas jugadas se limpian al inicio de cada mano,
-    // y luego se añaden las cartas jugadas en cada ronda.
-    DOMElements.iaPlayedCardsContainer.innerHTML = '';
-    DOMElements.playerPlayedCardsContainer.innerHTML = '';
+    clearPlayedCards(); // Limpiar visualmente las cartas de la mesa
     updateScoreboardMessage('top', '');
     updateScoreboardMessage('bottom', '');
     renderScore(gameState.playerScore, gameState.gamePoints, DOMElements.playerScoreMatchesContainer.id);
@@ -210,7 +214,7 @@ const clearGameUI = () => {
  * @returns {string} 'player' o 'ia'.
  */
 const determineMano = () => {
-    // Si es la primera mano de la partida, la mano es aleatoria
+    // Si es la primera mano de la PARTIDA, la mano es aleatoria
     if (gameState.manoPlayerId === null) {
         return Math.random() < 0.5 ? 'player' : 'ia';
     } else {
@@ -224,9 +228,7 @@ const determineMano = () => {
  * @param {boolean} enable Si es true, las cartas son clickables.
  */
 const togglePlayerHandInteraction = (enable) => {
-    // Asegurarse de que las cartas solo sean clickables si no están ya jugadas
     DOMElements.playerHandContainer.querySelectorAll('.card').forEach(cardElement => {
-        // Solo aplicar el listener si la carta NO es la que está boca abajo (IA) y es jugable
         if (cardElement.dataset.cardPlayable === 'true') {
             if (enable) {
                 cardElement.classList.add('cursor-pointer', 'hover:scale-105', 'transform', 'transition-transform', 'duration-100', 'active:scale-95');
@@ -257,10 +259,12 @@ const handlePlayerCardPlay = (event) => {
         card => !(card.value === playedCard.value && card.suit === playedCard.suit)
     );
 
-    // Añadir la carta a las cartas jugadas en la ronda
+    // Guardar la carta jugada en el estado de la ronda
     gameState.cardsPlayedInRound.player = playedCard;
+    gameState.playedCardsOnTable[`round${gameState.currentRound}`].player = playedCard;
 
-    // Renderizar mano actualizada y carta jugada en mesa
+
+    // Renderizar mano actualizada y añadir carta jugada a la mesa
     renderPlayerHand(gameState.playerHand, 'player-hand', false); // Mano ya no es jugable hasta el siguiente turno
     addCardToPlayedArea(playedCard, 'player', DOMElements.playerPlayedCardsContainer.id);
     addMessageToHistory(`${gameState.playerName} jugó el ${playedCard.value} de ${playedCard.suit}.`, 'player');
@@ -291,10 +295,11 @@ const playIACard = () => {
     // Quitar la carta de la mano de la IA
     gameState.iaHand.splice(randomIndex, 1);
 
-    // Añadir la carta a las cartas jugadas en la ronda
+    // Guardar la carta jugada en el estado de la ronda
     gameState.cardsPlayedInRound.ia = playedCard;
+    gameState.playedCardsOnTable[`round${gameState.currentRound}`].ia = playedCard;
 
-    // Renderizar mano de IA (boca abajo) y carta jugada en mesa
+    // Renderizar mano de IA (boca abajo) y añadir carta jugada a la mesa
     renderIAHand(gameState.iaHand.length, 'ia-hand');
     addCardToPlayedArea(playedCard, 'ia', DOMElements.iaPlayedCardsContainer.id);
     addMessageToHistory(`YO (TrucoEstrella) jugó el ${playedCard.value} de ${playedCard.suit}.`, 'ia');
@@ -339,6 +344,8 @@ const determineRoundWinner = () => {
         addMessageToHistory(`Ronda ${gameState.currentRound} fue parda.`, 'system');
     }
     
+    // Las cartas permanecen en la mesa por ahora. La limpieza ocurre al final de la mano.
+
     // Llamar a endRound después de un breve retraso para que los jugadores vean el resultado
     setTimeout(() => {
         endRound(roundWinner);
@@ -351,7 +358,7 @@ const determineRoundWinner = () => {
  */
 const endRound = (winner) => {
     gameState.currentRound++;
-    gameState.cardsPlayedInRound = { player: null, ia: null }; // Resetear cartas jugadas en esta ronda
+    gameState.cardsPlayedInRound = { player: null, ia: null }; // Resetear cartas jugadas en esta ronda (solo las de la ronda actual)
 
     console.log(`Ronda ${gameState.currentRound-1} finalizada. Ganador: ${winner}`);
     console.log(`Victorias - Jugador: ${gameState.playerRoundWins}, IA: ${gameState.iaRoundWins}`);
@@ -364,16 +371,16 @@ const endRound = (winner) => {
         addMessageToHistory(`Iniciando Ronda ${gameState.currentRound}.`, 'system');
         
         // Determinar quién es mano para la siguiente ronda (ganador de la anterior o mano original en parda)
-        let nextManoTurn = null;
+        let nextTurnPlayer = null;
         if (winner === 'player') {
-            nextManoTurn = 'player';
+            nextTurnPlayer = 'player';
         } else if (winner === 'ia') {
-            nextManoTurn = 'ia';
+            nextTurnPlayer = 'ia';
         } else { // Parda, la mano original de la mano actual sigue siendo mano
-            nextManoTurn = gameState.manoPlayerId;
+            nextTurnPlayer = gameState.manoPlayerId;
         }
 
-        if (nextManoTurn === 'player') {
+        if (nextTurnPlayer === 'player') {
             gameState.playerTurn = true;
             addMessageToHistory('Es tu turno.', 'system');
             togglePlayerHandInteraction(true); // Re-habilitar interacción para el jugador
@@ -422,15 +429,15 @@ const endHand = () => {
     } 
     
     // Si nadie ganó la partida, iniciar nueva mano después de un breve retraso
-    // Limpiar las cartas jugadas en la mesa (se hace aquí al final de la mano)
-    DOMElements.iaPlayedCardsContainer.innerHTML = ''; // Limpiar cartas jugadas IA
-    DOMElements.playerPlayedCardsContainer.innerHTML = ''; // Limpiar cartas jugadas jugador
+    // Limpiar las cartas jugadas en la mesa (solo aquí al final de la mano)
+    clearPlayedCards(); // Vuelve a limpiar ambos contenedores
     
     // Resetear estado de victorias de ronda para la próxima mano
     gameState.playerRoundWins = 0;
     gameState.iaRoundWins = 0;
-    // gameState.currentRound se reinicia en initializeGame
+    gameState.currentRound = 0; // Se reinicia para que initializeGame la ponga en 1
     gameState.cardsPlayedInRound = { player: null, ia: null };
+    gameState.playedCardsOnTable = { round1: { player: null, ia: null }, round2: { player: null, ia: null }, round3: { player: null, ia: null } }; // Reiniciar cartas en mesa
 
     setTimeout(() => {
         addMessageToHistory('Comenzando nueva mano...', 'system');
@@ -456,8 +463,7 @@ const initializeGame = () => {
     renderPlayerHand(gameState.playerHand, 'player-hand', true); // Las cartas son jugables al inicio de la mano
     renderIAHand(GAME_CONSTANTS.CARDS_PER_PLAYER, 'ia-hand');
     
-    // IMPORTANTE: clearPlayedCards() se llama ahora en endHand() para limpiar la mesa antes de la nueva mano
-    // y también en showStartScreen() al volver al menú.
+    clearPlayedCards(); // Asegurarse de que la mesa esté limpia al inicio de cada mano
 
     // Determinar quién es la mano de la primera ronda de esta mano
     gameState.manoPlayerId = determineMano();

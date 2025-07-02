@@ -174,6 +174,7 @@ export function renderScore(score, maxPoints, containerId) {
 }
 
 // Función para limpiar las cartas jugadas en la mesa (limpia los contenedores visualmente)
+// Esta función ahora SÍ vacía los contenedores para una nueva mano
 export function clearPlayedCards() {
     const iaPlayedCardsContainer = document.getElementById('ia-played-cards');
     const playerPlayedCardsContainer = document.getElementById('player-played-cards');
@@ -182,18 +183,16 @@ export function clearPlayedCards() {
 }
 
 // Función para añadir una carta a la mesa
+// AHORA NO LIMPIA EL CONTENEDOR, SOLO AÑADE LA CARTA
 export function addCardToPlayedArea(card, playerType, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
-
-    // Se limpia el contenedor antes de añadir la nueva carta para solo mostrar la última jugada por ese lado.
-    // Esto es funcional para una ronda 1v1 donde solo hay una carta por lado en juego.
-    container.innerHTML = ''; 
 
     const cardElement = createCardElement(card, false, false); // No jugable una vez en mesa
     
     cardElement.classList.add('relative', 'z-0');
 
+    // Animación básica de entrada
     cardElement.style.opacity = '0';
     cardElement.style.transform = 'translateY(20px)';
     setTimeout(() => {
@@ -202,5 +201,6 @@ export function addCardToPlayedArea(card, playerType, containerId) {
         cardElement.style.transform = 'translateY(0)';
     }, 50);
 
+    // Añade la carta SIN limpiar el contenido previo del contenedor
     container.appendChild(cardElement);
 }

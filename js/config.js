@@ -43,7 +43,7 @@ export const GAME_CONSTANTS = {
     DEFAULT_PLAYER_NAME: 'Jugador 1',
     DEFAULT_GAME_POINTS: 30,
     DEFAULT_PLAY_WITH_FLOR: false,
-    VERSION: 'Beta 1.3' // ACTUALIZADA LA VERSIÓN
+    VERSION: 'Beta 1.4' // ACTUALIZADA LA VERSIÓN
 };
 
 // Exporta una función para obtener el valor de Truco de una carta
