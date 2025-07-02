@@ -4,8 +4,8 @@
 import { SUITS, CARD_VALUES, GAME_CONSTANTS, getTrucoValue, getEnvidoValue } from './config.js';
 import { renderPlayerHand, renderIAHand, addMessageToHistory, updateScoreboardMessage, renderScore, createCardElement, clearPlayedCards, addCardToPlayedArea } from './ui.js';
 
-// Versión actual de la aplicación
-const APP_VERSION = 'Beta 1.0'; // Se mantiene la versión
+// Versión actual de la aplicación (se toma de config.js ahora)
+const APP_VERSION = GAME_CONSTANTS.VERSION;
 
 // Estado global del juego
 let gameState = {
@@ -26,30 +26,11 @@ let gameState = {
     },
     playerRoundWins: 0,
     iaRoundWins: 0,
-    manoPlayerId: null // 'player' o 'ia', quien es "mano" en la ronda actual (empieza jugando)
+    manoPlayerId: null // 'player' o 'ia', quien es "mano" en la mano actual (para desempates y alternancia de manos)
 };
 
 // Referencias del DOM (las obtenemos una vez al inicio)
-const DOMElements = {
-    startScreen: null,
-    gameScreen: null,
-    playerNameInput: null,
-    gamePointsRadios: null,
-    playWithFlorCheckbox: null,
-    startGameBtn: null,
-    clearCacheBtn: null,
-    appVersionSpan: null,
-    backToMenuBtn: null,
-    playerNameText: null,
-    playerHandContainer: null,
-    iaHandContainer: null,
-    iaPlayedCardsContainer: null,
-    playerPlayedCardsContainer: null,
-    playerScoreMatchesContainer: null,
-    opponentScoreMatchesContainer: null,
-    historyContent: null,
-    // Puedes añadir más referencias aquí si es necesario
-};
+const DOMElements = {};
 
 // --- Funciones de Inicialización y Configuración ---
 
@@ -76,6 +57,8 @@ const getDOMElements = () => {
     DOMElements.playerScoreMatchesContainer = document.getElementById('player-score-matches');
     DOMElements.opponentScoreMatchesContainer = document.getElementById('opponent-score-matches');
     DOMElements.historyContent = document.getElementById('history-content');
+    // Referencias a los botones de opciones de canto
+    DOMElements.gameControlButtons = document.querySelectorAll('#game-controls .game-btn');
 };
 
 
@@ -158,7 +141,7 @@ const showStartScreen = () => {
         cardsPlayedInRound: { player: null, ia: null },
         playerRoundWins: 0,
         iaRoundWins: 0,
-        manoPlayerId: null
+        manoPlayerId: null // Se reinicia para que la primera mano sea aleatoria
     });
 };
 
@@ -172,7 +155,7 @@ const showGameScreen = (config) => {
     DOMElements.playerNameText.textContent = config.playerName;
     
     // Limpiar historial previo antes de iniciar una nueva partida
-    DOMElements.historyContent.innerHTML = ''; 
+    DOMElements.historyContent.innerHTML = '<p class="text-gray-400">Bienvenido a TrucoEstrellas!</p>'; 
     addMessageToHistory('¡La partida ha comenzado!', 'system');
     initializeGame(); // Inicializar un nuevo juego
 };
@@ -219,8 +202,6 @@ const clearGameUI = () => {
     updateScoreboardMessage('bottom', '');
     renderScore(0, gameState.gamePoints, DOMElements.playerScoreMatchesContainer.id);
     renderScore(0, gameState.gamePoints, DOMElements.opponentScoreMatchesContainer.id);
-    // Dejar el historial inicial para no vaciarlo completamente
-    DOMElements.historyContent.innerHTML = '<p class="text-gray-400">Bienvenido a TrucoEstrellas!</p>'; 
 };
 
 /**
@@ -245,12 +226,14 @@ const determineMano = () => {
  */
 const togglePlayerHandInteraction = (enable) => {
     DOMElements.playerHandContainer.querySelectorAll('.card').forEach(cardElement => {
-        if (enable) {
-            cardElement.classList.add('cursor-pointer', 'hover:scale-105', 'transform', 'transition-transform', 'duration-100', 'active:scale-95');
-            cardElement.addEventListener('click', handlePlayerCardPlay);
-        } else {
-            cardElement.classList.remove('cursor-pointer', 'hover:scale-105', 'transform', 'transition-transform', 'duration-100', 'active:scale-95');
-            cardElement.removeEventListener('click', handlePlayerCardPlay);
+        if (cardElement.dataset.cardPlayable === 'true') { // Solo afectar cartas que son jugables
+            if (enable) {
+                cardElement.classList.add('cursor-pointer', 'hover:scale-105', 'transform', 'transition-transform', 'duration-100', 'active:scale-95');
+                cardElement.addEventListener('click', handlePlayerCardPlay);
+            } else {
+                cardElement.classList.remove('cursor-pointer', 'hover:scale-105', 'transform', 'transition-transform', 'duration-100', 'active:scale-95');
+                cardElement.removeEventListener('click', handlePlayerCardPlay);
+            }
         }
     });
 };
@@ -269,7 +252,6 @@ const handlePlayerCardPlay = (event) => {
     };
 
     // Quitar la carta de la mano del jugador
-    // Se elimina por cardId para asegurar que se quita la carta exacta si hay duplicados (aunque no debería haber)
     gameState.playerHand = gameState.playerHand.filter(
         card => !(card.value === playedCard.value && card.suit === playedCard.suit)
     );
@@ -285,14 +267,12 @@ const handlePlayerCardPlay = (event) => {
     togglePlayerHandInteraction(false); // Deshabilitar clic en cartas hasta que la IA responda
     gameState.playerTurn = false; // Ya no es el turno del jugador
 
-    // Si la IA aún no ha jugado, es su turno.
-    // Si la IA ya jugó (en el caso de que la IA fuera mano), se determina el ganador de la ronda.
-    if (gameState.cardsPlayedInRound.ia === null && gameState.manoPlayerId !== 'ia') { // Si IA no ha jugado Y no es mano de IA
-        // Simular un pequeño retraso para la IA
-        setTimeout(playIACard, 1000);
-    } else {
-        // Ambas cartas jugadas, determinar ganador (si la IA ya había jugado o es su turno ahora)
+    // Verificar si la IA ya jugó su carta para esta ronda
+    if (gameState.cardsPlayedInRound.ia !== null) {
         determineRoundWinner();
+    } else {
+        // La IA aún no ha jugado, es su turno.
+        setTimeout(playIACard, 1000);
     }
 };
 
@@ -318,12 +298,11 @@ const playIACard = () => {
     addCardToPlayedArea(playedCard, 'ia', 'ia-played-cards');
     addMessageToHistory(`YO (TrucoEstrella) jugó el ${playedCard.value} de ${playedCard.suit}.`, 'ia');
 
-    // Ambas cartas jugadas, determinar ganador
-    // Solo si el jugador ya jugó su carta
+    // Verificar si el jugador ya jugó su carta para esta ronda
     if (gameState.cardsPlayedInRound.player !== null) {
         determineRoundWinner();
     } else {
-        // Si la IA fue mano y jugó primero, ahora es el turno del jugador
+        // El jugador aún no ha jugado, es su turno.
         gameState.playerTurn = true;
         addMessageToHistory('Es tu turno.', 'system');
         togglePlayerHandInteraction(true);
@@ -385,16 +364,16 @@ const endRound = (winner) => {
         addMessageToHistory(`Iniciando Ronda ${gameState.currentRound}.`, 'system');
         
         // Determinar quién es mano para la siguiente ronda (ganador de la anterior o mano original en parda)
-        let nextMano = null;
+        let nextManoTurn = null;
         if (winner === 'player') {
-            nextMano = 'player';
+            nextManoTurn = 'player';
         } else if (winner === 'ia') {
-            nextMano = 'ia';
+            nextManoTurn = 'ia';
         } else { // Parda, la mano original de la mano actual sigue siendo mano
-            nextMano = gameState.manoPlayerId;
+            nextManoTurn = gameState.manoPlayerId;
         }
 
-        if (nextMano === 'player') {
+        if (nextManoTurn === 'player') {
             gameState.playerTurn = true;
             addMessageToHistory('Es tu turno.', 'system');
             togglePlayerHandInteraction(true);
@@ -446,7 +425,7 @@ const endHand = () => {
     // Resetear estado para la próxima mano
     gameState.playerRoundWins = 0;
     gameState.iaRoundWins = 0;
-    gameState.currentRound = 0;
+    // gameState.currentRound se reinicia en initializeGame
     gameState.cardsPlayedInRound = { player: null, ia: null };
 
     setTimeout(() => {
@@ -514,6 +493,14 @@ const setupEventListeners = () => {
     // Listener para el botón "Volver al Menú" en la pantalla de juego
     DOMElements.backToMenuBtn.addEventListener('click', () => {
         showStartScreen();
+    });
+
+    // TODO: Event listeners para los botones de canto (Opciones)
+    DOMElements.gameControlButtons.forEach(button => {
+        button.addEventListener('click', (event) => {
+            console.log(`Botón de opción clicado: ${event.target.textContent}`);
+            // Aquí se manejará la lógica de Truco, Envido, Flor, etc.
+        });
     });
 };
 

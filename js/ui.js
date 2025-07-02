@@ -9,7 +9,9 @@ export function createCardElement(card, isFaceDown = false, isPlayable = false) 
         'bg-white', 'border', 'border-gray-400', 'rounded-lg',
         'w-20', 'h-28', 'flex', 'flex-col', 'justify-between', 'p-1',
         'shadow-md', 'select-none', // select-none para evitar selección de texto
-        'text-gray-900' // Color base para los elementos de la carta
+        'text-gray-900', // Color base para los elementos de la carta
+        'relative', // Para posicionar los números correctamente
+        'overflow-hidden' // Para asegurar que los números no se salgan
     );
 
     // Si la carta está boca abajo
@@ -18,7 +20,6 @@ export function createCardElement(card, isFaceDown = false, isPlayable = false) 
         cardDiv.textContent = '?';
     } else {
         // Colores para los palos (Negro para Espadas/Bastos, Rojo para Oros/Copas)
-        // Usamos switch para ser más explícitos con los nuevos iconos
         let textColor = 'text-gray-900'; // Default para Espadas y Bastos
         if (card.suit === '💰' || card.suit === '🍷') { // Oros o Copas
             textColor = 'text-red-600';
@@ -26,15 +27,9 @@ export function createCardElement(card, isFaceDown = false, isPlayable = false) 
 
         // Estructura interna de la carta con número y palo en las esquinas y centro
         cardDiv.innerHTML = `
-            <div class="flex justify-between w-full">
-                <span class="text-sm font-bold ${textColor}">${card.value}</span>
-                <span class="text-sm font-bold ${textColor} transform scale-x-[-1] rotate-180">${card.value}</span>
-            </div>
-            <span class="text-4xl text-center ${textColor}">${card.suit}</span>
-            <div class="flex justify-between w-full transform rotate-180">
-                <span class="text-sm font-bold ${textColor}">${card.value}</span>
-                <span class="text-sm font-bold ${textColor} transform scale-x-[-1] rotate-180">${card.value}</span>
-            </div>
+            <span class="absolute top-1 left-1 text-sm font-bold ${textColor}">${card.value}</span>
+            <span class="absolute bottom-1 right-1 text-sm font-bold ${textColor} rotate-180">${card.value}</span>
+            <span class="text-4xl text-center absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${textColor}">${card.suit}</span>
         `;
 
         // Si la carta es jugable (mano del jugador)
@@ -180,8 +175,10 @@ export function renderScore(score, maxPoints, containerId) {
 
 // Función para limpiar las cartas jugadas en la mesa
 export function clearPlayedCards() {
-    document.getElementById('ia-played-cards').innerHTML = '';
-    document.getElementById('player-played-cards').innerHTML = '';
+    const iaPlayedCardsContainer = document.getElementById('ia-played-cards');
+    const playerPlayedCardsContainer = document.getElementById('player-played-cards');
+    if (iaPlayedCardsContainer) iaPlayedCardsContainer.innerHTML = '';
+    if (playerPlayedCardsContainer) playerPlayedCardsContainer.innerHTML = '';
 }
 
 // Función para añadir una carta a la mesa

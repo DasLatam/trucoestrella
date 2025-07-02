@@ -6,29 +6,35 @@
     <title>TrucoEstrellas - El Truco Online</title>
     <link rel="icon" href="favicon.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://argentina-pokerstars.com/wp-content/themes/hello-elementor/style.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4 font-sans">
 
     <div id="start-screen" class="bg-gray-800 p-8 rounded-lg shadow-2xl w-full max-w-lg mx-auto">
-        <h1 class="text-4xl font-bold text-center mb-6 text-yellow-400">TrucoEstrellas</h1>
-
-        <div class="mb-4">
-            <label for="playerName" class="block text-gray-300 text-sm font-bold mb-2">Tu Nombre:</label>
-            <input type="text" id="playerName" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-100 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 placeholder-gray-400" placeholder="Ej: Campeón del Truco" value="Jugador 1">
+        <div class="flex items-center justify-center mb-6">
+            <img src="favicon.png" alt="TrucoEstrellas Logo" class="h-12 w-12 mr-3">
+            <h1 class="text-4xl font-bold text-yellow-400">TrucoEstrellas</h1>
         </div>
 
-        <div class="mb-6">
-            <span class="block text-gray-300 text-sm font-bold mb-2">Puntos para Ganar:</span>
-            <div class="flex gap-4">
-                <label class="inline-flex items-center">
-                    <input type="radio" name="gamePoints" value="15" class="form-radio text-blue-500" checked>
-                    <span class="ml-2 text-gray-300">15 Puntos (Las Malas)</span>
-                </label>
-                <label class="inline-flex items-center">
-                    <input type="radio" name="gamePoints" value="30" class="form-radio text-blue-500">
-                    <span class="ml-2 text-gray-300">30 Puntos (Partida Completa)</span>
-                </label>
+        <div class="flex flex-col md:flex-row md:justify-between md:items-end mb-6 gap-4">
+            <div class="md:w-1/2">
+                <label for="playerName" class="block text-gray-300 text-sm font-bold mb-2">Tu Nombre:</label>
+                <input type="text" id="playerName" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-100 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 placeholder-gray-400" placeholder="Ej: Campeón del Truco" value="Jugador 1">
+            </div>
+
+            <div class="md:w-1/2 md:pl-4">
+                <span class="block text-gray-300 text-sm font-bold mb-2">Puntos para Ganar:</span>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="gamePoints" value="15" class="form-radio text-blue-500" checked>
+                        <span class="ml-2 text-gray-300">15 Puntos</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="gamePoints" value="30" class="form-radio text-blue-500">
+                        <span class="ml-2 text-gray-300">30 Puntos</span>
+                    </label>
+                </div>
             </div>
         </div>
 
@@ -41,17 +47,16 @@
 
         <div class="mb-8">
             <span class="block text-gray-300 text-sm font-bold mb-2">Modo de Juego:</span>
-            <div class="grid grid-cols-2 gap-4">
-                <button id="btnPlayVsIA" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200">
+            <div class="flex flex-wrap gap-2 justify-center"> <button id="btnPlayVsIA" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200 flex-grow">
                     Retar a TrucoEstrella (1 vs IA)
                 </button>
-                <button id="btnPlay1v1" class="bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded cursor-not-allowed opacity-70" disabled>
+                <button id="btnPlay1v1" class="bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded cursor-not-allowed opacity-70 flex-grow" disabled>
                     Uno a Uno (Próximamente)
                 </button>
-                <button id="btnPlay2v2" class="bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded cursor-not-allowed opacity-70" disabled>
+                <button id="btnPlay2v2" class="bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded cursor-not-allowed opacity-70 flex-grow" disabled>
                     Dos a Dos (Próximamente)
                 </button>
-                <button id="btnPlay3v3" class="bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded cursor-not-allowed opacity-70" disabled>
+                <button id="btnPlay3v3" class="bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded cursor-not-allowed opacity-70 flex-grow" disabled>
                     Tres a Tres (Próximamente)
                 </button>
             </div>
@@ -67,7 +72,8 @@
             <button id="clearCacheBtn" class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-xs transition duration-200">
                 Limpiar Cache
             </button>
-            <span id="app-version">Versión: Beta 1.0</span> <div class="text-right">
+            <span id="app-version">Versión: Beta 1.1</span>
+            <div class="text-right">
                 <p>Versión: PC</p>
                 <p class="text-xs mt-1">
                     <a href="#" class="hover:underline opacity-50 cursor-not-allowed">Autenticar con Gmail</a> |
@@ -82,13 +88,14 @@
 
         <div id="game-controls" class="flex flex-col gap-2 p-3 bg-gray-800 rounded-lg shadow-lg lg:w-1/6 min-w-[120px] max-w-[200px] mx-auto lg:mx-0">
             <h3 class="text-xl font-bold text-yellow-400 mb-2 text-center">Opciones</h3>
-            <button class="game-btn bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200">Truco</button>
             <button class="game-btn bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200">Envido</button>
             <button class="game-btn bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200">Real Envido</button>
             <button class="game-btn bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200">Falta Envido</button>
             <button class="game-btn bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded transition duration-200">Flor</button>
             <button class="game-btn bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded transition duration-200">Contra Flor</button>
             <button class="game-btn bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded transition duration-200">Contra Flor al Resto</button>
+            <button class="game-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-200">Truco</button> <button class="game-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-200">Re-Truco</button>
+            <button class="game-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-200">Vale Cuatro</button>
             <button class="game-btn bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-200 mt-auto">Quiero</button>
             <button class="game-btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-200">No Quiero</button>
             <button class="game-btn bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded transition duration-200">Ir al Mazo</button>
