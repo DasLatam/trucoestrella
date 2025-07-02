@@ -73,7 +73,7 @@ export function renderIAHand(numCards, containerId) {
     for (let i = 0; i < numCards; i++) {
         const cardElement = createCardElement({value:0, suit:''}, true, false); // Carta boca abajo, no jugable
         container.appendChild(cardElement);
-    }
+    });
 }
 
 // Función para añadir un mensaje al historial/chat
@@ -174,11 +174,12 @@ export function renderScore(score, maxPoints, containerId) {
 }
 
 // Función para limpiar las cartas jugadas en la mesa
+// NO VACÍA EL CONTENEDOR, SINO QUE LO ESCONDE TEMPORALMENTE SI ES NECESARIO
 export function clearPlayedCards() {
-    const iaPlayedCardsContainer = document.getElementById('ia-played-cards');
-    const playerPlayedCardsContainer = document.getElementById('player-played-cards');
-    if (iaPlayedCardsContainer) iaPlayedCardsContainer.innerHTML = '';
-    if (playerPlayedCardsContainer) playerPlayedCardsContainer.innerHTML = '';
+    // Para esta versión, las cartas permanecerán visibles hasta el final de la mano.
+    // Esta función se puede expandir si en el futuro se desea una animación de "recojo"
+    // o una lógica más compleja para las rondas.
+    // Por ahora, solo nos aseguramos de que los contenedores estén listos para nuevas cartas.
 }
 
 // Función para añadir una carta a la mesa
@@ -186,9 +187,12 @@ export function addCardToPlayedArea(card, playerType, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
+    // Limpiar el contenedor antes de añadir la nueva carta para que solo muestre la última jugada por ese lado
+    // Esto es para 1v1 y para mostrar solo la carta de la ronda actual
+    container.innerHTML = ''; 
+
     const cardElement = createCardElement(card, false, false); // No jugable una vez en mesa
     
-    // Añadir clase para posicionamiento relativo a su contenedor
     cardElement.classList.add('relative', 'z-0');
 
     // Animación básica de entrada (opcional, puede ajustarse)

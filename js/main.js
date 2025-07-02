@@ -19,13 +19,12 @@ let gameState = {
     iaScore: 0,
     currentRound: 0, // 0 = no iniciada, 1 = primera, 2 = segunda, 3 = tercera
     playerTurn: false, // true si es turno del jugador, false si es de la IA
-    handWinner: null, // 'player', 'ia', 'parda'
-    cardsPlayedInRound: {
+    cardsPlayedInRound: { // Guarda la carta jugada por cada jugador en la ronda actual
         player: null,
         ia: null
     },
-    playerRoundWins: 0,
-    iaRoundWins: 0,
+    playerRoundWins: 0, // Victorias del jugador en la mano actual
+    iaRoundWins: 0,     // Victorias de la IA en la mano actual
     manoPlayerId: null // 'player' o 'ia', quien es "mano" en la mano actual (para desempates y alternancia de manos)
 };
 
@@ -57,7 +56,6 @@ const getDOMElements = () => {
     DOMElements.playerScoreMatchesContainer = document.getElementById('player-score-matches');
     DOMElements.opponentScoreMatchesContainer = document.getElementById('opponent-score-matches');
     DOMElements.historyContent = document.getElementById('history-content');
-    // Referencias a los botones de opciones de canto
     DOMElements.gameControlButtons = document.querySelectorAll('#game-controls .game-btn');
 };
 
@@ -92,7 +90,6 @@ const loadGameConfig = () => {
         gameState.playWithFlor = false;
     }
     
-    // Actualizar la versión visible
     if (DOMElements.appVersionSpan) {
         DOMElements.appVersionSpan.textContent = `Versión: ${APP_VERSION}`;
     }
@@ -111,7 +108,6 @@ const saveGameConfig = () => {
     localStorage.setItem('trucoEstrellasGamePoints', gamePoints);
     localStorage.setItem('trucoEstrellasPlayWithFlor', playWithFlor.toString());
 
-    // Actualiza el estado global del juego
     gameState.playerName = playerName;
     gameState.gamePoints = parseInt(gamePoints);
     gameState.playWithFlor = playWithFlor;
@@ -125,10 +121,7 @@ const saveGameConfig = () => {
 const showStartScreen = () => {
     DOMElements.gameScreen.classList.add('hidden');
     DOMElements.startScreen.classList.remove('hidden');
-    addMessageToHistory('Bienvenido a TrucoEstrellas!', 'system'); // Reiniciar historial al volver
-    clearGameUI(); // Limpiar UI al regresar al menú
-    console.log('Regresando a la pantalla de inicio...');
-    // Reiniciar estado del juego
+    // Reiniciar estado del juego para una partida nueva
     Object.assign(gameState, {
         playerHand: [],
         iaHand: [],
@@ -137,12 +130,15 @@ const showStartScreen = () => {
         iaScore: 0,
         currentRound: 0,
         playerTurn: false,
-        handWinner: null,
         cardsPlayedInRound: { player: null, ia: null },
         playerRoundWins: 0,
         iaRoundWins: 0,
         manoPlayerId: null // Se reinicia para que la primera mano sea aleatoria
     });
+    // Limpiar UI al regresar al menú
+    clearGameUI(); 
+    DOMElements.historyContent.innerHTML = '<p class="text-gray-400">Bienvenido a TrucoEstrellas!</p>'; 
+    console.log('Regresando a la pantalla de inicio...');
 };
 
 /**
@@ -154,8 +150,7 @@ const showGameScreen = (config) => {
     DOMElements.gameScreen.classList.remove('hidden');
     DOMElements.playerNameText.textContent = config.playerName;
     
-    // Limpiar historial previo antes de iniciar una nueva partida
-    DOMElements.historyContent.innerHTML = '<p class="text-gray-400">Bienvenido a TrucoEstrellas!</p>'; 
+    DOMElements.historyContent.innerHTML = ''; // Limpiar historial antes de iniciar una nueva partida
     addMessageToHistory('¡La partida ha comenzado!', 'system');
     initializeGame(); // Inicializar un nuevo juego
 };
@@ -192,16 +187,20 @@ const dealCards = (deck, numCards) => {
 };
 
 /**
- * Limpia la interfaz de usuario de las cartas y el marcador.
+ * Limpia la interfaz de usuario de las cartas en la mesa y el marcador.
+ * Debe ser llamada al inicio de cada MANO.
  */
 const clearGameUI = () => {
     DOMElements.playerHandContainer.innerHTML = '';
     DOMElements.iaHandContainer.innerHTML = '';
-    clearPlayedCards(); // Función de ui.js
+    // Los contenedores de cartas jugadas se limpian al inicio de cada mano,
+    // y luego se añaden las cartas jugadas en cada ronda.
+    DOMElements.iaPlayedCardsContainer.innerHTML = '';
+    DOMElements.playerPlayedCardsContainer.innerHTML = '';
     updateScoreboardMessage('top', '');
     updateScoreboardMessage('bottom', '');
-    renderScore(0, gameState.gamePoints, DOMElements.playerScoreMatchesContainer.id);
-    renderScore(0, gameState.gamePoints, DOMElements.opponentScoreMatchesContainer.id);
+    renderScore(gameState.playerScore, gameState.gamePoints, DOMElements.playerScoreMatchesContainer.id);
+    renderScore(gameState.iaScore, gameState.gamePoints, DOMElements.opponentScoreMatchesContainer.id);
 };
 
 /**
@@ -225,8 +224,10 @@ const determineMano = () => {
  * @param {boolean} enable Si es true, las cartas son clickables.
  */
 const togglePlayerHandInteraction = (enable) => {
+    // Asegurarse de que las cartas solo sean clickables si no están ya jugadas
     DOMElements.playerHandContainer.querySelectorAll('.card').forEach(cardElement => {
-        if (cardElement.dataset.cardPlayable === 'true') { // Solo afectar cartas que son jugables
+        // Solo aplicar el listener si la carta NO es la que está boca abajo (IA) y es jugable
+        if (cardElement.dataset.cardPlayable === 'true') {
             if (enable) {
                 cardElement.classList.add('cursor-pointer', 'hover:scale-105', 'transform', 'transition-transform', 'duration-100', 'active:scale-95');
                 cardElement.addEventListener('click', handlePlayerCardPlay);
@@ -261,18 +262,18 @@ const handlePlayerCardPlay = (event) => {
 
     // Renderizar mano actualizada y carta jugada en mesa
     renderPlayerHand(gameState.playerHand, 'player-hand', false); // Mano ya no es jugable hasta el siguiente turno
-    addCardToPlayedArea(playedCard, 'player', 'player-played-cards');
+    addCardToPlayedArea(playedCard, 'player', DOMElements.playerPlayedCardsContainer.id);
     addMessageToHistory(`${gameState.playerName} jugó el ${playedCard.value} de ${playedCard.suit}.`, 'player');
 
     togglePlayerHandInteraction(false); // Deshabilitar clic en cartas hasta que la IA responda
     gameState.playerTurn = false; // Ya no es el turno del jugador
 
-    // Verificar si la IA ya jugó su carta para esta ronda
-    if (gameState.cardsPlayedInRound.ia !== null) {
-        determineRoundWinner();
+    // Si la IA aún no ha jugado, es su turno.
+    if (gameState.cardsPlayedInRound.ia === null) {
+        setTimeout(playIACard, 1000); // IA juega después de 1 segundo
     } else {
-        // La IA aún no ha jugado, es su turno.
-        setTimeout(playIACard, 1000);
+        // Ambas cartas jugadas, determinar ganador (esto ocurre si la IA fue mano)
+        determineRoundWinner();
     }
 };
 
@@ -295,7 +296,7 @@ const playIACard = () => {
 
     // Renderizar mano de IA (boca abajo) y carta jugada en mesa
     renderIAHand(gameState.iaHand.length, 'ia-hand');
-    addCardToPlayedArea(playedCard, 'ia', 'ia-played-cards');
+    addCardToPlayedArea(playedCard, 'ia', DOMElements.iaPlayedCardsContainer.id);
     addMessageToHistory(`YO (TrucoEstrella) jugó el ${playedCard.value} de ${playedCard.suit}.`, 'ia');
 
     // Verificar si el jugador ya jugó su carta para esta ronda
@@ -338,11 +339,14 @@ const determineRoundWinner = () => {
         addMessageToHistory(`Ronda ${gameState.currentRound} fue parda.`, 'system');
     }
     
-    // Limpiar cartas de la mesa después de un breve retraso para que se vean
+    // Las cartas permanecen en la mesa por ahora, solo limpiamos los contenedores de jugadas.
+    // En futuras versiones, quizás animemos el "recojo" o las deshabilitamos.
+
+    // Llamar a endRound sin limpiar visualmente las cartas de la mesa inmediatamente
     setTimeout(() => {
-        clearPlayedCards();
+        // Aquí no llamamos a clearPlayedCards(), las cartas se quedan.
         endRound(roundWinner);
-    }, 1500); // Esperar 1.5 segundos antes de limpiar y avanzar
+    }, 1500); // Esperar 1.5 segundos para que los jugadores vean el resultado
 };
 
 /**
@@ -376,7 +380,7 @@ const endRound = (winner) => {
         if (nextManoTurn === 'player') {
             gameState.playerTurn = true;
             addMessageToHistory('Es tu turno.', 'system');
-            togglePlayerHandInteraction(true);
+            togglePlayerHandInteraction(true); // Re-habilitar interacción para el jugador
         } else {
             gameState.playerTurn = false;
             addMessageToHistory('Es el turno de TrucoEstrella.', 'system');
@@ -422,7 +426,11 @@ const endHand = () => {
     } 
     
     // Si nadie ganó la partida, iniciar nueva mano después de un breve retraso
-    // Resetear estado para la próxima mano
+    // Limpiar las cartas jugadas en la mesa (se hace aquí al final de la mano)
+    DOMElements.iaPlayedCardsContainer.innerHTML = ''; // Limpiar cartas jugadas IA
+    DOMElements.playerPlayedCardsContainer.innerHTML = ''; // Limpiar cartas jugadas jugador
+    
+    // Resetear estado de victorias de ronda para la próxima mano
     gameState.playerRoundWins = 0;
     gameState.iaRoundWins = 0;
     // gameState.currentRound se reinicia en initializeGame
@@ -452,7 +460,8 @@ const initializeGame = () => {
     renderPlayerHand(gameState.playerHand, 'player-hand', true); // Las cartas son jugables al inicio de la mano
     renderIAHand(GAME_CONSTANTS.CARDS_PER_PLAYER, 'ia-hand');
     
-    clearPlayedCards(); // Asegurarse de que la mesa esté limpia
+    // IMPORTANTE: clearPlayedCards() se llama ahora en endHand() para limpiar la mesa antes de la nueva mano
+    // y también en showStartScreen() al volver al menú.
 
     // Determinar quién es la mano de la primera ronda de esta mano
     gameState.manoPlayerId = determineMano();
