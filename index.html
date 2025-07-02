@@ -3,154 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TrucoEstrellas - El Truco Online</title>
+    <title>TrucoEstrella - El Truco Online</title>
     <link rel="icon" href="favicon.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4 font-sans">
 
+    <!-- Pantalla de inicio -->
     <div id="start-screen" class="bg-gray-800 p-8 rounded-lg shadow-2xl w-full max-w-lg mx-auto">
         <div class="flex items-center justify-center mb-6">
-            <img src="favicon.png" alt="TrucoEstrellas Logo" class="h-12 w-12 mr-3">
-            <h1 class="text-4xl font-bold text-yellow-400">TrucoEstrellas</h1>
+            <img src="favicon.png" alt="Logo TrucoEstrella" class="w-16 h-16 mr-2">
+            <h1 class="text-3xl font-bold">TrucoEstrella</h1>
         </div>
-
-        <div class="flex flex-col md:flex-row md:justify-between md:items-end mb-6 gap-4">
-            <div class="md:w-1/2">
-                <label for="playerName" class="block text-gray-300 text-sm font-bold mb-2">Tu Nombre:</label>
-                <input type="text" id="playerName" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-100 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 placeholder-gray-400" placeholder="Ej: Campeón del Truco" value="Jugador 1">
+        <div class="mb-4">
+            <label class="block mb-2 font-semibold" for="playerName">Nombre:</label>
+            <input id="playerName" type="text" class="w-full p-2 rounded text-black" maxlength="16" placeholder="Tu nombre">
+        </div>
+        <div class="mb-4 flex gap-4">
+            <div>
+                <label class="font-semibold">Puntos:</label>
+                <select id="gamePoints" class="ml-2 p-1 rounded text-black">
+                    <option value="15">15</option>
+                    <option value="30" selected>30</option>
+                </select>
             </div>
-
-            <div class="md:w-1/2 md:pl-4">
-                <span class="block text-gray-300 text-sm font-bold mb-2">Puntos para Ganar:</span>
-                <div class="flex gap-4">
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="gamePoints" value="15" class="form-radio text-blue-500" checked>
-                        <span class="ml-2 text-gray-300">15 Puntos</span>
-                    </label>
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="gamePoints" value="30" class="form-radio text-blue-500">
-                        <span class="ml-2 text-gray-300">30 Puntos</span>
-                    </label>
-                </div>
+            <div>
+                <label class="font-semibold" for="florRule">Jugar con Flor</label>
+                <input id="florRule" type="checkbox" class="ml-2" />
             </div>
         </div>
-
-        <div class="mb-6">
-            <label class="inline-flex items-center">
-                <input type="checkbox" id="playWithFlor" class="form-checkbox text-blue-500">
-                <span class="ml-2 text-gray-300">Jugar con Flor (Deshabilitado por defecto)</span>
-            </label>
-        </div>
-
-        <div class="mb-8">
-            <span class="block text-gray-300 text-sm font-bold mb-2">Modo de Juego:</span>
-            <div class="flex flex-wrap gap-2 justify-around">
-                <button id="btnPlayVsIA" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200">
-                    1 vs IA
-                </button>
-                <button id="btnPlay1v1" class="bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded cursor-not-allowed opacity-70" disabled>
-                    1 vs 1
-                </button>
-                <button id="btnPlay2v2" class="bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded cursor-not-allowed opacity-70" disabled>
-                    2 vs 2
-                </button>
-                <button id="btnPlay3v3" class="bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded cursor-not-allowed opacity-70" disabled>
-                    3 vs 3
-                </button>
+        <div class="mb-4">
+            <label class="font-semibold">Modo de juego:</label>
+            <div class="flex flex-col gap-2 mt-2">
+                <button id="btn-vs-ia" class="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">Retar a TrucoEstrella (1 vs IA)</button>
+                <button class="bg-gray-600 text-white py-2 rounded opacity-50 cursor-not-allowed" disabled>Uno a Uno (Próximamente)</button>
+                <button class="bg-gray-600 text-white py-2 rounded opacity-50 cursor-not-allowed" disabled>Dos a Dos (Próximamente)</button>
+                <button class="bg-gray-600 text-white py-2 rounded opacity-50 cursor-not-allowed" disabled>Tres a Tres (Próximamente)</button>
             </div>
         </div>
-
         <button id="startGameBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg w-full text-xl shadow-lg transition duration-200">
             Comenzar Partida
         </button>
-
+        <button id="clearCacheBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg w-full mt-4 transition duration-200">
+            Limpiar Cache
+        </button>
         <hr class="my-6 border-gray-700">
-
         <div class="flex flex-col md:flex-row md:justify-between md:items-center text-sm text-gray-400 mt-4 gap-2">
-            <button id="clearCacheBtn" class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-xs transition duration-200">
-                Limpiar Cache
-            </button>
-            <div class="flex items-center space-x-2 text-center md:text-left text-xs md:text-sm">
-                <span id="app-version">Versión: Beta 1.4</span>
-                <span>|</span>
-                <span>Versión: PC</span>
-                <span>|</span>
-                <span class="whitespace-nowrap">
-                    <a href="#" class="hover:underline opacity-50 cursor-not-allowed">Gmail</a> |
-                    <a href="#" class="hover:underline opacity-50 cursor-not-allowed">Facebook</a> |
-                    <a href="#" class="hover:underline opacity-50 cursor-not-allowed">Registrarse</a>
-                </span>
-            </div>
+            <span>Versión: <b>beta 2.0 gemini 2.5 PRO con deep research</b></span>
+            <span>PC / Celular (próximamente)</span>
         </div>
     </div>
 
+    <!-- Pantalla de juego -->
     <div id="game-screen" class="hidden w-full h-screen flex flex-col lg:flex-row bg-gray-900 text-white p-4 gap-4">
-
-        <div id="game-controls" class="flex flex-col gap-2 p-3 bg-gray-800 rounded-lg shadow-lg lg:w-1/6 min-w-[120px] max-w-[200px] mx-auto lg:mx-0">
-            <h3 class="text-xl font-bold text-yellow-400 mb-2 text-center">Opciones</h3>
-            <button class="game-btn bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200">Envido</button>
-            <button class="game-btn bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200">Real Envido</button>
-            <button class="game-btn bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200">Falta Envido</button>
-            <button class="game-btn bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded transition duration-200">Flor</button>
-            <button class="game-btn bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded transition duration-200">Contra Flor</button>
-            <button class="game-btn bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded transition duration-200">Contra Flor al Resto</button>
-            <button class="game-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-200">Truco</button> <button class="game-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-200">Re-Truco</button>
-            <button class="game-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-200">Vale Cuatro</button>
-            <button class="game-btn bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-200 mt-auto">Quiero</button>
-            <button class="game-btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-200">No Quiero</button>
-            <button class="game-btn bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded transition duration-200">Ir al Mazo</button>
+        <!-- Columna 1: Botonera de cantos -->
+        <div class="flex flex-col gap-2 w-32">
+            <button class="game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-2 rounded" data-canto="Truco">Truco</button>
+            <button class="game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-2 rounded" data-canto="ReTruco">ReTruco</button>
+            <button class="game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-2 rounded" data-canto="Vale Cuatro">Vale Cuatro</button>
+            <button class="game-canto-btn bg-blue-700 hover:bg-blue-800 py-2 rounded" data-canto="Envido">Envido</button>
+            <button class="game-canto-btn bg-blue-700 hover:bg-blue-800 py-2 rounded" data-canto="Real Envido">Real Envido</button>
+            <button class="game-canto-btn bg-blue-700 hover:bg-blue-800 py-2 rounded" data-canto="Falta Envido">Falta Envido</button>
+            <button class="game-canto-btn bg-green-700 hover:bg-green-800 py-2 rounded" data-canto="Flor">Flor</button>
+            <button class="game-canto-btn bg-green-700 hover:bg-green-800 py-2 rounded" data-canto="Contra Flor">Contra Flor</button>
+            <button class="game-canto-btn bg-green-700 hover:bg-green-800 py-2 rounded" data-canto="Contra Flor al Resto">Contra Flor al Resto</button>
+            <button id="btn-mazo" class="bg-red-700 hover:bg-red-800 py-2 rounded mt-4">Ir al Mazo</button>
+            <button id="backToMenuBtn" class="bg-gray-700 hover:bg-gray-800 py-2 rounded mt-4">Volver al Menú</button>
         </div>
-
-        <div id="game-area" class="flex flex-col justify-between flex-grow bg-gray-800 rounded-lg shadow-lg p-4 relative overflow-hidden">
-            <div id="ia-hand" class="flex justify-center mb-4 gap-2">
-                </div>
-
-            <div id="play-area" class="flex flex-col items-center justify-center h-full mb-4 relative">
-                <div id="ia-played-cards" class="flex justify-center gap-2 mb-4 absolute top-1/4">
-                    </div>
-                <div id="player-played-cards" class="flex justify-center gap-2 absolute bottom-1/4">
-                    </div>
-            </div>
-
-            <div id="player-hand" class="flex justify-center gap-2 mt-auto">
-                </div>
-            <div id="player-name-display" class="absolute bottom-1 left-1/2 -translate-x-1/2 bg-gray-700 px-3 py-1 rounded-full text-sm font-semibold text-gray-200 z-10 shadow-md">
-                <span id="player-name-text"></span>
-            </div>
+        <!-- Columna 2: Área de juego principal -->
+        <div class="flex-1 flex flex-col items-center justify-between">
+            <div id="ia-hand" class="flex justify-center gap-2 mb-4"></div>
+            <div id="mesa" class="flex justify-center items-center gap-8 mb-4"></div>
+            <div id="player-hand" class="flex justify-center gap-2 mt-4"></div>
         </div>
-
-        <div id="scoreboard" class="flex flex-col p-4 bg-gray-800 rounded-lg shadow-lg lg:w-1/6 min-w-[120px] max-w-[200px] mx-auto lg:mx-0">
-            <div id="top-message" class="text-lg font-bold text-center h-12 flex items-center justify-center text-red-400">
-                </div>
-            <div id="points-display" class="flex flex-col items-center justify-around flex-grow border-y border-gray-700 py-2">
-                <div class="flex flex-col items-center mb-4">
-                    <span class="text-lg font-semibold text-blue-300 mb-2" id="opponent-score-name">YO</span>
-                    <div id="opponent-score-matches" class="flex flex-wrap gap-1 justify-center">
-                        </div>
-                </div>
-                <hr class="w-2/3 border-gray-600 my-2"> <div class="flex flex-col items-center mt-4">
-                    <span class="text-lg font-semibold text-green-300 mb-2" id="player-score-name">VOS</span>
-                    <div id="player-score-matches" class="flex flex-wrap gap-1 justify-center">
-                        </div>
-                </div>
-            </div>
-            <div id="bottom-message" class="text-lg font-bold text-center h-12 flex items-center justify-center text-green-400">
-                </div>
+        <!-- Columna 3: Marcador de puntos -->
+        <div class="flex flex-col w-48 items-center justify-between">
+            <div id="canto-actual" class="h-12 flex items-center justify-center text-yellow-400 text-xl font-bold"></div>
+            <div id="marcador" class="flex flex-col items-center justify-center"></div>
+            <div id="canto-ia" class="h-12 flex items-center justify-center text-blue-400 text-xl font-bold"></div>
         </div>
-
-        <div id="game-history" class="flex flex-col bg-gray-800 rounded-lg shadow-lg p-4 lg:w-2/6 min-w-[250px] mx-auto lg:mx-0">
-            <h3 class="text-xl font-bold text-yellow-400 mb-2 text-center">Historial de Partida</h3>
-            <div id="history-content" class="flex-grow overflow-y-auto border border-gray-700 p-2 rounded text-sm leading-relaxed max-h-[calc(15*1.5em)] lg:max-h-full">
-                <p class="text-gray-400">Bienvenido a TrucoEstrellas!</p>
-                <p class="text-gray-400">La partida ha comenzado.</p>
-            </div>
-            <button id="backToMenuBtn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded mt-4 transition duration-200">
-                Volver al Menú
-            </button>
+        <!-- Columna 4: Historial -->
+        <div class="flex flex-col w-80 bg-gray-800 rounded-lg shadow-lg p-2">
+            <div class="font-bold text-center mb-2">Historial</div>
+            <div id="historial" class="flex-1 overflow-y-auto h-64 text-sm select-text"></div>
         </div>
-
     </div>
 
     <!-- Popup de resultado de Envido/Flor -->
