@@ -3,38 +3,58 @@
 // Función para crear un elemento de carta HTML
 export function createCardElement(card, isFaceDown = false, isPlayable = false) {
     const cardDiv = document.createElement('div');
+    // Clases base para la apariencia de una carta de baraja española
     cardDiv.classList.add(
         'card',
         'bg-white', 'border', 'border-gray-400', 'rounded-lg',
         'w-20', 'h-28', 'flex', 'flex-col', 'justify-between', 'p-1',
-        'shadow-md', 'select-none' // select-none para evitar selección de texto
+        'shadow-md', 'select-none', // select-none para evitar selección de texto
+        'text-gray-900' // Color base para los elementos de la carta
     );
 
-    if (isPlayable) {
-        cardDiv.classList.add('cursor-pointer', 'hover:scale-105', 'transform', 'transition-transform', 'duration-100', 'active:scale-95');
-    }
-
+    // Si la carta está boca abajo
     if (isFaceDown) {
         cardDiv.classList.add('bg-blue-900', 'border-blue-700', 'text-white', 'text-5xl', 'flex', 'items-center', 'justify-center', 'font-bold');
         cardDiv.textContent = '?';
     } else {
-        const textColor = (card.suit === '♠️' || card.suit === '♣️') ? 'text-gray-900' : 'text-red-600'; // Negro para espadas/bastos, Rojo para oros/copas
+        // Colores para los palos (Negro para Espadas/Bastos, Rojo para Oros/Copas)
+        // Usamos switch para ser más explícitos con los nuevos iconos
+        let textColor = 'text-gray-900'; // Default para Espadas y Bastos
+        if (card.suit === '💰' || card.suit === '🍷') { // Oros o Copas
+            textColor = 'text-red-600';
+        }
 
+        // Estructura interna de la carta con número y palo en las esquinas y centro
         cardDiv.innerHTML = `
-            <span class="text-sm font-bold text-left ${textColor}">${card.value}</span>
+            <div class="flex justify-between w-full">
+                <span class="text-sm font-bold ${textColor}">${card.value}</span>
+                <span class="text-sm font-bold ${textColor} transform scale-x-[-1] rotate-180">${card.value}</span>
+            </div>
             <span class="text-4xl text-center ${textColor}">${card.suit}</span>
-            <span class="text-sm font-bold text-right rotate-180 ${textColor}">${card.value}</span>
+            <div class="flex justify-between w-full transform rotate-180">
+                <span class="text-sm font-bold ${textColor}">${card.value}</span>
+                <span class="text-sm font-bold ${textColor} transform scale-x-[-1] rotate-180">${card.value}</span>
+            </div>
         `;
+
+        // Si la carta es jugable (mano del jugador)
+        if (isPlayable) {
+            cardDiv.classList.add('cursor-pointer', 'hover:scale-105', 'transform', 'transition-transform', 'duration-100', 'active:scale-95');
+            cardDiv.setAttribute('data-card-playable', 'true'); // Marca para facilitar selección
+        }
     }
 
+    // Datos para la lógica del juego
     cardDiv.dataset.suit = card.suit;
     cardDiv.dataset.value = card.value;
+    // Esto es importante para identificar la carta cuando se haga clic
+    cardDiv.dataset.cardId = `${card.value}-${card.suit}`; 
 
     return cardDiv;
 }
 
 // Función para renderizar la mano del jugador
-export function renderPlayerHand(hand, containerId) {
+export function renderPlayerHand(hand, containerId, playable = true) {
     const container = document.getElementById(containerId);
     if (!container) {
         console.error(`Contenedor con ID "${containerId}" no encontrado.`);
@@ -42,7 +62,7 @@ export function renderPlayerHand(hand, containerId) {
     }
     container.innerHTML = ''; // Limpiar mano anterior
     hand.forEach(card => {
-        const cardElement = createCardElement(card, false, true); // Cartas del jugador son jugables
+        const cardElement = createCardElement(card, false, playable);
         container.appendChild(cardElement);
     });
 }
@@ -56,7 +76,7 @@ export function renderIAHand(numCards, containerId) {
     }
     container.innerHTML = ''; // Limpiar mano anterior
     for (let i = 0; i < numCards; i++) {
-        const cardElement = createCardElement({value:0, suit:''}, true, false); // No hay carta real, es boca abajo, no jugable
+        const cardElement = createCardElement({value:0, suit:''}, true, false); // Carta boca abajo, no jugable
         container.appendChild(cardElement);
     }
 }
@@ -68,15 +88,19 @@ export function addMessageToHistory(message, playerType = 'system') { // 'system
 
     const messageElement = document.createElement('p');
     let textColorClass = 'text-gray-400'; // Default for system messages
+    let playerNamePrefix = '';
 
     if (playerType === 'player') {
         textColorClass = 'text-green-300'; // Color para el jugador humano
+        playerNamePrefix = 'VOS: ';
     } else if (playerType === 'ia') {
         textColorClass = 'text-blue-300'; // Color para la IA
+        playerNamePrefix = 'YO (TrucoEstrella): ';
     }
 
-    messageElement.classList.add(textColorClass);
-    messageElement.textContent = message;
+    messageElement.classList.add(textColorClass, 'text-sm'); // Añadir clase de tamaño de texto
+    messageElement.innerHTML = `<span class="font-bold">${playerNamePrefix}</span>${message}`; // Usar innerHTML para el span
+
     historyContent.appendChild(messageElement);
 
     // Hacer scroll al final
@@ -105,7 +129,7 @@ export function renderScore(score, maxPoints, containerId) {
 
     // Aseguramos que los fósforos sean pequeños y estéticos
     const stickClass = 'bg-white w-0.5 h-3 rounded-sm absolute'; // Clase base para un palito
-    const squareContainerClass = 'relative w-4 h-4 mr-1 mb-1'; // Contenedor para cada cuadrado de 5
+    const squareContainerClass = 'relative w-4 h-4 mr-1 mb-1 flex-shrink-0'; // Contenedor para cada cuadrado de 5
 
     for (let i = 0; i < score; i++) {
         // Cada 5 puntos se forma un "cuadrado"
@@ -152,9 +176,32 @@ export function renderScore(score, maxPoints, containerId) {
         }
         currentSquare.appendChild(stick);
     }
+}
 
-    // Opcional: Mostrar línea divisoria a los 15 puntos (visual, no funcional aquí)
-    // if (maxPoints === 30 && containerId.includes('player-score-matches') || containerId.includes('opponent-score-matches')) {
-    //     // Esto se manejaría mejor en el HTML o con CSS de Tailwind condicional
-    // }
+// Función para limpiar las cartas jugadas en la mesa
+export function clearPlayedCards() {
+    document.getElementById('ia-played-cards').innerHTML = '';
+    document.getElementById('player-played-cards').innerHTML = '';
+}
+
+// Función para añadir una carta a la mesa
+export function addCardToPlayedArea(card, playerType, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const cardElement = createCardElement(card, false, false); // No jugable una vez en mesa
+    
+    // Añadir clase para posicionamiento relativo a su contenedor
+    cardElement.classList.add('relative', 'z-0');
+
+    // Animación básica de entrada (opcional, puede ajustarse)
+    cardElement.style.opacity = '0';
+    cardElement.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+        cardElement.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+        cardElement.style.opacity = '1';
+        cardElement.style.transform = 'translateY(0)';
+    }, 50); // Pequeño retraso para la animación
+
+    container.appendChild(cardElement);
 }

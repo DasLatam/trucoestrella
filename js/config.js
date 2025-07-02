@@ -1,16 +1,17 @@
 // js/config.js
 
 export const SUITS = {
-    SWORDS: '♠️', // Espadas
-    CLUBS: '♣️',  // Bastos
-    COINS: '♦️',  // Oros
-    CUPS: '♥️'   // Copas
+    SWORDS: '⚔️', // Espadas
+    CLUBS: '🌲',  // Bastos
+    COINS: '💰',  // Oros
+    CUPS: '🍷'   // Copas
 };
 
 export const CARD_VALUES = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12]; // Sin 8s y 9s
 
 // Jerarquía de cartas para el Truco (de mayor a menor valor)
 // Cada elemento es un objeto { value: numero, suit: palo }
+// 'null' en suit significa que aplica a cualquier palo
 export const TRUCO_HIERARCHY = [
     { value: 1, suit: SUITS.SWORDS }, // As de Espadas (Macho)
     { value: 1, suit: SUITS.CLUBS },  // As de Bastos
