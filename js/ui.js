@@ -1,226 +1,160 @@
-/**
- * ui.js
- * Módulo para todas las manipulaciones del DOM y la interfaz de usuario.
- * No contiene lógica de juego, solo renderiza el estado proporcionado por main.js.
- */
+// js/ui.js
 
-import { SIMBOLOS_PALO, JUGADORES } from './config.js';
-import { procesarAccionJugador, getConfiguracionActual } from './main.js';
+// Función para crear un elemento de carta HTML
+export function createCardElement(card, isFaceDown = false, isPlayable = false) {
+    const cardDiv = document.createElement('div');
+    cardDiv.classList.add(
+        'card',
+        'bg-white', 'border', 'border-gray-400', 'rounded-lg',
+        'w-20', 'h-28', 'flex', 'flex-col', 'justify-between', 'p-1',
+        'shadow-md', 'select-none' // select-none para evitar selección de texto
+    );
 
-// Referencias a elementos del DOM
-const pantallaInicio = document.getElementById('pantalla-inicio');
-const pantallaJuego = document.getElementById('pantalla-juego');
-const formInicio = document.getElementById('form-inicio');
-const inputNombre = document.getElementById('nombre-jugador');
-const btnLimpiarCache = document.getElementById('limpiar-cache');
-const btnVolverMenu = document.getElementById('volver-menu');
-
-const manoJugadorContainer = document.getElementById('mano-jugador');
-const manoIAContainer = document.getElementById('mano-ia');
-const mesaJugadorContainer = document.getElementById('mesa-jugador');
-const mesaIAContainer = document.getElementById('mesa-ia');
-const marcadorNosotros = document.getElementById('marcador-nosotros');
-const marcadorEllos = document.getElementById('marcador-ellos');
-const historialContainer = document.getElementById('historial-partida');
-const nombreJugadorDisplay = document.getElementById('nombre-jugador-display');
-const nombreIADisplay = document.getElementById('nombre-ia-display');
-
-const modalFinPartida = document.getElementById('modal-fin-partida');
-const mensajeGanador = document.getElementById('mensaje-ganador');
-const puntajeFinal = document.getElementById('puntaje-final');
-const btnRevancha = document.getElementById('btn-revancha');
-const btnMenuPrincipal = document.getElementById('btn-menu-principal');
-
-const botonesCanto = document.getElementById('canto-buttons');
-
-let iniciarPartidaCallback;
-let jugarManoCallback;
-
-/**
- * Inicializa la UI, configura los event listeners principales.
- * @param {function} iniciarPartidaFn - Callback para iniciar la partida desde main.js.
- * @param {function} jugarManoFn - Callback para reiniciar una mano (revancha).
- */
-export function inicializarUI(iniciarPartidaFn, jugarManoFn) {
-  iniciarPartidaCallback = iniciarPartidaFn;
-  jugarManoCallback = jugarManoFn;
-
-  formInicio.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const configuracion = {
-      nombreJugador: inputNombre.value |
-
-| 'Jugador',
-      puntosVictoria: document.querySelector('input[name="puntos"]:checked').value,
-      conFlor: document.getElementById('con-flor').checked,
-    };
-    iniciarPartidaCallback(configuracion);
-  });
-
-  btnLimpiarCache.addEventListener('click', () => window.location.reload(true));
-  btnVolverMenu.addEventListener('click', volverAlMenu);
-  btnMenuPrincipal.addEventListener('click', volverAlMenu);
-  
-  btnRevancha.addEventListener('click', () => {
-      modalFinPartida.style.display = 'none';
-      iniciarPartidaCallback(getConfiguracionActual());
-  });
-
-  // Event listener para los botones de canto (delegación de eventos)
-  botonesCanto.addEventListener('click', (e) => {
-    if (e.target.tagName === 'BUTTON' &&!e.target.disabled) {
-      const canto = e.target.dataset.canto;
-      procesarAccionJugador({ tipo: 'cantar', valor: canto });
+    if (isPlayable) {
+        cardDiv.classList.add('cursor-pointer', 'hover:scale-105', 'transform', 'transition-transform', 'duration-100', 'active:scale-95');
     }
-  });
-}
 
-function volverAlMenu() {
-    pantallaJuego.style.display = 'none';
-    modalFinPartida.style.display = 'none';
-    pantallaInicio.style.display = 'flex';
-}
-
-export function mostrarPantallaJuego() {
-  pantallaInicio.style.display = 'none';
-  pantallaJuego.style.display = 'grid';
-}
-
-export function actualizarNombres(nombreJugador, nombreIA) {
-    nombreJugadorDisplay.textContent = nombreJugador;
-    nombreIADisplay.textContent = nombreIA;
-}
-
-/**
- * Dibuja las cartas en la mano de un jugador.
- * @param {string} jugador - JUGADOR o IA.
- * @param {Array<object>} cartas - Array de objetos de carta.
- */
-export function dibujarMano(jugador, cartas) {
-  const container = jugador === JUGADORES.JUGADOR? manoJugadorContainer : manoIAContainer;
-  container.innerHTML = '';
-  cartas.forEach(carta => {
-    const cartaEl = document.createElement('div');
-    cartaEl.classList.add('carta');
-    if (jugador === JUGADORES.JUGADOR) {
-      cartaEl.innerHTML = `<span>${carta.numero}</span><span>${SIMBOLOS_PALO[carta.palo]}</span>`;
-      cartaEl.dataset.id = carta.id;
-      cartaEl.addEventListener('click', () => {
-        procesarAccionJugador({ tipo: 'jugar_carta', valor: carta.id });
-      });
+    if (isFaceDown) {
+        cardDiv.classList.add('bg-blue-900', 'border-blue-700', 'text-white', 'text-5xl', 'flex', 'items-center', 'justify-center', 'font-bold');
+        cardDiv.textContent = '?';
     } else {
-      cartaEl.classList.add('dorso');
+        const textColor = (card.suit === '♠️' || card.suit === '♣️') ? 'text-gray-900' : 'text-red-600'; // Negro para espadas/bastos, Rojo para oros/copas
+
+        cardDiv.innerHTML = `
+            <span class="text-sm font-bold text-left ${textColor}">${card.value}</span>
+            <span class="text-4xl text-center ${textColor}">${card.suit}</span>
+            <span class="text-sm font-bold text-right rotate-180 ${textColor}">${card.value}</span>
+        `;
     }
-    container.appendChild(cartaEl);
-  });
+
+    cardDiv.dataset.suit = card.suit;
+    cardDiv.dataset.value = card.value;
+
+    return cardDiv;
 }
 
-/**
- * Mueve una carta de la mano a la mesa.
- * @param {string} jugador - JUGADOR o IA.
- * @param {object} carta - El objeto de la carta jugada.
- * @param {number} ronda - El número de la ronda (1, 2, o 3).
- */
-export function jugarCarta(jugador, carta, ronda) {
-  const mesaContainer = jugador === JUGADORES.JUGADOR? mesaJugadorContainer : mesaIAContainer;
-  const slot = mesaContainer.querySelector(`.slot[data-ronda="${ronda}"]`);
-  
-  if (slot) {
-    slot.innerHTML = `<div class="carta"><span>${carta.numero}</span><span>${SIMBOLOS_PALO[carta.palo]}</span></div>`;
-  }
-
-  // Quitar la carta de la mano en la UI
-  const manoContainer = jugador === JUGADORES.JUGADOR? manoJugadorContainer : manoIAContainer;
-  if (jugador === JUGADORES.JUGADOR) {
-      const cartaEnMano = manoContainer.querySelector(`[data-id="${carta.id}"]`);
-      if (cartaEnMano) cartaEnMano.remove();
-  } else {
-      // Quitar una carta del dorso
-      if(manoContainer.firstChild) manoContainer.firstChild.remove();
-  }
-}
-
-export function limpiarMesa() {
-    const slots = document.querySelectorAll('.slot');
-    slots.forEach(slot => slot.innerHTML = '');
-}
-
-/**
- * Actualiza el marcador de puntos con el sistema de "porotos".
- * @param {number} puntosNosotros 
- * @param {number} puntosEllos 
- * @param {number} puntosVictoria
- */
-export function actualizarMarcador(puntosNosotros, puntosEllos, puntosVictoria) {
-  const dibujarPorotos = (puntos) => {
-    let html = '';
-    const gruposDeCinco = Math.floor(puntos / 5);
-    const resto = puntos % 5;
-
-    for (let i = 0; i < gruposDeCinco; i++) {
-      html += '<div class="poroto-grupo"><s>||||</s></div>';
+// Función para renderizar la mano del jugador
+export function renderPlayerHand(hand, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) {
+        console.error(`Contenedor con ID "${containerId}" no encontrado.`);
+        return;
     }
-    if (resto > 0) {
-      html += `<div class="poroto-grupo">${'|'.repeat(resto)}</div>`;
+    container.innerHTML = ''; // Limpiar mano anterior
+    hand.forEach(card => {
+        const cardElement = createCardElement(card, false, true); // Cartas del jugador son jugables
+        container.appendChild(cardElement);
+    });
+}
+
+// Función para renderizar la mano de la IA (boca abajo)
+export function renderIAHand(numCards, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) {
+        console.error(`Contenedor con ID "${containerId}" no encontrado.`);
+        return;
     }
-    return html;
-  };
-  
-  marcadorNosotros.innerHTML = dibujarPorotos(puntosNosotros);
-  marcadorEllos.innerHTML = dibujarPorotos(puntosEllos);
-  
-  // Añadir línea divisoria si es a 30
-  document.querySelector('.marcador').classList.toggle('a30', puntosVictoria == 30);
+    container.innerHTML = ''; // Limpiar mano anterior
+    for (let i = 0; i < numCards; i++) {
+        const cardElement = createCardElement({value:0, suit:''}, true, false); // No hay carta real, es boca abajo, no jugable
+        container.appendChild(cardElement);
+    }
 }
 
-/**
- * Añade un mensaje al historial de la partida.
- * @param {Array<object>} historial - El array de mensajes del historial.
- */
-export function actualizarHistorial(historial) {
-  historialContainer.innerHTML = '';
-  historial.forEach(evento => {
-    const p = document.createElement('p');
-    p.textContent = evento.mensaje;
-    p.classList.add(`historial-${evento.jugador}`);
-    historialContainer.appendChild(p);
-  });
-  historialContainer.scrollTop = historialContainer.scrollHeight;
+// Función para añadir un mensaje al historial/chat
+export function addMessageToHistory(message, playerType = 'system') { // 'system', 'player', 'ia'
+    const historyContent = document.getElementById('history-content');
+    if (!historyContent) return;
+
+    const messageElement = document.createElement('p');
+    let textColorClass = 'text-gray-400'; // Default for system messages
+
+    if (playerType === 'player') {
+        textColorClass = 'text-green-300'; // Color para el jugador humano
+    } else if (playerType === 'ia') {
+        textColorClass = 'text-blue-300'; // Color para la IA
+    }
+
+    messageElement.classList.add(textColorClass);
+    messageElement.textContent = message;
+    historyContent.appendChild(messageElement);
+
+    // Hacer scroll al final
+    historyContent.scrollTop = historyContent.scrollHeight;
 }
 
-/**
- * Habilita o deshabilita los botones de canto según el estado del juego.
- * @param {object} estadoJuego - El estado actual del juego.
- */
-export function actualizarBotones(estadoJuego) {
-    const puedeCantarEnvido = estadoJuego.ronda.numero === 1 &&!estadoJuego.cantoActual; // Simplificado
-    const puedeCantarTruco =!estadoJuego.cantoActual |
-
-| estadoJuego.cantoActual.tipo.includes('truco'); // Simplificado
-
-    document.querySelector('[data-canto="envido"]').disabled =!puedeCantarEnvido;
-    document.querySelector('[data-canto="real-envido"]').disabled =!puedeCantarEnvido;
-    document.querySelector('[data-canto="falta-envido"]').disabled =!puedeCantarEnvido;
-    document.querySelector('[data-canto="truco"]').disabled =!puedeCantarTruco;
-    // Lógica más compleja para retruco, etc. iría aquí
+// Función para actualizar los mensajes de canto en el marcador
+export function updateScoreboardMessage(type, message) { // 'top' para IA, 'bottom' para jugador
+    const targetElement = type === 'top' ? document.getElementById('top-message') : document.getElementById('bottom-message');
+    if (targetElement) {
+        targetElement.textContent = message;
+        // Limpiar el mensaje después de un tiempo, si es un canto temporal
+        if (message) {
+            setTimeout(() => {
+                targetElement.textContent = '';
+            }, 3000); // Mensaje visible por 3 segundos
+        }
+    }
 }
 
-/**
- * Resalta visualmente qué jugador tiene el turno.
- * @param {string} jugadorActual - El jugador que tiene el turno.
- */
-export function resaltarTurno(jugadorActual) {
-    document.getElementById('zona-jugador').classList.toggle('turno-activo', jugadorActual === JUGADORES.JUGADOR);
-    document.getElementById('zona-ia').classList.toggle('turno-activo', jugadorActual === JUGADORES.IA);
-}
+// Función para dibujar los fósforos del marcador
+export function renderScore(score, maxPoints, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = ''; // Limpiar fósforos anteriores
 
-/**
- * Muestra el modal de fin de partida.
- * @param {string} ganador - Nombre del ganador.
- * @param {object} puntuacion - Objeto con los puntajes finales.
- */
-export function mostrarModalFinPartida(ganador, puntuacion) {
-    mensajeGanador.textContent = `¡Partida terminada! El ganador es ${ganador}.`;
-    puntajeFinal.textContent = `Resultado final: ${puntuacion.nosotros} a ${puntuacion.ellos}.`;
-    modalFinPartida.style.display = 'flex';
+    // Aseguramos que los fósforos sean pequeños y estéticos
+    const stickClass = 'bg-white w-0.5 h-3 rounded-sm absolute'; // Clase base para un palito
+    const squareContainerClass = 'relative w-4 h-4 mr-1 mb-1'; // Contenedor para cada cuadrado de 5
+
+    for (let i = 0; i < score; i++) {
+        // Cada 5 puntos se forma un "cuadrado"
+        if (i % 5 === 0) {
+            const squareDiv = document.createElement('div');
+            squareDiv.className = `flex items-center justify-center ${squareContainerClass} border border-gray-600 rounded-sm`;
+            container.appendChild(squareDiv);
+        }
+        const currentSquare = container.lastChild; // El cuadrado actual
+
+        const stick = document.createElement('div');
+        stick.className = stickClass;
+
+        const remainder = i % 5;
+        switch (remainder) {
+            case 0: // Palito izquierdo
+                stick.style.left = '1px';
+                stick.style.top = '2px';
+                break;
+            case 1: // Palito superior
+                stick.style.left = '2px';
+                stick.style.top = '1px';
+                stick.style.transform = 'rotate(90deg)';
+                stick.style.transformOrigin = 'top left';
+                break;
+            case 2: // Palito derecho
+                stick.style.right = '1px';
+                stick.style.top = '2px';
+                break;
+            case 3: // Palito inferior
+                stick.style.left = '2px';
+                stick.style.bottom = '1px';
+                stick.style.transform = 'rotate(90deg)';
+                stick.style.transformOrigin = 'bottom left';
+                break;
+            case 4: // Palito cruzado (de abajo izquierda a arriba derecha)
+                stick.style.width = '16px'; // Para que cruce diagonalmente
+                stick.style.height = '1px'; // Delgado para la diagonal
+                stick.style.left = '0px';
+                stick.style.bottom = '0px';
+                stick.style.transform = 'rotate(-45deg)'; // Ajuste para que cruce
+                stick.style.transformOrigin = 'bottom left';
+                break;
+        }
+        currentSquare.appendChild(stick);
+    }
+
+    // Opcional: Mostrar línea divisoria a los 15 puntos (visual, no funcional aquí)
+    // if (maxPoints === 30 && containerId.includes('player-score-matches') || containerId.includes('opponent-score-matches')) {
+    //     // Esto se manejaría mejor en el HTML o con CSS de Tailwind condicional
+    // }
 }

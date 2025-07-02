@@ -15,7 +15,7 @@
 
         <div class="mb-4">
             <label for="playerName" class="block text-gray-300 text-sm font-bold mb-2">Tu Nombre:</label>
-            <input type="text" id="playerName" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 placeholder-gray-400" placeholder="Ej: Campeón del Truco" value="Jugador 1">
+            <input type="text" id="playerName" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-100 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 placeholder-gray-400" placeholder="Ej: Campeón del Truco" value="Jugador 1">
         </div>
 
         <div class="mb-6">
@@ -67,8 +67,7 @@
             <button id="clearCacheBtn" class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-xs transition duration-200">
                 Limpiar Cache
             </button>
-            <span>Versión: beta 1.0</span>
-            <div class="text-right">
+            <span id="app-version">Versión: Beta 1.0</span> <div class="text-right">
                 <p>Versión: PC</p>
                 <p class="text-xs mt-1">
                     <a href="#" class="hover:underline opacity-50 cursor-not-allowed">Autenticar con Gmail</a> |
@@ -82,7 +81,7 @@
     <div id="game-screen" class="hidden w-full h-screen flex flex-col lg:flex-row bg-gray-900 text-white p-4 gap-4">
 
         <div id="game-controls" class="flex flex-col gap-2 p-3 bg-gray-800 rounded-lg shadow-lg lg:w-1/6 min-w-[120px] max-w-[200px] mx-auto lg:mx-0">
-            <h3 class="text-xl font-bold text-yellow-400 mb-2 text-center">Cantos</h3>
+            <h3 class="text-xl font-bold text-yellow-400 mb-2 text-center">Opciones</h3>
             <button class="game-btn bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200">Truco</button>
             <button class="game-btn bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200">Envido</button>
             <button class="game-btn bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition duration-200">Real Envido</button>
