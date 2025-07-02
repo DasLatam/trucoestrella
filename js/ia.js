@@ -10,7 +10,7 @@ export function iaResponderCanto(canto, gameState) {
     // IA mejorada para Envido/Flor
     if (canto === 'Envido' || canto === 'Real Envido' || canto === 'Falta Envido') {
         let envido = calcularEnvido(gameState.iaHand);
-        if (envido >= 30) return (canto === 'Falta Envido') ? 'Quiero' : 'Quiero y Falta Envido';
+        if (envido >= 30) return (canto === 'Falta Envido') ? 'Quiero' : 'Falta Envido';
         if (envido >= 27) return (canto === 'Envido') ? 'Real Envido' : 'Quiero';
         if (envido >= 24) return 'Quiero';
         return 'No Quiero';
@@ -39,7 +39,7 @@ export function iaResponderCanto(canto, gameState) {
 
 export function iaCantarCanto(gameState) {
     // IA decide si cantar Envido, Flor o Truco al inicio de la mano
-    if (!gameState.envidoCantado && !gameState.florCantada) {
+    if (!gameState.envidoCantado && !gameState.florCantada && !gameState.trucoCantado && gameState.playedCards.length === 0) {
         let envido = calcularEnvido(gameState.iaHand);
         if (gameState.flor && tieneFlor(gameState.iaHand)) return 'Flor';
         if (envido >= 27) return 'Envido';
