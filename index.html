@@ -3,556 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gran Truco Argentino</title>
-    <style>
-        :root {
-            --color-fondo: #0a3d20;
-            --color-mesa: #006400;
-            --color-texto: #f0f0f0;
-            --color-carta-fondo: #f8f8f8;
-            --color-carta-borde: #333;
-            --color-primario: #c82a2a;
-            --color-secundario: #4a4a4a;
-            --color-acento: #ffc107;
-            --color-historial-jugador: rgba(255, 255, 255, 0.1);
-            --color-historial-ia: rgba(0, 0, 0, 0.1);
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; }
-        body { background-color: var(--color-fondo); color: var(--color-texto); overflow: hidden; height: 100vh; width: 100vw; }
-       .pantalla { display: none; width: 100%; height: 100%; }
-       .pantalla.activa { display: flex; justify-content: center; align-items: center; }
-        #pantalla-inicio.modal-contenido { background-color: var(--color-mesa); padding: 40px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); text-align: center; }
-        #form-inicio.form-grupo { margin-bottom: 20px; text-align: left; }
-        #form-inicio label { display: block; margin-bottom: 5px; }
-        #form-inicio input[type="text"] { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid var(--color-texto); background-color: var(--color-fondo); color: var(--color-texto); }
-        #form-inicio input[type="radio"], #form-inicio input[type="checkbox"] { margin-right: 10px; }
-       .btn-primario,.btn-secundario,.btn-peligro { padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: background-color 0.2s; width: 100%; margin-top: 10px; }
-       .btn-primario { background-color: var(--color-primario); color: white; }
-       .btn-primario:hover { background-color: #e04a4a; }
-       .btn-secundario { background-color: var(--color-secundario); color: white; }
-       .btn-secundario:hover { background-color: #6a6a6a; }
-       .btn-peligro { background-color: #f44336; color: white; }
-       .btn-peligro:hover { background-color: #da190b; }
-        #pantalla-juego { display: grid; grid-template-columns: 180px 1fr 220px 240px; grid-template-rows: 1fr; height: 100vh; padding: 15px; gap: 15px; }
-       .columna-lateral { background-color: rgba(0,0,0,0.2); border-radius: 8px; padding: 15px; display: flex; flex-direction: column; }
-        #canto-buttons { gap: 10px; }
-        #canto-buttons button { width: 100%; padding: 12px; font-size: 16px; background-color: var(--color-acento); color: #333; border: none; border-radius: 5px; cursor: pointer; transition: all 0.2s; }
-        #canto-buttons button:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
-        #canto-buttons button:disabled { background-color: var(--color-secundario); color: #888; cursor: not-allowed; }
-        #canto-buttons.btn-peligro { margin-top: auto; }
-        #canto-acciones-respuesta { margin-top: 20px; border-top: 2px solid var(--color-acento); padding-top: 20px; }
-        #game-table-area { background-color: var(--color-mesa); border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
-       .zona-jugador { text-align: center; padding: 10px; border-radius: 10px; transition: background-color 0.3s; }
-       .turno-activo { background-color: rgba(255, 255, 255, 0.15); }
-       .mano-container { display: flex; justify-content: center; gap: 10px; min-height: 140px; align-items: center; }
-        #mesa { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 30px; }
-       .mesa-fila { display: flex; justify-content: center; gap: 20px; }
-       .slot { width: 90px; height: 130px; border: 2px dashed rgba(255,255,255,0.3); border-radius: 8px; }
-       .carta { width: 90px; height: 130px; background-color: var(--color-carta-fondo); border: 1px solid var(--color-carta-borde); border-radius: 8px; color: #333; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 28px; font-weight: bold; box-shadow: 3px 3px 5px rgba(0,0,0,0.3); user-select: none; }
-        #mano-jugador.carta { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
-        #mano-jugador.carta:hover { transform: translateY(-15px) scale(1.05); box-shadow: 5px 15px 15px rgba(0,0,0,0.4); }
-       .carta.simbolo { font-size: 36px; }
-       .carta.dorso { background-color: var(--color-primario); background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.1) 5px, rgba(255,255,255,0.1) 10px); }
-        #score-board h3 { text-align: center; margin-bottom: 20px; }
-       .marcador { display: flex; flex-direction: column; gap: 20px; position: relative; }
-       .marcador.a30::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); height: 2px; background-color: rgba(255,255,255,0.5); }
-       .marcador-equipo { display: flex; justify-content: space-between; align-items: center; }
-       .marcador-equipo h4 { margin-right: 10px; }
-       .porotos-container { display: flex; flex-wrap: wrap; gap: 8px; min-height: 50px; align-items: center; }
-       .poroto-grupo-5 { width: 20px; height: 20px; border: 2px solid var(--color-texto); position: relative; margin: 2px; }
-       .poroto-grupo-5::after { content: ''; position: absolute; top: 50%; left: 50%; width: 2px; height: 120%; background-color: var(--color-texto); transform: translate(-50%, -50%) rotate(45deg); }
-       .poroto-individual { font-family: 'Courier New', Courier, monospace; font-size: 24px; letter-spacing: -2px; }
-        #volver-menu { margin-top: auto; }
-        #chat-log h3 { text-align: center; margin-bottom: 10px; }
-        #chat-display { flex-grow: 1; overflow-y: auto; background-color: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; user-select: text; max-height: calc(100vh - 150px); }
-        #chat-display p { padding: 5px; border-radius: 3px; margin-bottom: 5px; word-break: break-word; }
-       .historial-jugador { background-color: var(--color-historial-jugador); }
-       .historial-ia { background-color: var(--color-historial-ia); }
-       .historial-sistema { font-style: italic; color: var(--color-acento); }
-        #chat-input-container { display: flex; margin-top: 10px; gap: 5px; }
-        #chat-input { flex-grow: 1; padding: 8px; border-radius: 5px; border: none; background-color: #f0f0f0; color: #333; }
-        #chat-send { padding: 8px 12px; border-radius: 5px; border: none; background-color: var(--color-acento); color: #333; cursor: pointer; }
-       .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
-       .modal-contenido { background-color: var(--color-mesa); padding: 30px; border-radius: 10px; text-align: center; min-width: 400px; }
-       .modal-acciones { margin-top: 20px; display: flex; gap: 15px; }
-    </style>
+    <title>TrucoEstrellas - El Truco Online</title>
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div id="pantalla-inicio" class="pantalla activa">
-        <div class="modal-contenido">
-            <h1>Gran Truco Argentino</h1>
-            <form id="form-inicio">
-                <div class="form-grupo"><label for="nombre-jugador">Tu Nombre:</label><input type="text" id="nombre-jugador" placeholder="Jugador" maxlength="15"></div>
-                <div class="form-grupo"><p>Jugar a:</p><label><input type="radio" name="puntos" value="15"> 15 Puntos</label><label><input type="radio" name="puntos" value="30" checked> 30 Puntos</label></div>
-                <div class="form-grupo"><label><input type="checkbox" id="con-flor"> Jugar con flor</label></div>
-                <button type="submit" class="btn-primario">Comenzar Partida</button><button type="button" id="limpiar-cache" class="btn-secundario">Limpiar Cache y Recargar</button>
-            </form>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4 font-sans">
+
+    <div id="start-screen" class="bg-gray-800 p-8 rounded-lg shadow-2xl w-full max-w-md">
+        <h1 class="text-4xl font-bold text-center mb-6 text-yellow-400">TrucoEstrellas</h1>
+
+        <div class="mb-4">
+            <label for="playerName" class="block text-gray-300 text-sm font-bold mb-2">Tu Nombre:</label>
+            <input type="text" id="playerName" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 placeholder-gray-400" placeholder="Ej: Campeón del Truco" value="Jugador 1">
+        </div>
+
+        <div class="mb-6">
+            <span class="block text-gray-300 text-sm font-bold mb-2">Puntos para Ganar:</span>
+            <div class="flex gap-4">
+                <label class="inline-flex items-center">
+                    <input type="radio" name="gamePoints" value="15" class="form-radio text-blue-500" checked>
+                    <span class="ml-2 text-gray-300">15 Puntos (Las Malas)</span>
+                </label>
+                <label class="inline-flex items-center">
+                    <input type="radio" name="gamePoints" value="30" class="form-radio text-blue-500">
+                    <span class="ml-2 text-gray-300">30 Puntos (Partida Completa)</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <label class="inline-flex items-center">
+                <input type="checkbox" id="playWithFlor" class="form-checkbox text-blue-500">
+                <span class="ml-2 text-gray-300">Jugar con Flor (Deshabilitado por defecto)</span>
+            </label>
+        </div>
+
+        <div class="mb-8">
+            <span class="block text-gray-300 text-sm font-bold mb-2">Modo de Juego:</span>
+            <div class="grid grid-cols-2 gap-4">
+                <button id="btnPlayVsIA" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200">
+                    Retar a TrucoEstrella (1 vs IA)
+                </button>
+                <button id="btnPlay1v1" class="bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded cursor-not-allowed opacity-70" disabled>
+                    Uno a Uno (Próximamente)
+                </button>
+                <button id="btnPlay2v2" class="bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded cursor-not-allowed opacity-70" disabled>
+                    Dos a Dos (Próximamente)
+                </button>
+                <button id="btnPlay3v3" class="bg-gray-600 text-gray-300 font-bold py-2 px-4 rounded cursor-not-allowed opacity-70" disabled>
+                    Tres a Tres (Próximamente)
+                </button>
+            </div>
+        </div>
+
+        <button id="startGameBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg w-full text-xl shadow-lg transition duration-200">
+            Comenzar Partida
+        </button>
+
+        <hr class="my-6 border-gray-700">
+
+        <div class="flex justify-between items-center text-sm text-gray-400 mt-4">
+            <button id="clearCacheBtn" class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-xs transition duration-200">
+                Limpiar Cache
+            </button>
+            <span>Versión: beta 1.0</span>
+            <div class="text-right">
+                <p>Versión: PC</p>
+                <p class="text-xs mt-1">
+                    <a href="#" class="hover:underline opacity-50 cursor-not-allowed">Autenticar con Gmail</a> |
+                    <a href="#" class="hover:underline opacity-50 cursor-not-allowed">Facebook</a> |
+                    <a href="#" class="hover:underline opacity-50 cursor-not-allowed">Registrarse</a>
+                </p>
+            </div>
         </div>
     </div>
-    <div id="pantalla-juego" class="pantalla">
-        <div id="canto-buttons" class="columna-lateral">
-            <div id="canto-acciones-principales"><button data-canto="truco">Truco</button><button data-canto="retruco" disabled>Retruco</button><button data-canto="vale-cuatro" disabled>Vale Cuatro</button><button data-canto="envido">Envido</button><button data-canto="real-envido">Real Envido</button><button data-canto="falta-envido">Falta Envido</button></div>
-            <div id="canto-acciones-respuesta" style="display: none;"><button data-canto="quiero" class="btn-primario">Quiero</button><button data-canto="no-quiero" class="btn-peligro">No Quiero</button></div>
-            <button data-canto="me-voy-al-mazo" class="btn-peligro">Ir al Mazo</button>
+
+    <div id="game-screen" class="hidden w-full h-full">
         </div>
-        <div id="game-table-area">
-            <div id="zona-ia" class="zona-jugador"><h2 id="nombre-ia-display">TrucoEstrella</h2><div id="mano-ia" class="mano-container"></div></div>
-            <div id="mesa"><div id="mesa-ia" class="mesa-fila"><div class="slot" data-ronda="1"></div><div class="slot" data-ronda="2"></div><div class="slot" data-ronda="3"></div></div><div id="mesa-jugador" class="mesa-fila"><div class="slot" data-ronda="1"></div><div class="slot" data-ronda="2"></div><div class="slot" data-ronda="3"></div></div></div>
-            <div id="zona-jugador" class="zona-jugador"><div id="mano-jugador" class="mano-container"></div><h2 id="nombre-jugador-display">Jugador</h2></div>
-        </div>
-        <div id="score-board" class="columna-lateral">
-            <h3>Puntos</h3>
-            <div class="marcador"><div class="marcador-equipo"><h4 id="marcador-nombre-nosotros">Nosotros</h4><div id="marcador-nosotros" class="porotos-container"></div></div><div class="marcador-equipo"><h4 id="marcador-nombre-ellos">Ellos</h4><div id="marcador-ellos" class="porotos-container"></div></div></div>
-            <button id="volver-menu" class="btn-secundario">Volver al Menú</button>
-        </div>
-        <div id="chat-log" class="columna-lateral">
-            <h3>Chat</h3><div id="chat-display"></div>
-            <div id="chat-input-container"><input type="text" id="chat-input" placeholder="Escribe un mensaje..."><button id="chat-send">Enviar</button></div>
-        </div>
-    </div>
-    <div id="modal-fin-partida" class="modal">
-        <div class="modal-contenido"><h2 id="mensaje-ganador"></h2><p id="puntaje-final"></p><div class="modal-acciones"><button id="btn-revancha" class="btn-primario">Revancha</button><button id="btn-menu-principal" class="btn-secundario">Menú Principal</button></div></div>
-    </div>
 
-    <script type="module">
-        // --- Módulo: config.js ---
-        const config = (() => {
-            const PALOS = { ESPADA: 'espada', BASTO: 'basto', ORO: 'oro', COPA: 'copa' };
-            const SIMBOLOS_PALO = {: '⚔️',: '🌲',: '💰',: '🍷' };
-            const NUMEROS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-            const crearBaraja = () => {
-                const baraja =;
-                for (const palo of Object.values(PALOS)) {
-                    for (const numero of NUMEROS) {
-                        baraja.push({ id: `${numero}-${palo}`, palo, numero, valorEnvido: numero < 10? numero : 0 });
-                    }
-                }
-                return baraja;
-            };
-            const BARAJA = crearBaraja();
-            const TRUCO_HIERARCHY =;
-            const VALORES_TRUCO = TRUCO_HIERARCHY.reduce((acc, carta) => { acc[carta.id] = carta.valorTruco; return acc; }, {});
-            const PUNTOS = {
-                TRUCO: { NO_QUERIDO: 1, QUERIDO: 2 }, RETRUCO: { NO_QUERIDO: 2, QUERIDO: 3 }, VALE_CUATRO: { NO_QUERIDO: 3, QUERIDO: 4 },
-                ENVIDO: { NO_QUERIDO: 1, QUERIDO: 2 }, ENVIDO_ENVIDO: { NO_QUERIDO: 2, QUERIDO: 4 }, REAL_ENVIDO: { NO_QUERIDO: 1, QUERIDO: 3 },
-                FLOR: 3, CONTRAFLOR: { NO_QUERIDO: 3, QUERIDO: 6 }, ENVIDO_REAL_ENVIDO: { NO_QUERIDO: 2, QUERIDO: 5 },
-                ENVIDO_ENVIDO_REAL_ENVIDO: { NO_QUERIDO: 4, QUERIDO: 7 },
-            };
-            const JUGADORES = { JUGADOR: 'jugador', IA: 'ia' };
-            const EQUIPOS = { NOSOTROS: 'nosotros', ELLOS: 'ellos' };
-            const ESTADOS_JUEGO = { INICIO: 'inicio', REPARTIENDO: 'repartiendo', ESPERANDO_JUGADA: 'esperando_jugada', ESPERANDO_RESPUESTA_CANTO: 'esperando_respuesta_canto', MANO_TERMINADA: 'mano_terminada', PARTIDA_TERMINADA: 'partida_terminada' };
-            const CANTOS = { TRUCO: 'truco', RETRUCO: 'retruco', VALE_CUATRO: 'vale-cuatro', ENVIDO: 'envido', REAL_ENVIDO: 'real-envido', FALTA_ENVIDO: 'falta-envido', FLOR: 'flor', CONTRAFLOR: 'contraflor', CONTRAFLOR_AL_RESTO: 'contraflor-al-resto', IR_AL_MAZO: 'me-voy-al-mazo', QUIERO: 'quiero', NO_QUIERO: 'no-quiero' };
-            const GAME_CONFIG = { CARTAS_POR_MANO: 3, MAX_PUNTOS_MALAS: 15, PUNTOS_PARTIDA_CORTA: 15, PUNTOS_PARTIDA_LARGA: 30, TIEMPO_ESPERA_IA: 1500 };
-            return { PALOS, SIMBOLOS_PALO, BARAJA, VALORES_TRUCO, PUNTOS, JUGADORES, EQUIPOS, ESTADOS_JUEGO, CANTOS, GAME_CONFIG };
-        })();
-
-        // --- Módulo: ia.js ---
-        const ia = (() => {
-            function decidirJugada(estadoJuego) {
-                const manoIA = estadoJuego.jugadores.mano;
-                const evaluacion = evaluarMano(manoIA);
-                if (estadoJuego.ronda.numero === 1 &&!estadoJuego.envido.cantado) {
-                    if (evaluacion.puntosEnvido >= 28) return { tipo: 'cantar', valor: config.CANTOS.ENVIDO };
-                }
-                const cartasEnMesaRondaActual = estadoJuego.ronda.cartasEnMesa.slice((estadoJuego.ronda.numero - 1) * 2);
-                if (cartasEnMesaRondaActual.length === 0 |
-
-| cartasEnMesaRondaActual.length === 2) {
-                    return { tipo: 'jugar_carta', valor: evaluacion.cartaMasFuerte.id };
-                } else {
-                    const cartaJugador = cartasEnMesaRondaActual.carta;
-                    const valorCartaJugador = config.VALORES_TRUCO[cartaJugador.id];
-                    const cartasGanadoras = manoIA.filter(c => config.VALORES_TRUCO[c.id] > valorCartaJugador).sort((a, b) => config.VALORES_TRUCO[a.id] - config.VALORES_TRUCO[b.id]);
-                    if (cartasGanadoras.length > 0) return { tipo: 'jugar_carta', valor: cartasGanadoras.id };
-                    return { tipo: 'jugar_carta', valor: evaluacion.cartaMasDebil.id };
-                }
-            }
-            function decidirRespuestaCanto(estadoJuego) {
-                const manoIA = estadoJuego.jugadores.mano;
-                const evaluacion = evaluarMano(manoIA);
-                const canto = estadoJuego.cantoActual.tipo;
-                if (canto.includes('envido')) {
-                    return (evaluacion.puntosEnvido >= 25)? { tipo: 'responder_canto', valor: config.CANTOS.QUIERO } : { tipo: 'responder_canto', valor: config.CANTOS.NO_QUIERO };
-                }
-                if (canto.includes('truco')) {
-                    return (evaluacion.fuerzaGeneral > 15)? { tipo: 'responder_canto', valor: config.CANTOS.QUIERO } : { tipo: 'responder_canto', valor: config.CANTOS.NO_QUIERO };
-                }
-                return { tipo: 'responder_canto', valor: config.CANTOS.NO_QUIERO };
-            }
-            function evaluarMano(mano) {
-                if (mano.length === 0) return { puntosEnvido: 0, cartaMasFuerte: null, cartaMasDebil: null, fuerzaGeneral: 0 };
-                const manoOrdenadaTruco = [...mano].sort((a, b) => config.VALORES_TRUCO[b.id] - config.VALORES_TRUCO[a.id]);
-                return {
-                    puntosEnvido: calcularEnvido(mano),
-                    cartaMasFuerte: manoOrdenadaTruco,
-                    cartaMasDebil: manoOrdenadaTruco,
-                    fuerzaGeneral: mano.reduce((acc, c) => acc + config.VALORES_TRUCO[c.id], 0)
-                };
-            }
-            function calcularEnvido(mano) {
-                const palos = {};
-                mano.forEach(carta => {
-                    if (!palos[carta.palo]) palos[carta.palo] =;
-                    palos[carta.palo].push(carta.valorEnvido);
-                });
-                let maxPuntos = 0;
-                for (const palo in palos) {
-                    if (palos[palo].length >= 2) {
-                        const valores = palos[palo].sort((a, b) => b - a);
-                        const puntos = 20 + valores + (valores[1] |
-
-| 0);
-                        if (puntos > maxPuntos) maxPuntos = puntos;
-                    }
-                }
-                if (maxPuntos > 0) return maxPuntos;
-                return Math.max(...mano.map(c => c.valorEnvido));
-            }
-            return { decidirJugada, decidirRespuestaCanto, calcularEnvido };
-        })();
-
-        // --- Módulo: ui.js ---
-        const ui = (() => {
-            const DOMElements = {
-                pantallaInicio: document.getElementById('pantalla-inicio'), pantallaJuego: document.getElementById('pantalla-juego'),
-                formInicio: document.getElementById('form-inicio'), inputNombre: document.getElementById('nombre-jugador'),
-                btnLimpiarCache: document.getElementById('limpiar-cache'), btnVolverMenu: document.getElementById('volver-menu'),
-                manoJugadorContainer: document.getElementById('mano-jugador'), manoIAContainer: document.getElementById('mano-ia'),
-                mesaJugadorContainer: document.getElementById('mesa-jugador'), mesaIAContainer: document.getElementById('mesa-ia'),
-                marcadorNosotros: document.getElementById('marcador-nosotros'), marcadorEllos: document.getElementById('marcador-ellos'),
-                marcadorNombreNosotros: document.getElementById('marcador-nombre-nosotros'), marcadorNombreEllos: document.getElementById('marcador-nombre-ellos'),
-                chatDisplay: document.getElementById('chat-display'), chatInput: document.getElementById('chat-input'), chatSend: document.getElementById('chat-send'),
-                nombreJugadorDisplay: document.getElementById('nombre-jugador-display'), nombreIADisplay: document.getElementById('nombre-ia-display'),
-                modalFinPartida: document.getElementById('modal-fin-partida'), mensajeGanador: document.getElementById('mensaje-ganador'),
-                puntajeFinal: document.getElementById('puntaje-final'), btnRevancha: document.getElementById('btn-revancha'),
-                btnMenuPrincipal: document.getElementById('btn-menu-principal'), cantoButtons: document.getElementById('canto-buttons'),
-                cantoAccionesPrincipales: document.getElementById('canto-acciones-principales'), cantoAccionesRespuesta: document.getElementById('canto-acciones-respuesta'),
-            };
-            let procesarAccionCallback;
-            function inicializarUI(iniciarPartidaFn, procesarAccionFn, getConfigFn, agregarAlHistorialFn) {
-                procesarAccionCallback = procesarAccionFn;
-                DOMElements.formInicio.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    const configuracion = {
-                        nombreJugador: DOMElements.inputNombre.value |
-
-| 'Jugador',
-                        puntosVictoria: document.querySelector('input[name="puntos"]:checked').value,
-                        conFlor: document.getElementById('con-flor').checked,
-                    };
-                    iniciarPartidaFn(configuracion);
-                });
-                DOMElements.btnLimpiarCache.addEventListener('click', () => window.location.reload(true));
-                DOMElements.btnVolverMenu.addEventListener('click', volverAlMenu);
-                DOMElements.btnMenuPrincipal.addEventListener('click', volverAlMenu);
-                DOMElements.btnRevancha.addEventListener('click', () => {
-                    DOMElements.modalFinPartida.style.display = 'none';
-                    iniciarPartidaFn(getConfigFn());
-                });
-                DOMElements.cantoButtons.addEventListener('click', (e) => {
-                    if (e.target.tagName === 'BUTTON' &&!e.target.disabled) {
-                        const canto = e.target.dataset.canto;
-                        const esRespuesta = e.target.closest('#canto-acciones-respuesta');
-                        procesarAccionCallback({ tipo: esRespuesta? 'responder_canto' : 'cantar', valor: canto });
-                    }
-                });
-                DOMElements.chatSend.addEventListener('click', () => {
-                    const mensaje = DOMElements.chatInput.value.trim();
-                    if (mensaje) {
-                        agregarAlHistorialFn(`${getConfigFn().nombreJugador}: ${mensaje}`, config.JUGADORES.JUGADOR);
-                        DOMElements.chatInput.value = '';
-                    }
-                });
-                DOMElements.chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') DOMElements.chatSend.click(); });
-            }
-            function volverAlMenu() {
-                DOMElements.pantallaJuego.style.display = 'none';
-                DOMElements.modalFinPartida.style.display = 'none';
-                DOMElements.pantallaInicio.classList.add('activa');
-            }
-            function mostrarPantallaJuego() {
-                DOMElements.pantallaInicio.classList.remove('activa');
-                DOMElements.pantallaJuego.style.display = 'grid';
-            }
-            function actualizarNombres(nombreJugador, nombreIA) {
-                DOMElements.nombreJugadorDisplay.textContent = nombreJugador;
-                DOMElements.nombreIADisplay.textContent = nombreIA;
-                DOMElements.marcadorNombreNosotros.textContent = "Vos";
-                DOMElements.marcadorNombreEllos.textContent = "IA";
-            }
-            function dibujarMano(jugador, cartas) {
-                const container = jugador === config.JUGADORES.JUGADOR? DOMElements.manoJugadorContainer : DOMElements.manoIAContainer;
-                container.innerHTML = '';
-                cartas.forEach(carta => {
-                    const cartaEl = document.createElement('div');
-                    cartaEl.classList.add('carta');
-                    if (jugador === config.JUGADORES.JUGADOR) {
-                        cartaEl.innerHTML = `<span>${carta.numero}</span><span class="simbolo">${config.SIMBOLOS_PALO[carta.palo]}</span>`;
-                        cartaEl.dataset.id = carta.id;
-                        cartaEl.addEventListener('click', () => procesarAccionCallback({ tipo: 'jugar_carta', valor: carta.id }));
-                    } else {
-                        cartaEl.classList.add('dorso');
-                    }
-                    container.appendChild(cartaEl);
-                });
-            }
-            function jugarCarta(jugador, carta, ronda) {
-                const mesaContainer = jugador === config.JUGADORES.JUGADOR? DOMElements.mesaJugadorContainer : DOMElements.mesaIAContainer;
-                const slot = mesaContainer.querySelector(`.slot[data-ronda="${ronda}"]`);
-                if (slot) slot.innerHTML = `<div class="carta"><span>${carta.numero}</span><span class="simbolo">${config.SIMBOLOS_PALO[carta.palo]}</span></div>`;
-                const manoContainer = jugador === config.JUGADORES.JUGADOR? DOMElements.manoJugadorContainer : DOMElements.manoIAContainer;
-                if (jugador === config.JUGADORES.JUGADOR) {
-                    const cartaEnMano = manoContainer.querySelector(`[data-id="${carta.id}"]`);
-                    if (cartaEnMano) cartaEnMano.remove();
-                } else {
-                    if (manoContainer.firstChild) manoContainer.firstChild.remove();
-                }
-            }
-            function limpiarMesa() { document.querySelectorAll('.slot').forEach(slot => slot.innerHTML = ''); }
-            function actualizarMarcador(puntosNosotros, puntosEllos, puntosVictoria) {
-                const dibujarPorotos = (puntos) => {
-                    let html = '';
-                    const gruposDeCinco = Math.floor(puntos / 5);
-                    const resto = puntos % 5;
-                    for (let i = 0; i < gruposDeCinco; i++) html += '<div class="poroto-grupo-5"></div>';
-                    if (resto > 0) html += `<div class="poroto-individual">${'|'.repeat(resto)}</div>`;
-                    return html;
-                };
-                DOMElements.marcadorNosotros.innerHTML = dibujarPorotos(puntosNosotros);
-                DOMElements.marcadorEllos.innerHTML = dibujarPorotos(puntosEllos);
-                document.querySelector('.marcador').classList.toggle('a30', puntosVictoria == 30);
-            }
-            function actualizarHistorial(historial) {
-                DOMElements.chatDisplay.innerHTML = '';
-                historial.forEach(evento => {
-                    const p = document.createElement('p');
-                    p.textContent = evento.mensaje;
-                    p.classList.add(`historial-${evento.jugador}`);
-                    DOMElements.chatDisplay.appendChild(p);
-                });
-                DOMElements.chatDisplay.scrollTop = DOMElements.chatDisplay.scrollHeight;
-            }
-            function actualizarBotones(estadoJuego) {
-                const enModoRespuesta = estadoJuego.estado === config.ESTADOS_JUEGO.ESPERANDO_RESPUESTA_CANTO && estadoJuego.turnoActual === config.JUGADORES.JUGADOR;
-                DOMElements.cantoAccionesPrincipales.style.display = enModoRespuesta? 'none' : 'flex';
-                DOMElements.cantoAccionesPrincipales.style.flexDirection = 'column';
-                DOMElements.cantoAccionesPrincipales.style.gap = '10px';
-                DOMElements.cantoAccionesRespuesta.style.display = enModoRespuesta? 'block' : 'none';
-
-                if (!enModoRespuesta) {
-                    const puedeCantarEnvido = estadoJuego.ronda.numero === 1 &&!estadoJuego.envido.cantado;
-                    document.querySelector('[data-canto="envido"]').disabled =!puedeCantarEnvido;
-                    document.querySelector('[data-canto="real-envido"]').disabled =!puedeCantarEnvido;
-                    document.querySelector('[data-canto="falta-envido"]').disabled =!puedeCantarEnvido;
-                    const trucoCantado = estadoJuego.truco.nivel > 0;
-                    const puedeSubir = estadoJuego.truco.ultimoEnQuerer === estadoJuego.jugadores.equipo;
-                    document.querySelector('[data-canto="truco"]').disabled = trucoCantado;
-                    document.querySelector('[data-canto="retruco"]').disabled =!(trucoCantado && estadoJuego.truco.nivel === 1 && puedeSubir);
-                    document.querySelector('[data-canto="vale-cuatro"]').disabled =!(trucoCantado && estadoJuego.truco.nivel === 2 && puedeSubir);
-                }
-            }
-            function resaltarTurno(jugadorActual) {
-                document.getElementById('zona-jugador').classList.toggle('turno-activo', jugadorActual === config.JUGADORES.JUGADOR);
-                document.getElementById('zona-ia').classList.toggle('turno-activo', jugadorActual === config.JUGADORES.IA);
-            }
-            function mostrarModalFinPartida(ganador, puntuacion) {
-                DOMElements.mensajeGanador.textContent = `¡Partida terminada! El ganador es ${ganador}.`;
-                DOMElements.puntajeFinal.textContent = `Resultado final: ${puntuacion.nosotros} a ${puntuacion.ellos}.`;
-                DOMElements.modalFinPartida.style.display = 'flex';
-            }
-            return { inicializarUI, mostrarPantallaJuego, actualizarNombres, dibujarMano, jugarCarta, limpiarMesa, actualizarMarcador, actualizarHistorial, actualizarBotones, resaltarTurno, mostrarModalFinPartida };
-        })();
-
-        // --- Módulo: main.js ---
-        let estadoJuego = {};
-        function inicializarEstado() {
-            estadoJuego = {
-                configuracion: { nombreJugador: 'Jugador', puntosVictoria: config.GAME_CONFIG.PUNTOS_PARTIDA_LARGA, conFlor: false },
-                puntuacion: {: 0,: 0 },
-                historial:,
-                jugadores: {: { mano:, equipo: config.EQUIPOS.NOSOTROS },: { mano:, equipo: config.EQUIPOS.ELLOS } },
-                dealer: null, mano: null, turnoActual: null, estado: config.ESTADOS_JUEGO.INICIO,
-                ronda: { numero: 0, cartasEnMesa:, resultado: },
-                cantoActual: null,
-                truco: { nivel: 0, puntos: 1, cantor: null, ultimoEnQuerer: null },
-                envido: { cantado: false, puntos: 0, ganador: null },
-            };
-        }
-        function iniciarPartida(configuracionJuego) {
-            inicializarEstado();
-            estadoJuego.configuracion = configuracionJuego;
-            ui.mostrarPantallaJuego();
-            ui.actualizarNombres(configuracionJuego.nombreJugador, 'TrucoEstrella');
-            ui.actualizarMarcador(0, 0, configuracionJuego.puntosVictoria);
-            estadoJuego.dealer = config.JUGADORES.IA;
-            jugarMano();
-        }
-        function jugarMano() {
-            estadoJuego.ronda = { numero: 1, cartasEnMesa:, resultado: };
-            estadoJuego.cantoActual = null;
-            estadoJuego.truco = { nivel: 0, puntos: 1, cantor: null, ultimoEnQuerer: null };
-            estadoJuego.envido = { cantado: false, puntos: 0, ganador: null };
-            estadoJuego.dealer = (estadoJuego.dealer === config.JUGADORES.JUGADOR)? config.JUGADORES.IA : config.JUGADORES.JUGADOR;
-            estadoJuego.mano = (estadoJuego.dealer === config.JUGADORES.JUGADOR)? config.JUGADORES.IA : config.JUGADORES.JUGADOR;
-            estadoJuego.turnoActual = estadoJuego.mano;
-            const barajaMezclada =.sort(() => Math.random() - 0.5);
-            estadoJuego.jugadores.mano = barajaMezclada.splice(0, config.GAME_CONFIG.CARTAS_POR_MANO);
-            estadoJuego.jugadores.mano = barajaMezclada.splice(0, config.GAME_CONFIG.CARTAS_POR_MANO);
-            ui.limpiarMesa();
-            ui.dibujarMano(config.JUGADORES.JUGADOR, estadoJuego.jugadores.mano);
-            ui.dibujarMano(config.JUGADORES.IA, estadoJuego.jugadores.mano);
-            agregarAlHistorial(`Nueva mano. Reparte ${estadoJuego.dealer}. Es mano ${estadoJuego.mano}.`);
-            estadoJuego.estado = config.ESTADOS_JUEGO.ESPERANDO_JUGADA;
-            gestionarTurno();
-        }
-        function gestionarTurno() {
-            ui.actualizarBotones(estadoJuego);
-            ui.resaltarTurno(estadoJuego.turnoActual);
-            if (estadoJuego.turnoActual === config.JUGADORES.IA) {
-                setTimeout(() => {
-                    const accion = estadoJuego.estado === config.ESTADOS_JUEGO.ESPERANDO_RESPUESTA_CANTO
-                       ? ia.decidirRespuestaCanto(estadoJuego)
-                        : ia.decidirJugada(estadoJuego);
-                    procesarAccion(config.JUGADORES.IA, accion);
-                }, config.GAME_CONFIG.TIEMPO_ESPERA_IA);
-            }
-        }
-        function procesarAccion(jugador, accion) {
-            agregarAlHistorial(`${jugador}: ${accion.valor.replace(/-/g, ' ')}`, jugador);
-            switch (accion.tipo) {
-                case 'jugar_carta': jugarCarta(jugador, accion.valor); break;
-                case 'cantar': procesarCanto(jugador, accion.valor); break;
-                case 'responder_canto': procesarRespuestaCanto(jugador, accion.valor); break;
-            }
-        }
-        function procesarCanto(jugador, canto) {
-            estadoJuego.cantoActual = { tipo: canto, cantor: jugador };
-            estadoJuego.estado = config.ESTADOS_JUEGO.ESPERANDO_RESPUESTA_CANTO;
-            cambiarTurno();
-            gestionarTurno();
-        }
-        function procesarRespuestaCanto(jugador, respuesta) {
-            const cantoInfo = estadoJuego.cantoActual;
-            if (respuesta === config.CANTOS.QUIERO) {
-                if (cantoInfo.tipo.includes('envido')) {
-                    estadoJuego.envido.cantado = true;
-                    const puntosJugador = ia.calcularEnvido(estadoJuego.jugadores.mano);
-                    const puntosIA = ia.calcularEnvido(estadoJuego.jugadores.mano);
-                    agregarAlHistorial(`Tus puntos de envido: ${puntosJugador}`, 'sistema');
-                    agregarAlHistorial(`Puntos de envido de IA: ${puntosIA}`, 'sistema');
-                    let ganadorEnvido;
-                    if (puntosJugador > puntosIA) ganadorEnvido = config.JUGADORES.JUGADOR;
-                    else if (puntosIA > puntosJugador) ganadorEnvido = config.JUGADORES.IA;
-                    else ganadorEnvido = estadoJuego.mano;
-                    const puntosGanados = config.PUNTOS.ENVIDO.QUERIDO;
-                    const equipoGanador = estadoJuego.jugadores[ganadorEnvido].equipo;
-                    estadoJuego.puntuacion[equipoGanador] += puntosGanados;
-                    agregarAlHistorial(`${ganadorEnvido} gana el envido y suma ${puntosGanados} puntos.`, 'sistema');
-                    ui.actualizarMarcador(estadoJuego.puntuacion, estadoJuego.puntuacion, estadoJuego.configuracion.puntosVictoria);
-                }
-            } else { // NO QUIERO
-                if (cantoInfo.tipo.includes('envido')) {
-                    const puntosGanados = config.PUNTOS.ENVIDO.NO_QUERIDO;
-                    const equipoGanador = estadoJuego.jugadores[cantoInfo.cantor].equipo;
-                    estadoJuego.puntuacion[equipoGanador] += puntosGanados;
-                    agregarAlHistorial(`${cantoInfo.cantor} suma ${puntosGanados} por envido no querido.`, 'sistema');
-                    ui.actualizarMarcador(estadoJuego.puntuacion, estadoJuego.puntuacion, estadoJuego.configuracion.puntosVictoria);
-                }
-            }
-            estadoJuego.cantoActual = null;
-            estadoJuego.estado = config.ESTADOS_JUEGO.ESPERANDO_JUGADA;
-            estadoJuego.turnoActual = cantoInfo.cantor; // El turno vuelve al que cantó
-            cambiarTurno(); // Para que juegue el siguiente
-            gestionarTurno();
-        }
-        function jugarCarta(jugador, idCarta) {
-            if (estadoJuego.estado === config.ESTADOS_JUEGO.ESPERANDO_RESPUESTA_CANTO) return;
-            const manoJugador = estadoJuego.jugadores[jugador].mano;
-            const indiceCarta = manoJugador.findIndex(c => c.id === idCarta);
-            if (indiceCarta === -1) return;
-            const [cartaJugada] = manoJugador.splice(indiceCarta, 1);
-            estadoJuego.ronda.cartasEnMesa.push({ jugador, carta: cartaJugada });
-            ui.jugarCarta(jugador, cartaJugada, estadoJuego.ronda.numero);
-            const cartasJugadasEnRonda = estadoJuego.ronda.cartasEnMesa.length;
-            if (cartasJugadasEnRonda % 2 === 0) {
-                setTimeout(resolverRonda, 500);
-            } else {
-                cambiarTurno();
-                gestionarTurno();
-            }
-        }
-        function resolverRonda() {
-            const inicioSlice = (estadoJuego.ronda.numero - 1) * 2;
-            const jugadasRonda = estadoJuego.ronda.cartasEnMesa.slice(inicioSlice);
-            const jugada1 = jugadasRonda, jugada2 = jugadasRonda[1];
-            const valor1 = config.VALORES_TRUCO[jugada1.carta.id], valor2 = config.VALORES_TRUCO[jugada2.carta.id];
-            let ganadorRonda, parda = false;
-            if (valor1 > valor2) ganadorRonda = jugada1.jugador;
-            else if (valor2 > valor1) ganadorRonda = jugada2.jugador;
-            else { parda = true; ganadorRonda = 'parda'; }
-            estadoJuego.ronda.resultado.push({ ganador: ganadorRonda, parda });
-            agregarAlHistorial(`Fin ronda ${estadoJuego.ronda.numero}. ${parda? 'Parda.' : `Gana ${ganadorRonda}.`}`, 'sistema');
-            if (parda) estadoJuego.turnoActual = estadoJuego.mano;
-            else estadoJuego.turnoActual = ganadorRonda;
-            if (verificarFinDeMano()) setTimeout(terminarMano, 1000);
-            else { estadoJuego.ronda.numero++; setTimeout(gestionarTurno, 1000); }
-        }
-        function verificarFinDeMano() {
-            const res = estadoJuego.ronda.resultado;
-            if (res.length < 2) return false;
-            const nosotros = res.filter(r => r.ganador === config.JUGADORES.JUGADOR).length;
-            const ellos = res.filter(r => r.ganador === config.JUGADORES.IA).length;
-            if (nosotros === 2 |
-
-| ellos === 2) return true;
-            if (res.length === 3) return true;
-            if (res.parda && res[1] &&!res.[1]parda) return true;
-            return false;
-        }
-        function terminarMano() {
-            estadoJuego.estado = config.ESTADOS_JUEGO.MANO_TERMINADA;
-            const ganadorMano = calcularGanadorMano();
-            const puntosGanados = estadoJuego.truco.puntos;
-            if (ganadorMano && ganadorMano!== 'parda') {
-                const equipoGanador = estadoJuego.jugadores[ganadorMano].equipo;
-                estadoJuego.puntuacion[equipoGanador] += puntosGanados;
-                agregarAlHistorial(`Mano ganada por ${ganadorMano}. Suma ${puntosGanados} punto(s) de truco.`, 'sistema');
-            } else {
-                agregarAlHistorial('La mano terminó en parda total.', 'sistema');
-            }
-            ui.actualizarMarcador(estadoJuego.puntuacion, estadoJuego.puntuacion, estadoJuego.configuracion.puntosVictoria);
-            if (estadoJuego.puntuacion >= estadoJuego.configuracion.puntosVictoria |
-
-| estadoJuego.puntuacion >= estadoJuego.configuracion.puntosVictoria) {
-                terminarPartida();
-            } else {
-                setTimeout(jugarMano, 3000);
-            }
-        }
-        function calcularGanadorMano() {
-            const res = estadoJuego.ronda.resultado;
-            const victoriasNosotros = res.filter(r => r.ganador === config.JUGADORES.JUGADOR).length;
-            const victoriasEllos = res.filter(r => r.ganador === config.JUGADORES.IA).length;
-            if (victoriasNosotros > victoriasEllos) return config.JUGADORES.JUGADOR;
-            if (victoriasEllos > victoriasNosotros) return config.JUGADORES.IA;
-            if (res.parda) return (res.length > 1 && res[1] &&!res.[1]parda)? res.[1]ganador : estadoJuego.mano;
-            return res.ganador;
-        }
-        function terminarPartida() {
-            estadoJuego.estado = config.ESTADOS_JUEGO.PARTIDA_TERMINADA;
-            const ganador = estadoJuego.puntuacion >= estadoJuego.configuracion.puntosVictoria? estadoJuego.configuracion.nombreJugador : 'TrucoEstrella';
-            ui.mostrarModalFinPartida(ganador, estadoJuego.puntuacion);
-        }
-        function cambiarTurno() { estadoJuego.turnoActual = (estadoJuego.turnoActual === config.JUGADORES.JUGADOR)? config.JUGADORES.IA : config.JUGADORES.JUGADOR; }
-        function agregarAlHistorial(mensaje, jugador = 'sistema') {
-            estadoJuego.historial.push({ mensaje, jugador });
-            ui.actualizarHistorial(estadoJuego.historial);
-        }
-        function getConfiguracionActual() { return estadoJuego.configuracion; }
-        document.addEventListener('DOMContentLoaded', () => {
-            inicializarEstado();
-            ui.inicializarUI(iniciarPartida, (accion) => procesarAccion(config.JUGADORES.JUGADOR, accion), getConfiguracionActual, agregarAlHistorial);
-        });
-    </script>
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>
