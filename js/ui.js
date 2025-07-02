@@ -1,208 +1,226 @@
-export function showScreen(screenId) {
-    document.querySelectorAll('.screen').forEach(screen => {
-        screen.classList.remove('active');
-    });
-    document.getElementById(screenId).classList.add('active');
+/**
+ * ui.js
+ * Módulo para todas las manipulaciones del DOM y la interfaz de usuario.
+ * No contiene lógica de juego, solo renderiza el estado proporcionado por main.js.
+ */
+
+import { SIMBOLOS_PALO, JUGADORES } from './config.js';
+import { procesarAccionJugador, getConfiguracionActual } from './main.js';
+
+// Referencias a elementos del DOM
+const pantallaInicio = document.getElementById('pantalla-inicio');
+const pantallaJuego = document.getElementById('pantalla-juego');
+const formInicio = document.getElementById('form-inicio');
+const inputNombre = document.getElementById('nombre-jugador');
+const btnLimpiarCache = document.getElementById('limpiar-cache');
+const btnVolverMenu = document.getElementById('volver-menu');
+
+const manoJugadorContainer = document.getElementById('mano-jugador');
+const manoIAContainer = document.getElementById('mano-ia');
+const mesaJugadorContainer = document.getElementById('mesa-jugador');
+const mesaIAContainer = document.getElementById('mesa-ia');
+const marcadorNosotros = document.getElementById('marcador-nosotros');
+const marcadorEllos = document.getElementById('marcador-ellos');
+const historialContainer = document.getElementById('historial-partida');
+const nombreJugadorDisplay = document.getElementById('nombre-jugador-display');
+const nombreIADisplay = document.getElementById('nombre-ia-display');
+
+const modalFinPartida = document.getElementById('modal-fin-partida');
+const mensajeGanador = document.getElementById('mensaje-ganador');
+const puntajeFinal = document.getElementById('puntaje-final');
+const btnRevancha = document.getElementById('btn-revancha');
+const btnMenuPrincipal = document.getElementById('btn-menu-principal');
+
+const botonesCanto = document.getElementById('canto-buttons');
+
+let iniciarPartidaCallback;
+let jugarManoCallback;
+
+/**
+ * Inicializa la UI, configura los event listeners principales.
+ * @param {function} iniciarPartidaFn - Callback para iniciar la partida desde main.js.
+ * @param {function} jugarManoFn - Callback para reiniciar una mano (revancha).
+ */
+export function inicializarUI(iniciarPartidaFn, jugarManoFn) {
+  iniciarPartidaCallback = iniciarPartidaFn;
+  jugarManoCallback = jugarManoFn;
+
+  formInicio.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const configuracion = {
+      nombreJugador: inputNombre.value |
+
+| 'Jugador',
+      puntosVictoria: document.querySelector('input[name="puntos"]:checked').value,
+      conFlor: document.getElementById('con-flor').checked,
+    };
+    iniciarPartidaCallback(configuracion);
+  });
+
+  btnLimpiarCache.addEventListener('click', () => window.location.reload(true));
+  btnVolverMenu.addEventListener('click', volverAlMenu);
+  btnMenuPrincipal.addEventListener('click', volverAlMenu);
+  
+  btnRevancha.addEventListener('click', () => {
+      modalFinPartida.style.display = 'none';
+      iniciarPartidaCallback(getConfiguracionActual());
+  });
+
+  // Event listener para los botones de canto (delegación de eventos)
+  botonesCanto.addEventListener('click', (e) => {
+    if (e.target.tagName === 'BUTTON' &&!e.target.disabled) {
+      const canto = e.target.dataset.canto;
+      procesarAccionJugador({ tipo: 'cantar', valor: canto });
+    }
+  });
 }
 
-export function updatePlayerName(name) {
-    document.getElementById('player-name-display').textContent = name;
-    document.getElementById('player-score-name').textContent = name;
+function volverAlMenu() {
+    pantallaJuego.style.display = 'none';
+    modalFinPartida.style.display = 'none';
+    pantallaInicio.style.display = 'flex';
 }
 
-export function drawCard(card, element, isFaceUp) {
-    element.innerHTML = '';
-    element.classList.remove('face-down', 'player-card');
+export function mostrarPantallaJuego() {
+  pantallaInicio.style.display = 'none';
+  pantallaJuego.style.display = 'grid';
+}
 
-    if (isFaceUp) {
-        element.innerHTML = `
-            <span class="number">${card.number}</span>
-            <span class="suit">${card.suit}</span>
-            <span class="number-bottom">${card.number}</span>
-        `;
-        element.dataset.card = JSON.stringify(card);
+export function actualizarNombres(nombreJugador, nombreIA) {
+    nombreJugadorDisplay.textContent = nombreJugador;
+    nombreIADisplay.textContent = nombreIA;
+}
+
+/**
+ * Dibuja las cartas en la mano de un jugador.
+ * @param {string} jugador - JUGADOR o IA.
+ * @param {Array<object>} cartas - Array de objetos de carta.
+ */
+export function dibujarMano(jugador, cartas) {
+  const container = jugador === JUGADORES.JUGADOR? manoJugadorContainer : manoIAContainer;
+  container.innerHTML = '';
+  cartas.forEach(carta => {
+    const cartaEl = document.createElement('div');
+    cartaEl.classList.add('carta');
+    if (jugador === JUGADORES.JUGADOR) {
+      cartaEl.innerHTML = `<span>${carta.numero}</span><span>${SIMBOLOS_PALO[carta.palo]}</span>`;
+      cartaEl.dataset.id = carta.id;
+      cartaEl.addEventListener('click', () => {
+        procesarAccionJugador({ tipo: 'jugar_carta', valor: carta.id });
+      });
     } else {
-        element.classList.add('face-down');
+      cartaEl.classList.add('dorso');
     }
+    container.appendChild(cartaEl);
+  });
 }
 
-export function clearTable() {
-    document.querySelectorAll('#table .card-slot').forEach(slot => {
-        slot.innerHTML = '';
-        slot.classList.remove('winner');
-    });
+/**
+ * Mueve una carta de la mano a la mesa.
+ * @param {string} jugador - JUGADOR o IA.
+ * @param {object} carta - El objeto de la carta jugada.
+ * @param {number} ronda - El número de la ronda (1, 2, o 3).
+ */
+export function jugarCarta(jugador, carta, ronda) {
+  const mesaContainer = jugador === JUGADORES.JUGADOR? mesaJugadorContainer : mesaIAContainer;
+  const slot = mesaContainer.querySelector(`.slot[data-ronda="${ronda}"]`);
+  
+  if (slot) {
+    slot.innerHTML = `<div class="carta"><span>${carta.numero}</span><span>${SIMBOLOS_PALO[carta.palo]}</span></div>`;
+  }
+
+  // Quitar la carta de la mano en la UI
+  const manoContainer = jugador === JUGADORES.JUGADOR? manoJugadorContainer : manoIAContainer;
+  if (jugador === JUGADORES.JUGADOR) {
+      const cartaEnMano = manoContainer.querySelector(`[data-id="${carta.id}"]`);
+      if (cartaEnMano) cartaEnMano.remove();
+  } else {
+      // Quitar una carta del dorso
+      if(manoContainer.firstChild) manoContainer.firstChild.remove();
+  }
 }
 
-export function drawHands(playerHand, iaHand) {
-    const playerHandDiv = document.getElementById('player-hand');
-    const iaHandDiv = document.getElementById('ia-hand');
-    
-    playerHandDiv.innerHTML = '';
-    iaHandDiv.innerHTML = '';
-
-    playerHand.forEach(card => {
-        const cardEl = document.createElement('div');
-        cardEl.className = 'card player-card';
-        drawCard(card, cardEl, true);
-        playerHandDiv.appendChild(cardEl);
-    });
-
-    iaHand.forEach(() => {
-        const cardEl = document.createElement('div');
-        cardEl.className = 'card';
-        drawCard(null, cardEl, false);
-        iaHandDiv.appendChild(cardEl);
-    });
+export function limpiarMesa() {
+    const slots = document.querySelectorAll('.slot');
+    slots.forEach(slot => slot.innerHTML = '');
 }
 
-export function playCardToTable(card, player, handNumber) {
-    const tableSlot = document.querySelector(`#${player}-table .card-slot:nth-child(${handNumber})`);
-    tableSlot.innerHTML = ''; // Limpiar slot por si acaso
-    const cardEl = document.createElement('div');
-    cardEl.className = 'card played';
-    drawCard(card, cardEl, true);
-    tableSlot.appendChild(cardEl);
-}
+/**
+ * Actualiza el marcador de puntos con el sistema de "porotos".
+ * @param {number} puntosNosotros 
+ * @param {number} puntosEllos 
+ * @param {number} puntosVictoria
+ */
+export function actualizarMarcador(puntosNosotros, puntosEllos, puntosVictoria) {
+  const dibujarPorotos = (puntos) => {
+    let html = '';
+    const gruposDeCinco = Math.floor(puntos / 5);
+    const resto = puntos % 5;
 
-export function highlightWinnerCard(player, handNumber) {
-    const tableSlot = document.querySelector(`#${player}-table .card-slot:nth-child(${handNumber})`);
-    if(tableSlot && tableSlot.firstChild) {
-        tableSlot.firstChild.classList.add('winner');
+    for (let i = 0; i < gruposDeCinco; i++) {
+      html += '<div class="poroto-grupo"><s>||||</s></div>';
     }
-}
-
-export function logToHistory(message, type) {
-    const historyLog = document.getElementById('history-log');
-    historyLog.innerHTML += `<p class="log-${type}">${message}</p>`;
-    historyLog.scrollTop = historyLog.scrollHeight;
-}
-
-export function updateScoreboard(playerScore, iaScore, maxPoints) {
-    const drawFosforos = (score, container) => {
-        container.innerHTML = '';
-        if (maxPoints === 30) {
-            const scorePart1 = Math.min(score, 15);
-            const scorePart2 = Math.max(0, score - 15);
-
-            drawGroups(scorePart1, container);
-            if (score > 15 || maxPoints === 30) {
-                 container.innerHTML += '<div class="score-divider"></div>';
-            }
-            drawGroups(scorePart2, container);
-
-        } else {
-            drawGroups(score, container);
-        }
-    };
-    
-    const drawGroups = (score, container) => {
-        const fullGroups = Math.floor(score / 5);
-        const remainder = score % 5;
-
-        for (let i = 0; i < fullGroups; i++) {
-            const group = document.createElement('div');
-            group.className = 'fosforo-group';
-            group.innerHTML = `
-                <div class="fosforo"></div><div class="fosforo"></div>
-                <div class="fosforo"></div><div class="fosforo"></div>
-                <div class="fosforo fosforo-h"></div>
-            `;
-            container.appendChild(group);
-        }
-
-        if (remainder > 0) {
-            const group = document.createElement('div');
-            group.className = 'fosforo-group';
-            for (let i = 0; i < remainder; i++) {
-                group.innerHTML += '<div class="fosforo"></div>';
-            }
-            container.appendChild(group);
-        }
-    };
-
-    drawFosforos(playerScore, document.getElementById('player-score'));
-    drawFosforos(iaScore, document.getElementById('ia-score'));
-}
-
-export function showCantoModal(message, options) {
-    return new Promise(resolve => {
-        const modal = document.getElementById('canto-modal');
-        const modalMessage = document.getElementById('modal-message');
-        const modalOptions = document.getElementById('modal-options');
-
-        modalMessage.textContent = message;
-        modalOptions.innerHTML = '';
-
-        options.forEach(option => {
-            const button = document.createElement('button');
-            button.className = 'btn';
-            button.textContent = option.text;
-            button.onclick = () => {
-                modal.classList.remove('active');
-                resolve(option.value);
-            };
-            if(option.type === 'primary') button.classList.add('btn-primary');
-            modalOptions.appendChild(button);
-        });
-        
-        modal.classList.add('active');
-    });
-}
-
-export function hideCantoModal() {
-    document.getElementById('canto-modal').classList.remove('active');
-}
-
-export function updateActionButtons(gameState) {
-    const { cantoState, turn, player, withFlor, roundNumber } = gameState;
-    const isPlayerTurn = turn === player.id;
-    
-    const buttons = {
-        'truco-btn': false, 'retruco-btn': false, 'vale4-btn': false,
-        'envido-btn': false, 'real-envido-btn': false, 'falta-envido-btn': false,
-        'flor-btn': false, 'contraflor-btn': false, 'contraflor-resto-btn': false,
-        'mazo-btn': isPlayerTurn
-    };
-
-    if (isPlayerTurn && !cantoState.active) {
-        // TRUCO
-        if (!cantoState.truco.level) {
-            buttons['truco-btn'] = true;
-        } else if (cantoState.truco.level === 'TRUCO' && cantoState.truco.singer !== player.id) {
-            buttons['retruco-btn'] = true;
-        } else if (cantoState.truco.level === 'RETRUCO' && cantoState.truco.singer !== player.id) {
-            buttons['vale4-btn'] = true;
-        }
-
-        // ENVIDO (solo en primera mano)
-        if (roundNumber === 1 && !cantoState.envido.closed && !cantoState.flor.active) {
-            buttons['envido-btn'] = true;
-            buttons['real-envido-btn'] = true;
-            buttons['falta-envido-btn'] = true;
-        }
-
-        // FLOR
-        if (withFlor && roundNumber === 1 && player.hasFlor && !cantoState.envido.active && !cantoState.flor.closed) {
-             if (!cantoState.flor.level) {
-                 buttons['flor-btn'] = true;
-             } else if (cantoState.flor.level === 'FLOR' && cantoState.flor.singer !== player.id) {
-                 buttons['contraflor-btn'] = true;
-                 buttons['contraflor-resto-btn'] = true;
-             }
-        }
+    if (resto > 0) {
+      html += `<div class="poroto-grupo">${'|'.repeat(resto)}</div>`;
     }
-    
-    for (const [id, enabled] of Object.entries(buttons)) {
-        document.getElementById(id).disabled = !enabled;
-    }
+    return html;
+  };
+  
+  marcadorNosotros.innerHTML = dibujarPorotos(puntosNosotros);
+  marcadorEllos.innerHTML = dibujarPorotos(puntosEllos);
+  
+  // Añadir línea divisoria si es a 30
+  document.querySelector('.marcador').classList.toggle('a30', puntosVictoria == 30);
 }
 
-export function showEndGameModal(title, message) {
-     document.getElementById('end-game-title').textContent = title;
-     document.getElementById('end-game-message').textContent = message;
-     document.getElementById('end-game-modal').classList.add('active');
+/**
+ * Añade un mensaje al historial de la partida.
+ * @param {Array<object>} historial - El array de mensajes del historial.
+ */
+export function actualizarHistorial(historial) {
+  historialContainer.innerHTML = '';
+  historial.forEach(evento => {
+    const p = document.createElement('p');
+    p.textContent = evento.mensaje;
+    p.classList.add(`historial-${evento.jugador}`);
+    historialContainer.appendChild(p);
+  });
+  historialContainer.scrollTop = historialContainer.scrollHeight;
 }
 
-export function hideEndGameModal() {
-    document.getElementById('end-game-modal').classList.remove('active');
+/**
+ * Habilita o deshabilita los botones de canto según el estado del juego.
+ * @param {object} estadoJuego - El estado actual del juego.
+ */
+export function actualizarBotones(estadoJuego) {
+    const puedeCantarEnvido = estadoJuego.ronda.numero === 1 &&!estadoJuego.cantoActual; // Simplificado
+    const puedeCantarTruco =!estadoJuego.cantoActual |
+
+| estadoJuego.cantoActual.tipo.includes('truco'); // Simplificado
+
+    document.querySelector('[data-canto="envido"]').disabled =!puedeCantarEnvido;
+    document.querySelector('[data-canto="real-envido"]').disabled =!puedeCantarEnvido;
+    document.querySelector('[data-canto="falta-envido"]').disabled =!puedeCantarEnvido;
+    document.querySelector('[data-canto="truco"]').disabled =!puedeCantarTruco;
+    // Lógica más compleja para retruco, etc. iría aquí
+}
+
+/**
+ * Resalta visualmente qué jugador tiene el turno.
+ * @param {string} jugadorActual - El jugador que tiene el turno.
+ */
+export function resaltarTurno(jugadorActual) {
+    document.getElementById('zona-jugador').classList.toggle('turno-activo', jugadorActual === JUGADORES.JUGADOR);
+    document.getElementById('zona-ia').classList.toggle('turno-activo', jugadorActual === JUGADORES.IA);
+}
+
+/**
+ * Muestra el modal de fin de partida.
+ * @param {string} ganador - Nombre del ganador.
+ * @param {object} puntuacion - Objeto con los puntajes finales.
+ */
+export function mostrarModalFinPartida(ganador, puntuacion) {
+    mensajeGanador.textContent = `¡Partida terminada! El ganador es ${ganador}.`;
+    puntajeFinal.textContent = `Resultado final: ${puntuacion.nosotros} a ${puntuacion.ellos}.`;
+    modalFinPartida.style.display = 'flex';
 }
