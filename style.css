@@ -80,9 +80,9 @@ body {
 
 #mesa-paño {
     border: 4px solid #14532d;
-    min-width: 420px;
-    min-height: 340px;
-    max-width: 600px;
+    min-width: 600px;
+    min-height: 320px;
+    max-width: 900px;
     max-height: 420px;
 }
 
@@ -90,7 +90,7 @@ body {
     #game-screen {
         flex-direction: column;
     }
-    .w-96, .w-56, .w-40 {
+    .w-96, .w-56, .w-44 {
         width: 100% !important;
         min-width: 0 !important;
     }

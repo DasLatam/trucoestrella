@@ -11,14 +11,14 @@
 <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4 font-sans">
 
     <!-- Pantalla de inicio -->
-    <div id="start-screen" class="bg-gray-800 p-8 rounded-lg shadow-2xl w-full max-w-lg mx-auto">
+    <div id="start-screen" class="bg-gray-800 p-8 rounded-lg shadow-2xl w-full max-w-2xl mx-auto">
         <div class="flex items-center justify-center mb-6">
             <img src="favicon.png" alt="Logo TrucoEstrella" class="w-16 h-16 mr-2">
             <h1 class="text-3xl font-bold">TrucoEstrella</h1>
         </div>
         <div class="mb-4">
             <label class="block mb-2 font-semibold" for="playerName">Nombre:</label>
-            <input id="playerName" type="text" class="w-full p-2 rounded text-black" maxlength="16" placeholder="Tu nombre">
+            <input id="playerName" type="text" class="w-full p-2 rounded text-black" maxlength="16" placeholder="Jugador 1" value="Jugador 1">
         </div>
         <div class="mb-4 flex gap-4">
             <div>
@@ -45,28 +45,25 @@
         <button id="startGameBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg w-full text-xl shadow-lg transition duration-200">
             Comenzar Partida
         </button>
-        <button id="clearCacheBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg w-full mt-4 transition duration-200">
-            Limpiar Cache
-        </button>
         <hr class="my-6 border-gray-700">
         <div class="flex flex-col md:flex-row md:justify-between md:items-center text-sm text-gray-400 mt-4 gap-2">
-            <span>Versión: <b>Beta 3.0 Copilot</b></span>
+            <span>Versión: <b>Beta 3.1 Copilot</b></span>
             <span>PC / Celular (próximamente)</span>
         </div>
     </div>
 
     <!-- Pantalla de juego -->
-    <div id="game-screen" class="hidden w-full h-screen flex flex-col lg:flex-row bg-gray-900 text-white p-4 gap-4">
+    <div id="game-screen" class="hidden w-full h-screen flex flex-row bg-gray-900 text-white p-4 gap-4 overflow-x-auto">
         <!-- Columna 1: Botonera de cantos -->
-        <div class="flex flex-col gap-2 w-40" id="cantos-col">
+        <div class="flex flex-col gap-2 w-44" id="cantos-col">
             <!-- Botones de canto generados dinámicamente -->
         </div>
-        <!-- Columna 2: Área de juego principal (mesa) -->
+        <!-- Columna 2: Área de juego principal (mesa apaisada) -->
         <div class="flex-1 flex flex-col items-center justify-center">
-            <div id="mesa-paño" class="bg-green-900 rounded-2xl shadow-lg flex flex-col items-center justify-center p-4" style="min-width:420px;min-height:340px;">
-                <div id="mesa-ia" class="flex justify-center gap-4 mb-6"></div>
-                <div id="mesa-rondas" class="flex flex-col gap-2"></div>
-                <div id="mesa-player" class="flex justify-center gap-4 mt-6"></div>
+            <div id="mesa-paño" class="bg-green-900 rounded-2xl shadow-lg flex flex-col items-center justify-center p-4" style="min-width:600px;min-height:320px;">
+                <div id="mesa-ia" class="flex flex-row justify-center gap-8 mb-4"></div>
+                <div id="mesa-rondas" class="flex flex-row gap-8 items-center justify-center mb-4"></div>
+                <div id="mesa-player" class="flex flex-row justify-center gap-8 mt-4"></div>
             </div>
         </div>
         <!-- Columna 3: Marcador de puntos -->

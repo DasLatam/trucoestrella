@@ -1,7 +1,6 @@
 import { calcularEnvido } from './main.js';
 
 export function iaElegirCarta(mano, cartasJugadas) {
-    // IA simple: juega la carta más baja disponible
     let disponibles = mano.filter(c => !c.jugada);
     disponibles.sort((a, b) => a.valorTruco - b.valorTruco);
     return mano.indexOf(disponibles[0]);

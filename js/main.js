@@ -4,7 +4,7 @@ import { iaElegirCarta, iaResponderCanto, iaCantarCanto } from './ia.js';
 
 // --- Estado global del juego ---
 export let gameState = {
-    playerName: 'Vos',
+    playerName: 'Jugador 1',
     playerHand: [],
     iaHand: [],
     deck: [],
@@ -93,7 +93,7 @@ function showStartScreen() {
 function showGameScreen(config) {
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('game-screen').classList.remove('hidden');
-    gameState.playerName = config.playerName;
+    gameState.playerName = config.playerName || 'Jugador 1';
     gameState.puntosMax = config.puntosMax;
     gameState.flor = config.flor;
     initializeGame();
@@ -123,7 +123,7 @@ function initializeGame() {
     renderMesaRondas(gameState.playedCards, gameState.playerName);
     renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
     addMessageToHistory('Cartas repartidas.', 'system');
-    addMessageToHistory(`Ronda 1. Mano: ${gameState.manoPlayerId === 'player' ? gameState.playerName : 'TrucoEstrella'}.`, 'system');
+    addMessageToHistory(`Primera ronda. Mano: ${gameState.manoPlayerId === 'player' ? gameState.playerName : 'TrucoEstrella'}.`, 'system');
     updateCantosUI();
     if (gameState.manoPlayerId === 'player') {
         addMessageToHistory('¡Tu turno!', 'system');
@@ -338,17 +338,11 @@ function showFinPartidaModal(winner) {
 function setupEventListeners() {
     document.getElementById('startGameBtn').addEventListener('click', () => {
         const config = {
-            playerName: document.getElementById('playerName').value || 'Vos',
+            playerName: document.getElementById('playerName').value || 'Jugador 1',
             puntosMax: parseInt(document.getElementById('gamePoints').value),
             flor: document.getElementById('florRule').checked
         };
         showGameScreen(config);
-    });
-    document.getElementById('clearCacheBtn').addEventListener('click', () => {
-        if (confirm('¿Estás seguro de que quieres limpiar la caché y reiniciar el juego?')) {
-            localStorage.clear();
-            location.reload();
-        }
     });
     document.getElementById('btn-revancha').addEventListener('click', () => {
         document.getElementById('modal-fin-partida').classList.add('hidden');

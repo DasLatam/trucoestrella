@@ -35,21 +35,22 @@ export function renderIAHand(hand, containerId) {
 }
 
 export function renderMesaRondas(playedCards, playerName) {
-    // playedCards: [{jugador, carta, ronda}]
+    // Horizontal: Primera, Segunda, Tercera
     const mesaRondas = document.getElementById('mesa-rondas');
     mesaRondas.innerHTML = '';
+    const nombres = ['Primera', 'Segunda', 'Tercera'];
     for (let ronda = 1; ronda <= 3; ronda++) {
-        const fila = document.createElement('div');
-        fila.className = 'flex gap-8 items-center justify-center';
+        const col = document.createElement('div');
+        col.className = 'flex flex-col items-center gap-1';
         // IA arriba
         let cartaIA = playedCards.find(pc => pc.jugador === 'TrucoEstrella' && pc.ronda === ronda);
         let cartaPlayer = playedCards.find(pc => pc.jugador === playerName && pc.ronda === ronda);
-        fila.innerHTML = `
+        col.innerHTML = `
             <div>${cartaIA ? renderCardHTML(cartaIA.carta) : renderEmptyCard()}</div>
-            <div class="mx-8 text-lg font-bold text-gray-300">Ronda ${ronda}</div>
+            <div class="mx-2 text-base font-bold text-gray-300">${nombres[ronda-1]}</div>
             <div>${cartaPlayer ? renderCardHTML(cartaPlayer.carta) : renderEmptyCard()}</div>
         `;
-        mesaRondas.appendChild(fila);
+        mesaRondas.appendChild(col);
     }
 }
 

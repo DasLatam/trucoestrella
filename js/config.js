@@ -28,5 +28,5 @@ export const GAME_CONSTANTS = {
         [5, '', 2],
         [4, '', 1]
     ],
-    VERSION: 'Beta 3.0 Copilot'
+    VERSION: 'Beta 3.1 Copilot'
 };
