@@ -513,6 +513,13 @@ const setupEventListeners = () => {
             // Aquí se manejará la lógica de Truco, Envido, Flor, etc.
         });
     });
+
+    document.getElementById('btn-mazo').addEventListener('click', () => {
+        addMessageToHistory(`${gameState.playerName} se fue al mazo.`, 'player');
+        // Lógica para terminar la mano y dar el punto al rival
+        gameState.iaScore += 1;
+        endHand();
+    });
 };
 
 // --- Inicialización al cargar el DOM ---
@@ -521,3 +528,77 @@ document.addEventListener('DOMContentLoaded', () => {
     loadGameConfig(); // Luego, cargar la configuración inicial
     setupEventListeners(); // Finalmente, configurar todos los event listeners
 });
+
+// Estado de canto actual
+let currentCanto = null;
+
+// Manejo de cantos
+const handleCanto = (canto) => {
+    currentCanto = canto;
+    addMessageToHistory(`${gameState.playerName} canta ${canto.toUpperCase()}!`, 'player');
+    // Aquí se puede agregar lógica para respuesta de la IA o mostrar opciones de "Quiero/No quiero"
+    if (canto === 'Envido') {
+        // Mostrar popup de envido y calcular puntos
+        showEnvidoPopup();
+    }
+    // Agregar lógica para otros cantos...
+};
+
+// Asignar listeners a los botones de canto
+DOMElements.gameControlButtons.forEach(button => {
+    button.addEventListener('click', (event) => {
+        const canto = event.target.textContent.trim();
+        handleCanto(canto);
+    });
+});
+
+function showEnvidoPopup() {
+    // Simulación de cálculo de envido
+    const playerEnvido = calcularEnvido(gameState.playerHand);
+    const iaEnvido = calcularEnvido(gameState.iaHand);
+    let winner = playerEnvido > iaEnvido ? gameState.playerName : 'TrucoEstrella';
+    let html = `
+        <div><b>${gameState.playerName}:</b> ${playerEnvido} puntos</div>
+        <div><b>TrucoEstrella:</b> ${iaEnvido} puntos</div>
+        <div class="mt-2 font-bold text-green-700">¡Gana ${winner}!</div>
+    `;
+    document.getElementById('popup-envido-title').textContent = 'Resultado Envido';
+    document.getElementById('popup-envido-content').innerHTML = html;
+    document.getElementById('popup-envido').classList.remove('hidden');
+    setTimeout(() => {
+        document.getElementById('popup-envido').classList.add('hidden');
+    }, 3000);
+}
+
+// Ejemplo de función para calcular envido (simplificada)
+function calcularEnvido(mano) {
+    // Lógica real de envido según reglas
+    // Por ahora, suma los valores de las dos cartas más altas del mismo palo + 20
+    let palos = {};
+    mano.forEach(carta => {
+        if (!palos[carta.palo]) palos[carta.palo] = [];
+        palos[carta.palo].push(carta.valorEnvido);
+    });
+    let max = 0;
+    for (let palo in palos) {
+        if (palos[palo].length >= 2) {
+            let valores = palos[palo].sort((a, b) => b - a);
+            max = Math.max(max, valores[0] + valores[1] + 20);
+        } else {
+            max = Math.max(max, palos[palo][0]);
+        }
+    }
+    return max;
+}
+
+function showFinPartidaModal(winner) {
+    document.getElementById('modal-fin-partida-content').textContent = `Ganador: ${winner}`;
+    document.getElementById('modal-fin-partida').classList.remove('hidden');
+}
+
+document.getElementById('btn-revancha').addEventListener('click', () => {
+    document.getElementById('modal-fin-partida').classList.add('hidden');
+    initializeGame();
+});
+
+// Llamar showFinPartidaModal(winner) en endHand cuando termina la partida

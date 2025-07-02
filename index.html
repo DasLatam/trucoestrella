@@ -153,6 +153,23 @@
 
     </div>
 
+    <!-- Popup de resultado de Envido/Flor -->
+    <div id="popup-envido" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+        <div class="bg-white text-black rounded-lg shadow-xl p-8 text-center">
+            <h2 class="text-2xl font-bold mb-4" id="popup-envido-title">Resultado Envido</h2>
+            <div class="mb-2" id="popup-envido-content"></div>
+        </div>
+    </div>
+
+    <!-- Modal de fin de partida -->
+    <div id="modal-fin-partida" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+        <div class="bg-white text-black rounded-lg shadow-xl p-8 text-center">
+            <h2 class="text-2xl font-bold mb-4">¡Fin de la partida!</h2>
+            <div id="modal-fin-partida-content" class="mb-4"></div>
+            <button id="btn-revancha" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg text-xl shadow-lg transition duration-200">Revancha</button>
+        </div>
+    </div>
+
     <script type="module" src="js/main.js"></script>
 </body>
 </html>
