@@ -7,7 +7,6 @@ export function iaElegirCarta(mano, cartasJugadas) {
 }
 
 export function iaResponderCanto(canto, gameState) {
-    // IA mejorada para Envido/Flor
     if (canto === 'Envido' || canto === 'Real Envido' || canto === 'Falta Envido') {
         let envido = calcularEnvido(gameState.iaHand);
         if (envido >= 30) return (canto === 'Falta Envido') ? 'Quiero' : 'Falta Envido';
@@ -38,7 +37,6 @@ export function iaResponderCanto(canto, gameState) {
 }
 
 export function iaCantarCanto(gameState) {
-    // IA decide si cantar Envido, Flor o Truco al inicio de la mano
     if (!gameState.envidoCantado && !gameState.florCantada && !gameState.trucoCantado && gameState.playedCards.length === 0) {
         let envido = calcularEnvido(gameState.iaHand);
         if (gameState.flor && tieneFlor(gameState.iaHand)) return 'Flor';

@@ -35,14 +35,12 @@ export function renderIAHand(hand, containerId) {
 }
 
 export function renderMesaRondas(playedCards, playerName) {
-    // Horizontal: Primera, Segunda, Tercera
     const mesaRondas = document.getElementById('mesa-rondas');
     mesaRondas.innerHTML = '';
     const nombres = ['Primera', 'Segunda', 'Tercera'];
     for (let ronda = 1; ronda <= 3; ronda++) {
         const col = document.createElement('div');
         col.className = 'flex flex-col items-center gap-1';
-        // IA arriba
         let cartaIA = playedCards.find(pc => pc.jugador === 'TrucoEstrella' && pc.ronda === ronda);
         let cartaPlayer = playedCards.find(pc => pc.jugador === playerName && pc.ronda === ronda);
         col.innerHTML = `
@@ -89,7 +87,6 @@ export function addMessageToHistory(msg, who = 'system') {
     historial.scrollTop = historial.scrollHeight;
 }
 
-// Botonera dinámica para cantos y respuestas
 export function renderCantoBotonera(gameState) {
     const cantosCol = document.getElementById('cantos-col');
     cantosCol.innerHTML = '';
@@ -125,18 +122,18 @@ export function renderCantoBotonera(gameState) {
     if (gameState.trucoCantado && !gameState.cantoPendiente) {
         opciones = ['ReTruco', 'Vale Cuatro'];
     }
-    opciones.push('Ir al Mazo', 'Volver al Menú');
+    opciones.push('Me voy al Mazo', 'Volver al Menú');
     opciones.forEach(canto => {
         const btn = document.createElement('button');
         btn.className = 'game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-3 rounded text-lg font-bold mb-1';
         btn.textContent = canto;
         btn.setAttribute('data-canto', canto);
         btn.onclick = () => {
-            if (canto === 'Ir al Mazo') {
-                // Sumar punto al rival y reiniciar mano
+            if (canto === 'Me voy al Mazo') {
+                // Sumar puntos en disputa al rival y reiniciar mano
                 const rival = 'TrucoEstrella';
                 addMessageToHistory(`${gameState.playerName} se fue al mazo. Punto para ${rival}`, 'system');
-                gameState.iaScore += 1;
+                gameState.iaScore += puntosEnDisputa(gameState);
                 renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
                 if (gameState.iaScore >= gameState.puntosMax) {
                     document.getElementById('modal-fin-partida-content').textContent = `Ganador: TrucoEstrella`;
@@ -156,4 +153,15 @@ export function renderCantoBotonera(gameState) {
 
 function tieneFlor(mano) {
     return mano[0].palo === mano[1].palo && mano[1].palo === mano[2].palo;
+}
+
+// Calcula los puntos en disputa según el canto actual (truco, retruco, vale cuatro)
+function puntosEnDisputa(gameState) {
+    if (gameState.cantoPendiente) {
+        const tipo = gameState.cantoPendiente.tipo;
+        if (tipo === 'Truco') return 1;
+        if (tipo === 'ReTruco') return 2;
+        if (tipo === 'Vale Cuatro') return 3;
+    }
+    return 1;
 }

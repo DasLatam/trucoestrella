@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cómo se juega TrucoEstrella</title>
+    <!-- Aquí puedes añadir estilos CSS para mejorar la apariencia -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        header {
+            text-align: center;
+            padding: 20px 0;
+            background-color: #0056b3;
+            color: white;
+        }
+        h1, h2, h3 {
+            color: #0056b3;
+            border-bottom: 2px solid #0056b3;
+            padding-bottom: 5px;
+            margin-top: 25px;
+        }
+        section {
+            background-color: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        strong {
+            color: #007bff; /* Un azul más vibrante para resaltar */
+        }
+        ul, ol {
+            margin-left: 20px;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .citation {
+            font-size: 0.8em;
+            color: #777;
+            text-align: right;
+            display: block;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Reglamento Oficial de TrucoEstrella</h1>
+    </header>
+
+    <section id="introduccion">
+        <h2>Introducción al Juego de Truco</h2>
+        <p>Para jugar al truco, necesitas las <strong>40 cartas de la baraja española</strong>, excluyendo los 8s, 9s y los comodines [1].</p>
+        <p>El objetivo principal es ser el primer equipo (o jugador) en alcanzar los <strong>30 puntos</strong> [1].</p>
+        <ul>
+            <li>Los <strong>primeros 15 puntos</strong> se conocen como "las malas" [1, 2].</li>
+            <li>Los <strong>últimos 15 puntos</strong> se conocen como "las buenas", y se considera que se entra en ellas al llegar a los 16 puntos [1, 2].</li>
+        </ul>
+        <p>En TrucoEstrella, tienes la opción de jugar una partida completa (30 puntos) o una más corta a 15 puntos ("las malas") [1].</p>
+
+        <h3>Número de Jugadores</h3>
+        <p>El truco puede jugarse de las siguientes maneras [1]:</p>
+        <ul>
+            <li><strong>Individualmente:</strong> 2 jugadores (conocido como mano a mano).</li>
+            <li><strong>Por equipos:</strong>
+                <ul>
+                    <li>4 jugadores (2 contra 2).</li>
+                    <li>6 jugadores (3 contra 3).</li>
+                </ul>
+            </li>
+        </ul>
+    </section>
+
+    <section id="inicio-juego">
+        <h2>Dinámica de una Mano (Rondas y Mano)</h2>
+        <p>Cada mano se compone de <strong>3 rondas</strong>, en las que cada jugador utiliza las 3 cartas que le fueron repartidas [3]. El equipo o jugador que gane <strong>2 de estas 3 rondas</strong> es el ganador de esa mano [3, 4].</p>
+        <ul>
+            <li>El jugador que gana la primera ronda es quien inicia la segunda [3].</li>
+            <li>Similarmente, el ganador de la segunda ronda es quien inicia la tercera [3].</li>
+        </ul>
+        <p>El juego de truco se divide en dos fases principales: <strong>el Envido y el Truco</strong> [3].</p>
+        <p>La <strong>"mano"</strong> es el jugador que inicia la ronda, cantando opciones o jugando cartas [2, 3].</p>
+        <ul>
+            <li>En juegos de 2 jugadores, la mano es alterna [3].</li>
+            <li>En juegos de 4 o 6 jugadores, la mano rota en sentido horario [3].</li>
+        </ul>
+
+        <h3>Reparto de Cartas</h3>
+        <p>Se reparten tres cartas a cada participante, una a la vez, hacia la derecha del repartidor [5]. Una vez finalizado el reparto, el mazo se coloca a la derecha del repartidor, sirviendo de referencia para la siguiente mano [5].</p>
+
+        <h3>Opciones de Canto Generales</h3>
+        <p>Durante el juego, se pueden "cantar" las siguientes opciones [3]:</p>
+        <ul>
+            <li>ENVIDO</li>
+            <li>REAL ENVIDO</li>
+            <li>FALTA ENVIDO</li>
+            <li>FLOR</li>
+            <li>CONTRA FLOR</li>
+            <li>CONTRA FLOR AL RESTO</li>
+            <li>TRUCO</li>
+            <li>RE-TRUCO</li>
+            <li>VALE CUATRO</li>
+            <li>QUIERO</li>
+            <li>NO QUIERO</li>
+            <li>ME VOY AL MAZO</li>
+        </ul>
+    </section>
+
+    <section id="envido">
+        <h2>El Envido: La Primera Parte del Juego</h2>
+        <p>El Envido es la fase inicial del juego, donde se suman los puntos de las cartas del <strong>mismo palo</strong> [6].</p>
+        <ul>
+            <li>El valor de cada carta para el Envido es su número, del 1 al 7 [4, 6].</li>
+            <li>Las <strong>figuras (10, 11 y 12) valen 0 puntos</strong> para el Envido [2, 4, 6].</li>
+            <li>El puntaje más alto posible es <strong>33 puntos</strong>, y el mínimo es 0 [6].</li>
+        </ul>
+
+        <h3>Cálculo de Puntos de Envido</h3>
+        <ul>
+            <li>Si tienes <strong>dos cartas del mismo palo</strong>, se suman sus valores y se le <strong>adicionan 20 puntos</strong> [4, 6, 7].
+                <ul>
+                    <li>Ejemplo: 6 de copas y 7 de copas = 6 + 7 + 20 = <strong>33 puntos</strong> [8].</li>
+                    <li>Ejemplo: Figura (0) y 7 de espadas = 0 + 7 + 20 = <strong>27 puntos</strong> (conocido como "Viejas" [2]) [8].</li>
+                    <li>Ejemplo: Dos figuras (0+0) del mismo palo = 0 + 0 + 20 = <strong>20 puntos</strong> [8].</li>
+                </ul>
+            </li>
+            <li>Si se juega <strong>sin Flor</strong> y tienes <strong>tres cartas del mismo palo</strong>, se suman los valores de las <strong>dos cartas más altas</strong> y se le adicionan 20 puntos [6, 8, 9].
+                <ul>
+                    <li>Ejemplo: 4, 6 y 7 de un mismo palo = 4 + 6 + 20 = <strong>30 puntos</strong> (asumiendo 4 y 6 son las más altas si el 7 no es relevante en este ejemplo, la fuente usa 4,6 y 20=30) [6, 8].</li>
+                </ul>
+            </li>
+        </ul>
+        <p>Los puntajes válidos para el "canto" del Envido van del 0 al 7 y del 20 al 33 [9].</p>
+
+        <h3>Cuándo Cantar el Envido</h3>
+        <p>El Envido es <strong>opcional</strong> [4, 6, 9]. Si decides cantarlo, <strong>siempre debe hacerse antes del Truco</strong> [4, 6, 7]. Una vez que el jugador que ha repartido tira su primera carta, o si se canta y acepta el Truco, ya no se puede jugar el Envido [7, 9].</p>
+
+        <h3>Opciones de Respuesta al Envido</h3>
+        <p>Cuando te cantan Envido, tienes las siguientes opciones [6, 9]:</p>
+        <ul>
+            <li>Decir <strong>"Quiero"</strong>: se juega por <strong>2 puntos</strong> [6, 9].</li>
+            <li>Decir <strong>"No Quiero"</strong>: tu rival se anota <strong>1 punto</strong> [6, 9]. Cantar "Truco" en este momento también se entiende como un "No Quiero" al Envido [9].</li>
+            <li><strong>Subir la apuesta:</strong>
+                <ul>
+                    <li>Cantar <strong>"Envido"</strong>: aumenta la apuesta en 2 puntos adicionales (ej. si ya era Envido, ahora va por 4) [6, 9].</li>
+                    <li>Cantar <strong>"Real Envido"</strong>: añade 3 puntos a la apuesta [6, 9].</li>
+                    <li>Cantar <strong>"Falta Envido"</strong>:
+                        <ul>
+                            <li>Si se acepta ("Quiero"), el ganador se lleva los puntos que le falten al equipo que va ganando para alcanzar los 30 puntos [6, 9].</li>
+                            <li>Si el equipo que va ganando la "Falta Envido" gana la partida directamente [6, 9].</li>
+                            <li>Si la gana el equipo que va perdiendo, suma tantos puntos como le falten al equipo que va ganando para llegar a 30 [9].</li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+        <p>Cualquier jugador del equipo contrario puede responder a la apuesta del Envido [9]. Puedes cantar las opciones del Envido sin seguir un orden preestablecido (ej. "Real Envido" antes de "Envido") [9].</p>
+
+        <h3>Resolución del Envido</h3>
+        <p>Una vez que el Envido ha sido "querido" y se ha establecido por cuántos puntos se juega, los jugadores deben "cantar" sus puntos (tantos) [9]. El primero en declarar su puntaje es el jugador "mano" (a la derecha del repartidor) [9].</p>
+        <p>Si un jugador no puede superar el puntaje declarado por su rival, no está obligado a revelar sus cartas y puede simplemente decir <strong>"Son Buenas"</strong> [2, 9]. Esto evita que el rival deduzca el valor de las cartas para el Truco siguiente [9].</p>
+        <p>El jugador con más puntaje gana el Envido [6, 9]. El ganador del Envido debe <strong>obligatoriamente mostrar sus cartas</strong> al finalizar la mano, después de haberse jugado el Truco, antes de anotar los puntos [9, 10].</p>
+    </section>
+
+    <section id="flor">
+        <h2>La Flor</h2>
+        <p>Antes de comenzar la partida, se debe decidir si se jugará <strong>con o sin Flor</strong> [10]. En TrucoEstrella, puedes elegir esta opción [10].</p>
+        <p>Un jugador tiene <strong>Flor cuando sus tres cartas son del mismo palo</strong> [10].</p>
+        <p>La Flor debe ser <strong>cantada en la primera parte del juego, antes de jugar la primera carta</strong> [10].</p>
+        <p>Si se canta "Flor", el <strong>Envido no se juega</strong> [10].</p>
+        <p>A diferencia del Envido, la Flor <strong>no necesita ser "querida"</strong> por el equipo contrario, a menos que ellos también tengan una Flor [10]. Por tenerla, se anotan directamente <strong>3 puntos</strong> [10, 11].</p>
+        <p>El jugador que canta la Flor debe <strong>obligatoriamente mostrar sus cartas</strong> al finalizar la mano, después de haber jugado el Truco, antes de anotar los puntos [10]. No se puede "mentir" con la Flor [11].</p>
+        <p>La Flor solo puede ser cantada por el jugador que la tiene, no por un compañero de equipo [11].</p>
+
+        <h3>Apuestas de Flor (si ambos equipos tienen Flor)</h3>
+        <p>Si el equipo contrario también tiene Flor, tiene la posibilidad de subir la apuesta con las siguientes opciones [10, 11]:</p>
+        <ul>
+            <li>Cantar <strong>"Flor"</strong> (si ya se había cantado una, esto implica subir la apuesta).</li>
+            <li>Cantar <strong>"Contra Flor"</strong>: se juega por <strong>6 puntos</strong> [11].</li>
+            <li>Cantar <strong>"Contra Flor Al Resto"</strong>: los puntos en juego son los que falten al equipo que va ganando para terminar la partida [10, 11].</li>
+        </ul>
+        <p>Si se sube la apuesta, el equipo rival debe contestar "queriendo", "no queriendo" o subiendo nuevamente la apuesta [10].</p>
+        <p>Los puntos de la Flor se cuentan de manera similar al Envido, sumando el valor de las <strong>dos cartas más altas</strong> si hay tres del mismo palo [9, 11].</p>
+        <p>No hay un orden establecido para cantar las opciones de la Flor (ej. "Contra Flor Al Resto" se puede cantar antes de "Contra Flor") [11].</p>
+    </section>
+
+    <section id="truco">
+        <h2>El Truco: La Segunda Parte del Juego</h2>
+        <p>El Truco es la segunda y principal parte del juego [3, 12]. Para ganar una mano de Truco, debes <strong>ganar 2 de las 3 rondas</strong> [4, 12].</p>
+        <p>Cada ronda la gana el jugador que tira la <strong>carta de mayor valor</strong> [12].</p>
+
+        <h3>Orden de Valor de las Cartas para el Truco</h3>
+        <p>El valor de las cartas en el juego del Truco es crucial y sigue un orden específico, de mayor a menor [13]:</p>
+        <ol>
+            <li><strong>1 de espadas</strong> (conocido como "Macho" [2])</li>
+            <li><strong>1 de bastos</strong></li>
+            <li><strong>7 de espadas</strong> (conocido como "Siete bravo" [2])</li>
+            <li><strong>7 de oros</strong> (conocido como "Siete bravo" [2])</li>
+            <li>Los <strong>3</strong> (los cuatro palos)</li>
+            <li>Los <strong>2</strong> (los cuatro palos)</li>
+            <li><strong>1 de copas y 1 de oros</strong> (conocidos como "Ancho falso" [2])</li>
+            <li>Los <strong>12</strong> (figuras/negras [2])</li>
+            <li>Los <strong>11</strong> (figuras/negras [2])</li>
+            <li>Los <strong>10</strong> (figuras/negras [2])</li>
+            <li><strong>7 de copas y 7 de bastos</strong> (conocidos como "Siete falso" [2])</li>
+            <li>Los <strong>6</strong> (los cuatro palos)</li>
+            <li>Los <strong>5</strong> (los cuatro palos)</li>
+            <li>Los <strong>4</strong> (los cuatro palos)</li>
+        </ol>
+
+        <h3>Desarrollo de las Rondas del Truco</h3>
+        <p>El jugador "mano" es el primero en jugar una carta [12]. Los jugadores a su derecha continúan la jugada hasta completar la ronda [12].</p>
+        <ul>
+            <li>El jugador que tiró la carta de mayor valor en la primera ronda es quien inicia la segunda ronda [12].</li>
+            <li>Lo mismo ocurre para la tercera ronda: la inicia el jugador que tiró la carta de mayor valor en la segunda ronda [12].</li>
+            <li>Si la primera ronda termina en <strong>"parda"</strong> (empate de valor de cartas de equipos contrarios) [2, 12], la segunda ronda la inicia nuevamente el jugador que fue "mano" [12].</li>
+            <li>Si la primera ronda es "parda", el equipo que juegue la carta de mayor valor en la segunda ronda ganará el juego del Truco [12].</li>
+            <li>Si también la segunda ronda es "parda", el equipo que juegue la carta de mayor valor en la tercera ronda ganará el juego del Truco [12].</li>
+            <li>Si la tercera ronda también resulta "parda", el equipo que fue "mano" gana el juego del Truco [12].</li>
+        </ul>
+        <p>Las cartas jugadas deben permanecer <strong>boca arriba</strong> en la mesa y no se pueden recoger hasta que la mano termine [12]. Una carta se considera "jugada" una vez que ha sido soltada boca arriba [14].</p>
+
+        <h3>Canto y Respuestas al Truco</h3>
+        <p>El Truco puede ser <strong>cantado en cualquier momento y por cualquier jugador</strong>, sin un orden preestablecido [15].</p>
+        <p>Si nadie canta "Truco" durante la mano, el equipo que gane dos de las tres rondas se anota <strong>1 punto</strong> [15].</p>
+        <p>Si un equipo canta "Truco", el otro debe responder con una de estas opciones [15]:</p>
+        <ul>
+            <li>Decir <strong>"Quiero"</strong>: la mano pasa a jugarse por <strong>2 puntos</strong> [13, 15]. El equipo que "quiso" el Truco puede "re-trucar" en cualquier momento [15].</li>
+            <li>Decir <strong>"No Quiero"</strong> o <strong>"Ir al Mazo"</strong>: el equipo que cantó Truco se anota <strong>1 punto</strong> [13, 15].</li>
+            <li><strong>Subir la apuesta:</strong> Se debe responder con la palabra "Quiero" seguida de la nueva apuesta [14, 15]:
+                <ul>
+                    <li><strong>"Quiero Re-truco"</strong>: si el rival acepta, se juega por <strong>3 puntos</strong> [13, 15].</li>
+                    <li><strong>"Quiero Vale Cuatro"</strong>: si el rival acepta, se juega por <strong>4 puntos</strong>, que es el máximo posible [13, 14].</li>
+                </ul>
+            </li>
+        </ul>
+        <p>Es importante recordar que en el Truco, a diferencia del Envido, siempre hay que seguir el <strong>orden del canto: "Truco", "Retruco", "Vale Cuatro"</strong> [14]. Solo el equipo que ha "querido" la última apuesta tiene la potestad de "retrucar" [14].</p>
+    </section>
+
+    <section id="irse-al-mazo">
+        <h2>Irse al Mazo</h2>
+        <p><strong>"Irse al mazo"</strong> significa abandonar la mano, dejando tus cartas boca abajo en el mazo general, sin que nadie las vea [2, 8].</p>
+        <ul>
+            <li>Un jugador puede "irse al mazo" en <strong>cualquier momento</strong> del juego y en cualquiera de las tres rondas de la mano [8].</li>
+            <li>Si un jugador se va al mazo, <strong>su equipo puede continuar jugando</strong> la mano [8]. Las acciones o declaraciones del jugador que se fue al mazo ya no son válidas [8].</li>
+            <li>Si <strong>todos los jugadores de un equipo</strong> se van al mazo, el equipo pierde todos los puntos que estaban en juego en esa mano [8].</li>
+            <li>Si un jugador se va al mazo <strong>antes de que se cante el Envido</strong>, pierde 1 punto por el Envido y 1 punto por el Truco [8].</li>
+            <li>Si el turno del Envido ya ha pasado, el equipo que se va al mazo pierde 1 punto por el Truco [8].</li>
+        </ul>
+    </section>
+
+    <section id="puntos-finalizacion">
+        <h2>Puntuación y Finalización de la Partida</h2>
+        <p>Los puntos se anotan al finalizar cada mano [2]. El equipo que gane 2 de las 3 rondas se anota los puntos en juego (1, 2, 3 o 4 puntos, dependiendo de las apuestas) [4].</p>
+        <p>El primer equipo en llegar a los <strong>30 puntos</strong> será el ganador del juego [1, 4].</p>
+        <p>La forma tradicional de anotar los puntos es usando fósforos, formando <strong>cuadrados con una línea diagonal que representan 5 puntos</strong> [2]. El orden para formar un cuadrado es: izquierda, arriba, derecha, abajo y una diagonal de abajo hacia arriba y de izquierda a derecha [2].</p>
+        <p>Al completarse los primeros 15 puntos ("las malas"), se traza una línea horizontal para separarlos de las "buenas" [2].</p>
+    </section>
+
+    <section id="pica-pica">
+        <h2>Pica - Pica o Punta y Hacha (Modalidad para 6 Jugadores)</h2>
+        <p>Esta es una opción de juego <strong>exclusiva para partidas de 6 participantes</strong> (dos equipos de 3 jugadores) [13].</p>
+        <ul>
+            <li>La ronda inicial se juega de manera normal, como en partidas de 2 o 4 jugadores [13].</li>
+            <li>La dinámica cambia a "Pica - Pica" <strong>después de que se han anotado los primeros 5 puntos</strong> [13].</li>
+            <li>En la modalidad Pica - Pica, los participantes se enfrentan <strong>uno a uno en diagonal</strong> (ej. jugador A contra D, B contra E, C contra F) [13]. Estas son "micro-manos" que se juegan una a la vez [13].</li>
+            <li>Después de que se resuelven las tres micro-manos (A vs D, B vs E, C vs F), se vuelve a jugar una mano con los 6 participantes, y luego se alterna nuevamente con el Pica - Pica [13].</li>
+            <li>Todos los puntos disputados, tanto en las manos de duplas como en las de 6 participantes, se suman [13].</li>
+            <li>Una característica importante del Pica - Pica es que <strong>no se puede cantar "Falta Envido"</strong>; solo hasta el "Real Envido" [13].</li>
+            <li>Una vez que un equipo alcanza los <strong>25 puntos</strong>, el juego vuelve a ser únicamente con los 6 participantes, sin la modalidad Pica - Pica [13].</li>
+        </ul>
+    </section>
+
+    <section id="glosario">
+        <h2>Glosario de Términos del Truco</h2>
+        <p>Para una mejor comprensión del juego, aquí tienes algunos términos clave [2]:</p>
+        <ul>
+            <li><strong>Ancho falso:</strong> Se refiere al uno de oros y al uno de copas [2].</li>
+            <li><strong>Buenas:</strong> Son los últimos 15 puntos de la partida, comenzando a partir de los 16 puntos del equipo que va ganando [2].</li>
+            <li><strong>Figura o Negra:</strong> Las cartas 10, 11 y 12 de cualquier palo [2].</li>
+            <li><strong>Ir al pie:</strong> Jugar una carta de bajo valor con la expectativa de que el "pie" del equipo juegue la carta de mayor valor para ganar la ronda del Truco [2].</li>
+            <li><strong>Irse al mazo:</strong> Abandonar la ronda actual apoyando las cartas en el mazo general [2].</li>
+            <li><strong>Macho:</strong> El as de espadas [2].</li>
+            <li><strong>Malas:</strong> Los primeros 15 puntos de la partida [2].</li>
+            <li><strong>Mano:</strong> El primer jugador a la derecha del repartidor [2].</li>
+            <li><strong>Matar:</strong> Jugar una carta de mayor valor que otra en el Truco [2].</li>
+            <li><strong>Parda:</strong> Situación de empate cuando dos cartas del mismo valor son jugadas por equipos contrarios [2].</li>
+            <li><strong>Pasar:</strong> No cantar el tanto del Envido, dejando la responsabilidad a los compañeros de equipo [2].</li>
+            <li><strong>Pie:</strong> El último jugador de cada equipo [2].</li>
+            <li><strong>Pie total:</strong> Se refiere al repartidor [2].</li>
+            <li><strong>Poner:</strong> Jugar una carta de alto valor para el Truco, siendo la mejor del equipo en esa ronda [2].</li>
+            <li><strong>Siete bravo:</strong> El siete de espadas o el siete de oros [2].</li>
+            <li><strong>Siete falso:</strong> El siete de bastos y el siete de copas [2].</li>
+            <li><strong>Tantos:</strong> Los puntos que se tienen para el Envido [2].</li>
+            <li><strong>Viejas:</strong> Se utiliza cuando se tienen 27 puntos para el Envido [2].</li>
+        </ul>
+    </section>
+
+</body>
+</html>

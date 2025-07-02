@@ -2,7 +2,7 @@ import { GAME_CONSTANTS } from './config.js';
 import { renderPlayerHand, renderIAHand, renderMesaRondas, renderMarcador, addMessageToHistory, renderCantoBotonera } from './ui.js';
 import { iaElegirCarta, iaResponderCanto, iaCantarCanto } from './ia.js';
 
-// --- Estado global del juego ---
+// Estado global del partido
 export let gameState = {
     playerName: 'Jugador 1',
     playerHand: [],
@@ -30,7 +30,7 @@ export let gameState = {
     rondaEmpieza: 'player'
 };
 
-// --- Utilidades ---
+// Utilidades
 function shuffleDeck(deck) {
     for (let i = deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -87,13 +87,13 @@ function tieneFlor(mano) {
     return mano[0].palo === mano[1].palo && mano[1].palo === mano[2].palo;
 }
 
-// --- Pantalla de inicio ---
+// Pantalla de inicio
 function showStartScreen() {
     document.getElementById('start-screen').classList.remove('hidden');
     document.getElementById('game-screen').classList.add('hidden');
 }
 
-// --- Pantalla de juego ---
+// Pantalla de juego
 function showGameScreen(config) {
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('game-screen').classList.remove('hidden');
@@ -103,7 +103,7 @@ function showGameScreen(config) {
     initializeGame();
 }
 
-// --- Inicializar nueva mano ---
+// Inicializar nueva mano
 function initializeGame() {
     gameState.deck = shuffleDeck(createDeck());
     const { playerHand, iaHand, deck } = dealCards(gameState.deck, GAME_CONSTANTS.CARDS_PER_PLAYER);
@@ -140,7 +140,7 @@ function initializeGame() {
     }
 }
 
-// --- Lógica de jugada de carta ---
+// Lógica de jugada de carta
 function onPlayerCardClick(idx) {
     if (gameState.turno !== 'player' || gameState.partidaTerminada || gameState.esperandoRespuesta) return;
     let carta = gameState.playerHand[idx];
@@ -158,7 +158,7 @@ function onPlayerCardClick(idx) {
 function iaTurno() {
     if (gameState.turno !== 'ia' || gameState.partidaTerminada || gameState.esperandoRespuesta) return;
     // IA puede cantar envido/flor/truco si corresponde
-    if (!gameState.envidoCantado && !gameState.florCantada && gameState.currentRound === 1 && !gameState.trucoCantado) {
+    if (!gameState.envidoCantado && !gameState.florCantada && gameState.currentRound === 1 && !gameState.trucoCantado && gameState.playedCards.length === 0) {
         let canto = iaCantarCanto(gameState);
         if (canto) {
             iniciarCanto('ia', canto);
@@ -208,9 +208,16 @@ function determinarGanadorMano() {
 }
 
 function sumarPuntosMano(ganador) {
-    if (ganador === gameState.playerName) gameState.playerScore += 1;
-    else if (ganador === 'TrucoEstrella') gameState.iaScore += 1;
-    addMessageToHistory(`Punto para ${ganador}`, 'system');
+    let puntos = 1;
+    if (gameState.trucoCantado && gameState.cantoPendiente) {
+        const tipo = gameState.cantoPendiente.tipo;
+        if (tipo === 'Truco') puntos = 2;
+        if (tipo === 'ReTruco') puntos = 3;
+        if (tipo === 'Vale Cuatro') puntos = 4;
+    }
+    if (ganador === gameState.playerName) gameState.playerScore += puntos;
+    else if (ganador === 'TrucoEstrella') gameState.iaScore += puntos;
+    addMessageToHistory(`Punto para ${ganador} (+${puntos})`, 'system');
     renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
     if (gameState.playerScore >= gameState.puntosMax || gameState.iaScore >= gameState.puntosMax) {
         gameState.partidaTerminada = true;
@@ -225,14 +232,13 @@ function alternarMano() {
     gameState.manoPlayerId = (gameState.manoPlayerId === 'player') ? 'ia' : 'player';
 }
 
-// --- Cantos y opciones dinámicas ---
+// Cantos y opciones dinámicas
 function updateCantosUI() {
     renderCantoBotonera(gameState);
 }
 
-// --- Nuevo sistema de cantos y respuestas ---
+// Nuevo sistema de cantos y respuestas
 function iniciarCanto(quien, tipo) {
-    // Validar si se puede cantar ese canto según el reglamento y el estado actual
     if (!puedeCantar(quien, tipo)) return;
     gameState.cantoPendiente = {
         tipo,
@@ -252,7 +258,6 @@ function iniciarCanto(quien, tipo) {
 }
 
 function puedeCantar(quien, tipo) {
-    // Reglas básicas: Envido solo antes de jugar la primera carta y antes de Truco, Flor bloquea Envido, etc.
     if (tipo === 'Envido' || tipo === 'Real Envido' || tipo === 'Falta Envido') {
         if (gameState.envidoCantado || gameState.florCantada) return false;
         if (gameState.playedCards.length > 0) return false;
@@ -295,7 +300,6 @@ function responderCantoIA(tipo) {
     } else if (respuesta === 'No Quiero') {
         rechazarCanto('ia');
     } else {
-        // Subida
         iniciarCanto('ia', respuesta);
     }
 }
@@ -312,7 +316,6 @@ export function aceptarCanto(quien) {
     }
     if (tipo === 'Truco' || tipo === 'ReTruco' || tipo === 'Vale Cuatro') {
         gameState.trucoCantado = true;
-        // El juego sigue, pero se guarda el nivel del Truco para sumar los puntos al final de la mano
         gameState.cantoPendiente.estado = 'aceptado';
         gameState.esperandoRespuesta = false;
         gameState.quienDebeResponder = null;
@@ -390,13 +393,13 @@ function resolverFlor(tipo) {
     }
 }
 
-// --- Modal Fin de Partida ---
+// Modal Fin de Partido
 function showFinPartidaModal(winner) {
     document.getElementById('modal-fin-partida-content').textContent = `Ganador: ${winner}`;
     document.getElementById('modal-fin-partida').classList.remove('hidden');
 }
 
-// --- Event Listeners ---
+// Event Listeners
 function setupEventListeners() {
     document.getElementById('startGameBtn').addEventListener('click', () => {
         const config = {
