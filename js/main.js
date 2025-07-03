@@ -334,7 +334,7 @@ function obtenerOpcionesCanto(tipo) {
     return [];
 }
 
-function puedeCantar(quien, tipo) {
+export function puedeCantar(quien, tipo) {
     if (!reglasCargadas) return false;
     if (gameState.esperandoRespuesta) return false;
 
