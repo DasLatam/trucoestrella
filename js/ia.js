@@ -49,9 +49,3 @@ export function iaCantarCanto(gameState) {
     return null;
 
 }
-const ronda = gameState.rondaActual;
-if (esFinDeMano('Se ganan las dos primeras rondas', 'Siempre', ronda)) {
-    terminarMano();
-    {return;
-    }
-}
