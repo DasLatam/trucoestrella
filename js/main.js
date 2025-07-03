@@ -94,7 +94,7 @@ export function rechazarCanto(quien) {
     if (gameState.turno === 'ia' && !gameState.partidaTerminada) setTimeout(iaTurno, 1200);
 }
 
-// Chequeo de fin de ronda (solo UNA definición)
+// Chequeo de fin de ronda (SOLO UNA DEFINICIÓN)
 function checkFinRonda() {
     let ganadorMano = determinarGanadorMano();
     if (ganadorMano) {
@@ -135,6 +135,15 @@ function iaTurno() {
 // Ejemplo de función tieneFlor exportada
 export function tieneFlor(mano) {
     return mano[0].palo === mano[1].palo && mano[1].palo === mano[2].palo;
+}
+
+// resolver canto
+function resolverCanto(evento, resultado) {
+    const ronda = gameState.rondaActual; // o como determines la ronda
+    if (esFinDeMano(evento, resultado, ronda)) {
+        terminarMano();
+    }
+    // ...resto de la lógica...
 }
 
 // --- NUEVO: Manejo de puntos reglamentario ---
