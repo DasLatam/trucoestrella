@@ -75,7 +75,7 @@ export function renderMarcador(playerScore, iaScore, puntosMax) {
             <span class="text-5xl">${iaScore}</span>
         </div>
         <div class="text-base text-gray-400 mt-2">A ${puntosMax} puntos</div>
-        <div class="text-xs text-gray-500 mt-1">Versión: <b>Beta 3.4 Copilot</b></div>
+        <div class="text-xs text-gray-500 mt-1">Versión: <b>Beta 3.6 Copilot</b></div>
     `;
 }
 
@@ -92,7 +92,7 @@ export function renderCantoBotonera(gameState) {
     const cantosCol = document.getElementById('cantos-col');
     cantosCol.innerHTML = '';
 
-    // Si hay un canto pendiente y el jugador debe responder, mostrar botones de respuesta
+    // Si hay un canto pendiente y el jugador debe responder, mostrar SOLO las opciones válidas + "Me voy al mazo" y "Volver al Menú"
     if (gameState.cantoPendiente && gameState.esperandoRespuesta && gameState.quienDebeResponder === 'player') {
         gameState.cantoPendiente.opciones.forEach(opcion => {
             const btn = document.createElement('button');
@@ -105,10 +105,34 @@ export function renderCantoBotonera(gameState) {
             };
             cantosCol.appendChild(btn);
         });
+        // Agregar "Me voy al mazo" y "Volver al Menú"
+        ['Me voy al Mazo', 'Volver al Menú'].forEach(canto => {
+            const btn = document.createElement('button');
+            btn.className = 'game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-3 rounded text-lg font-bold mb-1';
+            btn.textContent = canto;
+            btn.setAttribute('data-canto', canto);
+            btn.onclick = () => {
+                if (canto === 'Me voy al Mazo') {
+                    const rival = 'TrucoEstrella';
+                    addMessageToHistory(`${gameState.playerName} se fue al mazo. Punto para ${rival}`, 'system');
+                    gameState.iaScore += puntosEnDisputa(gameState);
+                    renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
+                    if (gameState.iaScore >= gameState.puntosMax) {
+                        document.getElementById('modal-fin-partida-content').textContent = `Ganador: TrucoEstrella`;
+                        document.getElementById('modal-fin-partida').classList.remove('hidden');
+                    } else {
+                        window.initializeGame();
+                    }
+                } else if (canto === 'Volver al Menú') {
+                    window.location.reload();
+                }
+            };
+            cantosCol.appendChild(btn);
+        });
         return;
     }
 
-    // Si no hay canto pendiente, mostrar opciones válidas según el estado
+    // Si NO hay canto pendiente, mostrar los cantos iniciales válidos + "Me voy al mazo" y "Volver al Menú"
     let opciones = [];
     if (!gameState.trucoCantado && !gameState.envidoCantado && !gameState.florCantada && gameState.playedCards.length === 0) {
         opciones = ['Truco', 'Envido', 'Real Envido', 'Falta Envido'];

@@ -221,13 +221,13 @@ function determinarGanadorMano() {
 }
 
 function sumarPuntosMano(ganador) {
-    let puntos = 1;
-    if (gameState.trucoCantado && gameState.cantoPendiente) {
-        const tipo = gameState.cantoPendiente.tipo;
-        if (tipo === 'Truco') puntos = 2;
-        if (tipo === 'ReTruco') puntos = 3;
-        if (tipo === 'Vale Cuatro') puntos = 4;
+    let historial = [];
+    if (gameState.cantoPendiente && (gameState.cantoPendiente.tipo === 'Truco' || gameState.cantoPendiente.tipo === 'ReTruco' || gameState.cantoPendiente.tipo === 'Vale Cuatro')) {
+        historial = gameState.cantoPendiente.historial;
+    } else if (gameState.trucoCantado) {
+        historial = [{ tipo: 'Truco' }];
     }
+    let puntos = historial.length ? calcularPuntosTruco(historial, true) : 1;
     if (ganador === gameState.playerName) gameState.playerScore += puntos;
     else if (ganador === 'TrucoEstrella') gameState.iaScore += puntos;
     addMessageToHistory(`Punto para ${ganador} (+${puntos})`, 'system');
@@ -241,13 +241,44 @@ function sumarPuntosMano(ganador) {
     }
 }
 
-function alternarMano() {
-    gameState.manoPlayerId = (gameState.manoPlayerId === 'player') ? 'ia' : 'player';
+// --- NUEVO: Manejo de puntos reglamentario ---
+
+function calcularPuntosEnvido(historial, querido = true) {
+    // historial: array de {quien, tipo}
+    let cantos = historial.map(h => h.tipo);
+    let puntos = 0;
+    let envidos = cantos.filter(c => c === 'Envido').length;
+    let real = cantos.includes('Real Envido');
+    let falta = cantos.includes('Falta Envido');
+
+    if (falta) {
+        // Falta Envido: los puntos que le faltan al rival para llegar a 15/30
+        return 'falta';
+    }
+    if (real && envidos === 2) puntos = querido ? 7 : 4;
+    else if (real && envidos === 1) puntos = querido ? 5 : 2;
+    else if (real) puntos = querido ? 3 : 1;
+    else if (envidos === 2) puntos = querido ? 4 : 2;
+    else if (envidos === 1) puntos = querido ? 2 : 1;
+    return puntos;
 }
 
-// Cantos y opciones dinámicas
-function updateCantosUI() {
-    renderCantoBotonera(gameState);
+function calcularPuntosFlor(historial, querido = true) {
+    let cantos = historial.map(h => h.tipo);
+    if (cantos.includes('Contra Flor al Resto')) return 'falta';
+    if (cantos.includes('Contra Flor')) return 6;
+    return 3;
+}
+
+function calcularPuntosTruco(historial, querido = true) {
+    let cantos = historial.map(h => h.tipo);
+    let truco = cantos.includes('Truco');
+    let retruco = cantos.includes('ReTruco');
+    let valeCuatro = cantos.includes('Vale Cuatro');
+    if (truco && retruco && valeCuatro) return querido ? 4 : 3;
+    if (truco && retruco) return querido ? 3 : 2;
+    if (truco) return querido ? 2 : 1;
+    return 1;
 }
 
 // Máquina de estados para cantos y subidas
@@ -356,16 +387,26 @@ export function aceptarCanto(quien) {
 
 export function rechazarCanto(quien) {
     let tipo = gameState.cantoPendiente.tipo;
+    let historial = gameState.cantoPendiente.historial;
     let puntos = 1;
-    if (tipo === 'Envido') puntos = 1;
-    if (tipo === 'Real Envido') puntos = 2;
-    if (tipo === 'Falta Envido') puntos = gameState.puntosMax - Math.max(gameState.playerScore, gameState.iaScore);
-    if (tipo === 'Flor') puntos = 2;
-    if (tipo === 'Contra Flor') puntos = 3;
-    if (tipo === 'Contra Flor al Resto') puntos = gameState.puntosMax - Math.max(gameState.playerScore, gameState.iaScore);
-    if (tipo === 'Truco') puntos = 1;
-    if (tipo === 'ReTruco') puntos = 2;
-    if (tipo === 'Vale Cuatro') puntos = 3;
+
+    if (tipo === 'Envido' || tipo === 'Real Envido' || tipo === 'Falta Envido') {
+        let pts = calcularPuntosEnvido(historial, false);
+        if (pts === 'falta') {
+            puntos = gameState.puntosMax - Math.max(gameState.playerScore, gameState.iaScore);
+        } else {
+            puntos = pts;
+        }
+    } else if (tipo === 'Flor' || tipo === 'Contra Flor' || tipo === 'Contra Flor al Resto') {
+        let pts = calcularPuntosFlor(historial, false);
+        if (pts === 'falta') {
+            puntos = gameState.puntosMax - Math.max(gameState.playerScore, gameState.iaScore);
+        } else {
+            puntos = pts;
+        }
+    } else if (tipo === 'Truco' || tipo === 'ReTruco' || tipo === 'Vale Cuatro') {
+        puntos = calcularPuntosTruco(historial, false);
+    }
 
     // El último que subió el canto es quien suma los puntos
     let ultimo = gameState.cantoPendiente.ultimoQueSubio || gameState.cantoPendiente.quien;
@@ -384,13 +425,16 @@ export function rechazarCanto(quien) {
     }
 }
 
+// --- MODIFICADO: Resolución de Envido ---
 function resolverEnvido(tipo) {
     const playerEnvido = calcularEnvido(gameState.playerHand);
     const iaEnvido = calcularEnvido(gameState.iaHand);
     let winner = playerEnvido > iaEnvido ? gameState.playerName : 'TrucoEstrella';
-    let puntos = 2;
-    if (tipo === 'Real Envido') puntos = 3;
-    if (tipo === 'Falta Envido') puntos = gameState.puntosMax - Math.max(gameState.playerScore, gameState.iaScore);
+    let historial = gameState.cantoPendiente.historial;
+    let puntos = calcularPuntosEnvido(historial, true);
+    if (puntos === 'falta') {
+        puntos = gameState.puntosMax - Math.max(gameState.playerScore, gameState.iaScore);
+    }
     if (winner === gameState.playerName) gameState.playerScore += puntos;
     else gameState.iaScore += puntos;
     addMessageToHistory(`Envido: ${gameState.playerName} ${playerEnvido} - TrucoEstrella ${iaEnvido}. Gana ${winner} (+${puntos})`, 'system');
@@ -405,13 +449,16 @@ function resolverEnvido(tipo) {
     }
 }
 
+// --- MODIFICADO: Resolución de Flor ---
 function resolverFlor(tipo) {
     const playerFlor = tieneFlor(gameState.playerHand) ? calcularEnvido(gameState.playerHand) : 0;
     const iaFlor = tieneFlor(gameState.iaHand) ? calcularEnvido(gameState.iaHand) : 0;
     let winner = playerFlor > iaFlor ? gameState.playerName : 'TrucoEstrella';
-    let puntos = 3;
-    if (tipo === 'Contra Flor') puntos = 6;
-    if (tipo === 'Contra Flor al Resto') puntos = gameState.puntosMax - Math.max(gameState.playerScore, gameState.iaScore);
+    let historial = gameState.cantoPendiente.historial;
+    let puntos = calcularPuntosFlor(historial, true);
+    if (puntos === 'falta') {
+        puntos = gameState.puntosMax - Math.max(gameState.playerScore, gameState.iaScore);
+    }
     if (winner === gameState.playerName) gameState.playerScore += puntos;
     else gameState.iaScore += puntos;
     addMessageToHistory(`Flor: ${gameState.playerName} ${playerFlor} - TrucoEstrella ${iaFlor}. Gana ${winner} (+${puntos})`, 'system');
