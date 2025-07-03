@@ -85,7 +85,7 @@ export function calcularEnvido(mano) {
     return max;
 }
 
-function tieneFlor(mano) {
+export function tieneFlor(mano) {
     return mano[0].palo === mano[1].palo && mano[1].palo === mano[2].palo;
 }
 
