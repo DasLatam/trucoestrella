@@ -1,9 +1,9 @@
 export const GAME_CONSTANTS = {
     PALOS: ['espada', 'basto', 'oro', 'copa'],
     PALOS_EMOJI: {
-        espada: '🗡️',
-        basto: '🌿',
-        oro: '🪙',
+        espada: '⚔️',
+        basto: '🌲',
+        oro: '💰',
         copa: '🍷'
     },
     CARTAS: [1, 2, 3, 4, 5, 6, 7, 10, 11, 12],
