@@ -250,27 +250,58 @@ function updateCantosUI() {
     renderCantoBotonera(gameState);
 }
 
-// Nuevo sistema de cantos y respuestas
+// Máquina de estados para cantos y subidas
 function iniciarCanto(quien, tipo) {
-    if (!puedeCantar(quien, tipo)) return;
-    gameState.cantoPendiente = {
-        tipo,
-        quien,
-        historial: [{ quien, tipo }],
-        estado: 'pendiente',
-        opciones: obtenerOpcionesCanto(tipo),
-        subido: false
-    };
+    // No permitir cantar si hay canto pendiente (bloqueo)
+    if (gameState.esperandoRespuesta) return;
+
+    // Si hay un canto pendiente, es una subida
+    if (gameState.cantoPendiente) {
+        gameState.cantoPendiente.historial.push({ quien, tipo });
+        gameState.cantoPendiente.tipo = tipo;
+        gameState.cantoPendiente.opciones = obtenerOpcionesCanto(tipo);
+        gameState.cantoPendiente.estado = 'pendiente';
+        gameState.cantoPendiente.subido = true;
+        gameState.cantoPendiente.ultimoQueSubio = quien;
+        gameState.quienDebeResponder = (quien === 'player') ? 'ia' : 'player';
+    } else {
+        // Nuevo canto
+        gameState.cantoPendiente = {
+            tipo,
+            quien,
+            historial: [{ quien, tipo }],
+            estado: 'pendiente',
+            opciones: obtenerOpcionesCanto(tipo),
+            subido: false,
+            ultimoQueSubio: quien
+        };
+        gameState.quienDebeResponder = (quien === 'player') ? 'ia' : 'player';
+    }
     gameState.esperandoRespuesta = true;
-    gameState.quienDebeResponder = (quien === 'player') ? 'ia' : 'player';
     addMessageToHistory(`${quien === 'player' ? gameState.playerName : 'TrucoEstrella'} canta ${tipo.toUpperCase()}!`, quien);
     updateCantosUI();
+
+    // Si la IA debe responder, lo hace automáticamente
     if (gameState.quienDebeResponder === 'ia') {
-        setTimeout(() => responderCantoIA(tipo), 1000);
+        setTimeout(() => responderCantoIA(gameState.cantoPendiente.tipo), 1000);
     }
 }
 
+function obtenerOpcionesCanto(tipo) {
+    if (tipo === 'Envido') return ['Quiero', 'Real Envido', 'Falta Envido', 'No Quiero'];
+    if (tipo === 'Real Envido') return ['Quiero', 'Falta Envido', 'No Quiero'];
+    if (tipo === 'Falta Envido') return ['Quiero', 'No Quiero'];
+    if (tipo === 'Flor') return ['Quiero', 'Contra Flor', 'Contra Flor al Resto', 'No Quiero'];
+    if (tipo === 'Contra Flor') return ['Quiero', 'Contra Flor al Resto', 'No Quiero'];
+    if (tipo === 'Contra Flor al Resto') return ['Quiero', 'No Quiero'];
+    if (tipo === 'Truco') return ['Quiero', 'ReTruco', 'No Quiero'];
+    if (tipo === 'ReTruco') return ['Quiero', 'Vale Cuatro', 'No Quiero'];
+    if (tipo === 'Vale Cuatro') return ['Quiero', 'No Quiero'];
+    return [];
+}
+
 function puedeCantar(quien, tipo) {
+    if (gameState.esperandoRespuesta) return false; // Bloqueo si hay canto pendiente
     if (tipo === 'Envido' || tipo === 'Real Envido' || tipo === 'Falta Envido') {
         if (gameState.envidoCantado || gameState.florCantada) return false;
         if (gameState.playedCards.length > 0) return false;
@@ -290,19 +321,6 @@ function puedeCantar(quien, tipo) {
         if (!gameState.trucoCantado || gameState.cantoPendiente?.tipo !== 'ReTruco') return false;
     }
     return true;
-}
-
-function obtenerOpcionesCanto(tipo) {
-    if (tipo === 'Envido') return ['Quiero', 'Real Envido', 'Falta Envido', 'No Quiero'];
-    if (tipo === 'Real Envido') return ['Quiero', 'Falta Envido', 'No Quiero'];
-    if (tipo === 'Falta Envido') return ['Quiero', 'No Quiero'];
-    if (tipo === 'Flor') return ['Quiero', 'Contra Flor', 'Contra Flor al Resto', 'No Quiero'];
-    if (tipo === 'Contra Flor') return ['Quiero', 'Contra Flor al Resto', 'No Quiero'];
-    if (tipo === 'Contra Flor al Resto') return ['Quiero', 'No Quiero'];
-    if (tipo === 'Truco') return ['Quiero', 'ReTruco', 'No Quiero'];
-    if (tipo === 'ReTruco') return ['Quiero', 'Vale Cuatro', 'No Quiero'];
-    if (tipo === 'Vale Cuatro') return ['Quiero', 'No Quiero'];
-    return [];
 }
 
 function responderCantoIA(tipo) {
@@ -349,7 +367,9 @@ export function rechazarCanto(quien) {
     if (tipo === 'ReTruco') puntos = 2;
     if (tipo === 'Vale Cuatro') puntos = 3;
 
-    let ganador = (gameState.cantoPendiente.quien === 'player') ? 'TrucoEstrella' : gameState.playerName;
+    // El último que subió el canto es quien suma los puntos
+    let ultimo = gameState.cantoPendiente.ultimoQueSubio || gameState.cantoPendiente.quien;
+    let ganador = (ultimo === 'player') ? gameState.playerName : 'TrucoEstrella';
     if (ganador === gameState.playerName) gameState.playerScore += puntos;
     else gameState.iaScore += puntos;
     addMessageToHistory(`¡${ganador} suma ${puntos} punto${puntos > 1 ? 's' : ''} por rechazo!`, 'system');
