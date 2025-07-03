@@ -199,6 +199,7 @@ function checkFinRonda() {
         // Si no hay ganador, sigue la siguiente ronda
         gameState.rondaActual++;
         // El que ganó la ronda anterior empieza la siguiente, si fue parda sigue el que empezó la ronda
+        let ganador = gameState.rondaGanada[gameState.rondaGanada.length - 1];
         gameState.turno = ganador === 'parda'
             ? gameState.rondaEmpieza
             : (ganador === gameState.playerName ? 'player' : 'ia');
