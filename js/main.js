@@ -1,111 +1,23 @@
 import { GAME_CONSTANTS } from './config.js';
-import { renderPlayerHand, renderIAHand, renderMesaRondas, renderMarcador, addMessageToHistory, renderCantoBotonera } from './ui.js';
-import { iaElegirCarta, iaResponderCanto, iaCantarCanto } from './ia.js';
-import { cargarReglasCantos, esCantoValido } from './cantosReglas.js';
 import { cargarReglasFinMano, esFinDeMano } from './finManoReglas.js';
+import { cargarReglasCantos, esCantoValido } from './cantosReglas.js';
+import { iaElegirCarta, iaResponderCanto } from './ia.js';
 
-// Estado global del partido
-export let gameState = {
-    playerName: 'Jugador 1',
-    playerHand: [],
-    iaHand: [],
-    deck: [],
-    playedCards: [],
-    playerScore: 0,
-    iaScore: 0,
-    puntosMax: 30,
-    flor: false,
-    manoPlayerId: 'player',
-    currentRound: 1,
-    turno: 'player',
-    rondaGanada: [],
-    envidoCantado: false,
-    florCantada: false,
-    trucoCantado: false,
-    cantoActual: null,
-    iaCantoActual: null,
-    partidaTerminada: false,
-    rondaActual: 1,
-    cantoPendiente: null,
-    esperandoRespuesta: false,
-    quienDebeResponder: null,
-    rondaEmpieza: 'player'
-};
-
-// Utilidades
-function shuffleDeck(deck) {
-    for (let i = deck.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [deck[i], deck[j]] = [deck[j], deck[i]];
-    }
-    return deck;
-}
-
-function createDeck() {
-    let deck = [];
-    for (let palo of GAME_CONSTANTS.PALOS) {
-        for (let numero of GAME_CONSTANTS.CARTAS) {
-            let valorTruco = getValorTruco(numero, palo);
-            let valorEnvido = (numero >= 10) ? 0 : numero;
-            deck.push({ numero, palo, valorTruco, valorEnvido, jugada: false });
-        }
-    }
-    return deck;
-}
-
-function getValorTruco(numero, palo) {
-    for (let [n, p, v] of GAME_CONSTANTS.CARTA_VALOR_TRUCO) {
-        if (n === numero && (p === '' || p === palo)) return v;
-    }
-    return 0;
-}
-
-function dealCards(deck, cantidad) {
-    let playerHand = deck.slice(0, cantidad).map(c => ({ ...c }));
-    let iaHand = deck.slice(cantidad, cantidad * 2).map(c => ({ ...c }));
-    let resto = deck.slice(cantidad * 2);
-    return { playerHand, iaHand, deck: resto };
-}
-
-export function calcularEnvido(mano) {
-    let palos = {};
-    mano.forEach(carta => {
-        if (!palos[carta.palo]) palos[carta.palo] = [];
-        palos[carta.palo].push(carta.valorEnvido);
-    });
-    let max = 0;
-    for (let palo in palos) {
-        if (palos[palo].length >= 2) {
-            let valores = palos[palo].sort((a, b) => b - a);
-            max = Math.max(max, valores[0] + valores[1] + 20);
-        } else {
-            max = Math.max(max, palos[palo][0]);
-        }
-    }
-    return max;
-}
+let reglasCargadas = false;
+let reglasFinManoCargadas = false;
 
 export function tieneFlor(mano) {
     return mano[0].palo === mano[1].palo && mano[1].palo === mano[2].palo;
 }
 
-// Pantalla de inicio
-function showStartScreen() {
-    document.getElementById('start-screen').classList.remove('hidden');
-    document.getElementById('game-screen').classList.add('hidden');
+// Alternar mano y turno inicial
+function alternarMano() {
+    gameState.manoPlayerId = (gameState.manoPlayerId === 'player') ? 'ia' : 'player';
+    gameState.turno = gameState.manoPlayerId;
+    gameState.rondaEmpieza = gameState.manoPlayerId;
 }
 
-// Pantalla de juego
-function showGameScreen(config) {
-    document.getElementById('start-screen').classList.add('hidden');
-    document.getElementById('game-screen').classList.remove('hidden');
-    gameState.playerName = config.playerName || 'Jugador 1';
-    gameState.puntosMax = config.puntosMax;
-    gameState.flor = config.flor;
-    initializeGame();
-}
-
-// Inicializar nueva mano
+// Inicializar juego
 function initializeGame() {
     gameState.deck = shuffleDeck(createDeck());
     const { playerHand, iaHand, deck } = dealCards(gameState.deck, GAME_CONSTANTS.CARDS_PER_PLAYER);
@@ -387,27 +299,7 @@ export function aceptarCanto(quien) {
 
 export function rechazarCanto(quien) {
     let tipo = gameState.cantoPendiente.tipo;
-    let historial = gameState.cantoPendiente.historial;
     let puntos = 1;
-
-    if (tipo === 'Envido' || tipo === 'Real Envido' || tipo === 'Falta Envido') {
-        let pts = calcularPuntosEnvido(historial, false);
-        if (pts === 'falta') {
-            puntos = gameState.puntosMax - Math.max(gameState.playerScore, gameState.iaScore);
-        } else {
-            puntos = pts;
-        }
-    } else if (tipo === 'Flor' || tipo === 'Contra Flor' || tipo === 'Contra Flor al Resto') {
-        let pts = calcularPuntosFlor(historial, false);
-        if (pts === 'falta') {
-            puntos = gameState.puntosMax - Math.max(gameState.playerScore, gameState.iaScore);
-        } else {
-            puntos = pts;
-        }
-    } else if (tipo === 'Truco' || tipo === 'ReTruco' || tipo === 'Vale Cuatro') {
-        puntos = calcularPuntosTruco(historial, false);
-    }
-
     let ultimo = gameState.cantoPendiente.ultimoQueSubio || gameState.cantoPendiente.quien;
     let ganador = (ultimo === 'player') ? gameState.playerName : 'TrucoEstrella';
     if (ganador === gameState.playerName) gameState.playerScore += puntos;
@@ -429,113 +321,45 @@ export function rechazarCanto(quien) {
     if (gameState.turno === 'ia' && !gameState.partidaTerminada) setTimeout(iaTurno, 1200);
 }
 
-function resolverEnvido(tipo) {
-    const playerEnvido = calcularEnvido(gameState.playerHand);
-    const iaEnvido = calcularEnvido(gameState.iaHand);
-    let winner = playerEnvido > iaEnvido ? gameState.playerName : 'TrucoEstrella';
-    let historial = gameState.cantoPendiente.historial;
-    let puntos = calcularPuntosEnvido(historial, true);
-    if (puntos === 'falta') {
-        puntos = gameState.puntosMax - Math.max(gameState.playerScore, gameState.iaScore);
+// Chequeo de fin de ronda
+function checkFinRonda() {
+    let ganadorMano = determinarGanadorMano();
+    if (ganadorMano) {
+        sumarPuntosMano(ganadorMano);
+        const ronda = gameState.rondaActual;
+        if (esFinDeMano('Se ganan las dos primeras rondas', 'Siempre', ronda)) {
+            terminarMano();
+            return;
+        }
+    } else if (gameState.rondaGanada.length < 3) {
+        gameState.rondaActual++;
+        let ganador = gameState.rondaGanada[gameState.rondaGanada.length - 1];
+        gameState.turno = ganador === 'parda'
+            ? gameState.rondaEmpieza
+            : (ganador === gameState.playerName ? 'player' : 'ia');
+        if (gameState.turno === 'ia') setTimeout(iaTurno, 1200);
     }
-    if (winner === gameState.playerName) gameState.playerScore += puntos;
-    else gameState.iaScore += puntos;
-    addMessageToHistory(`Envido: ${gameState.playerName} ${playerEnvido} - TrucoEstrella ${iaEnvido}. Gana ${winner} (+${puntos})`, 'system');
     renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
-    gameState.esperandoRespuesta = false;
-    gameState.quienDebeResponder = null;
-    gameState.cantoPendiente = null;
     updateCantosUI();
-    // Continuar la mano si corresponde
-    if (gameState.turno === 'ia' && !gameState.partidaTerminada) setTimeout(iaTurno, 1200);
 }
 
-function resolverFlor(tipo) {
-    const playerFlor = tieneFlor(gameState.playerHand) ? calcularEnvido(gameState.playerHand) : 0;
-    const iaFlor = tieneFlor(gameState.iaHand) ? calcularEnvido(gameState.iaHand) : 0;
-    let winner = playerFlor > iaFlor ? gameState.playerName : 'TrucoEstrella';
-    let historial = gameState.cantoPendiente.historial;
-    let puntos = calcularPuntosFlor(historial, true);
-    if (puntos === 'falta') {
-        puntos = gameState.puntosMax - Math.max(gameState.playerScore, gameState.iaScore);
-    }
-    if (winner === gameState.playerName) gameState.playerScore += puntos;
-    else gameState.iaScore += puntos;
-    addMessageToHistory(`Flor: ${gameState.playerName} ${playerFlor} - TrucoEstrella ${iaFlor}. Gana ${winner} (+${puntos})`, 'system');
-    renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
-    gameState.esperandoRespuesta = false;
-    gameState.quienDebeResponder = null;
-    gameState.cantoPendiente = null;
+// Ejemplo de iaTurno
+function iaTurno() {
+    if (gameState.turno !== 'ia' || gameState.partidaTerminada || gameState.esperandoRespuesta) return;
+    // ... IA canta si corresponde ...
+    let idx = iaElegirCarta(gameState.iaHand, gameState.playedCards);
+    let carta = gameState.iaHand[idx];
+    carta.jugada = true;
+    gameState.playedCards.push({ jugador: 'TrucoEstrella', carta, ronda: gameState.rondaActual });
+    renderIAHand(gameState.iaHand, 'mesa-ia');
+    renderMesaRondas(gameState.playedCards, gameState.playerName);
+    addMessageToHistory(`TrucoEstrella jugó ${carta.numero} ${carta.palo}`, 'ia');
     updateCantosUI();
-    // Continuar la mano si corresponde
-    if (gameState.turno === 'ia' && !gameState.partidaTerminada) setTimeout(iaTurno, 1200);
+    gameState.turno = 'player';
+    checkFinRonda();
 }
 
-function alternarMano() {
-    gameState.manoPlayerId = (gameState.manoPlayerId === 'player') ? 'ia' : 'player';
-    gameState.turno = gameState.manoPlayerId;
-    gameState.rondaEmpieza = gameState.manoPlayerId;
-}
-
-// Modal Fin de Partido
-function showFinPartidaModal(winner) {
-    document.getElementById('modal-fin-partida-content').textContent = `Ganador: ${winner}`;
-    document.getElementById('modal-fin-partida').classList.remove('hidden');
-}
-
-// Event Listeners
-function setupEventListeners() {
-    document.getElementById('startGameBtn').addEventListener('click', () => {
-        const config = {
-            playerName: document.getElementById('playerName').value || 'Jugador 1',
-            puntosMax: parseInt(document.getElementById('gamePoints').value),
-            flor: document.getElementById('florRule').checked
-        };
-        showGameScreen(config);
-    });
-    document.getElementById('btn-revancha').addEventListener('click', () => {
-        document.getElementById('modal-fin-partida').classList.add('hidden');
-        initializeGame();
-        updateCantosUI();
-    });
-}
-
-let reglasCargadas = false;
-let reglasFinManoCargadas = false;
-
-document.addEventListener('DOMContentLoaded', async () => {
-    await cargarReglasCantos();
-    await cargarReglasFinMano();
-    reglasCargadas = true;
-    reglasFinManoCargadas = true;
-    showStartScreen();
-    setupEventListeners();
-});
-
-window.iniciarCanto = iniciarCanto;
-window.aceptarCanto = aceptarCanto;
-window.rechazarCanto = rechazarCanto;
-window.initializeGame = initializeGame;
-window.updateCantosUI = updateCantosUI;
-
-function resolverCanto(evento, resultado) {
-    const ronda = gameState.rondaActual; // o como determines la ronda
-    if (esFinDeMano(evento, resultado, ronda)) {
-        terminarMano();
-    }
-    // ...resto de la lógica...
-}
-
-
-function terminarMano() {
-    alternarMano();
-    setTimeout(() => {
-        initializeGame();
-        updateCantosUI();
-    }, 2000);
-}
-
-// NUEVO: Manejo de puntos reglamentario (continuación)
+// --- NUEVO: Manejo de puntos reglamentario (continuación)
 
 
 function handleMeVoyAlMazo() {
@@ -544,17 +368,32 @@ function handleMeVoyAlMazo() {
         terminarMano();
         return;
     }
-    // Aquí podrías sumar puntos al rival, mostrar mensaje, etc.
-    // Por ejemplo:
     let ganador = (gameState.turno === 'player') ? 'TrucoEstrella' : gameState.playerName;
     if (ganador === gameState.playerName) gameState.playerScore += 1;
     else gameState.iaScore += 1;
     addMessageToHistory(`${ganador} suma 1 punto porque el rival se fue al mazo.`, 'system');
     renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
-    // Si no terminó la mano, continuar normalmente
     alternarMano();
     setTimeout(() => {
         initializeGame();
         updateCantosUI();
     }, 2000);
+}
+
+// Fin de mano
+function terminarMano() {
+    alternarMano();
+    setTimeout(() => {
+        initializeGame();
+        updateCantosUI();
+    }, 2000);
+}
+
+// resolver canto
+function resolverCanto(evento, resultado) {
+    const ronda = gameState.rondaActual; // o como determines la ronda
+    if (esFinDeMano(evento, resultado, ronda)) {
+        terminarMano();
+    }
+    // ...resto de la lógica...
 }

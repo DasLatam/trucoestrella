@@ -67,16 +67,12 @@ function renderEmptyCard() {
 export function renderMarcador(playerScore, iaScore, puntosMax) {
     const marcador = document.getElementById('marcador');
     marcador.innerHTML = `
-        <div class="flex flex-col items-center mb-2">
-            <span class="text-lg text-yellow-300 font-bold">Vos</span>
-            <span class="text-5xl">${playerScore}</span>
+        <div class="flex justify-between items-center">
+            <span>Jugador 1: <b>${playerScore}</b></span>
+            <span>TrucoEstrella: <b>${iaScore}</b></span>
+            <span>Puntos: <b>${puntosMax}</b></span>
         </div>
-        <div class="flex flex-col items-center mb-2">
-            <span class="text-lg text-blue-300 font-bold">TrucoEstrella</span>
-            <span class="text-5xl">${iaScore}</span>
-        </div>
-        <div class="text-base text-gray-400 mt-2">A ${puntosMax} puntos</div>
-        <div class="text-xs text-gray-500 mt-1">Versión: <b>Beta 3.8 Copilot</b></div>
+        <div class="text-xs text-gray-500 mt-1">Versión: <b>${GAME_CONSTANTS.VERSION}</b></div>
     `;
 }
 

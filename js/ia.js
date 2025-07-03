@@ -7,7 +7,6 @@ export function iaElegirCarta(mano, cartasJugadas) {
 }
 
 export function iaResponderCanto(canto, gameState) {
-    
     if (canto === 'Envido' || canto === 'Real Envido' || canto === 'Falta Envido') {
         let envido = calcularEnvido(gameState.iaHand);
         if (envido >= 30) return (canto === 'Falta Envido') ? 'Quiero' : 'Falta Envido';
@@ -16,25 +15,19 @@ export function iaResponderCanto(canto, gameState) {
         return 'No Quiero';
     }
     if (canto === 'Flor' || canto === 'Contra Flor' || canto === 'Contra Flor al Resto') {
-        let flor = calcularEnvido(gameState.iaHand);
-        if (flor >= 30) return (canto === 'Contra Flor al Resto') ? 'Quiero' : 'Contra Flor al Resto';
-        if (flor >= 27) return (canto === 'Flor') ? 'Contra Flor' : 'Quiero';
-        if (flor >= 24) return 'Quiero';
-        return 'No Quiero';
+        if (tieneFlor(gameState.iaHand)) return 'Flor';
+        return null;
     }
     if (canto === 'Truco') {
-        if (gameState.iaScore >= gameState.playerScore) return 'Quiero';
-        return 'No Quiero';
+        return 'Quiero';
     }
     if (canto === 'ReTruco') {
-        if (gameState.iaScore > gameState.playerScore) return 'Quiero';
-        return 'No Quiero';
+        return 'Quiero';
     }
     if (canto === 'Vale Cuatro') {
-        if (gameState.iaScore > gameState.playerScore + 2) return 'Quiero';
         return 'No Quiero';
     }
-    return 'No Quiero';
+    return null;
 }
 
 export function iaCantarCanto(gameState) {
