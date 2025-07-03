@@ -47,11 +47,7 @@ export function iaCantarCanto(gameState) {
         return 'Truco';
     }
     return null;
-}
-const ronda = gameState.rondaActual;
-if (esFinDeMano('Me voy al maso', 'Siempre', ronda)) {
-    terminarMano();
-    return;
+
 }
 const ronda = gameState.rondaActual;
 if (esFinDeMano('Se ganan las dos primeras rondas', 'Siempre', ronda)) {

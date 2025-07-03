@@ -146,11 +146,6 @@ function puntosEnDisputa(gameState) {
     return 1;
 }
 
-const ronda = gameState.rondaActual;
-if (esFinDeMano('Me voy al maso', 'Siempre', ronda)) {
-    terminarMano();
-    return;
-}
 
 const ronda = gameState.rondaActual;
 if (esFinDeMano('Se ganan las dos primeras rondas', 'Siempre', ronda)) {

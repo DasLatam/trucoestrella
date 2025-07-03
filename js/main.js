@@ -185,30 +185,24 @@ function iaTurno() {
 }
 
 function checkFinRonda() {
-    let jugadasRonda = gameState.playedCards.filter(pc => pc.ronda === gameState.rondaActual).length === 2;
-    if (jugadasRonda) {
-        let jugadas = gameState.playedCards.filter(pc => pc.ronda === gameState.rondaActual);
-        let carta1 = jugadas[0].carta;
-        let carta2 = jugadas[1].carta;
-        let ganador = null;
-        if (carta1.valorTruco > carta2.valorTruco) ganador = jugadas[0].jugador;
-        else if (carta2.valorTruco > carta1.valorTruco) ganador = jugadas[1].jugador;
-        else ganador = 'parda';
-        gameState.rondaGanada.push(ganador);
-        addMessageToHistory(`Ganador de la ronda: ${ganador === 'parda' ? 'Empate' : ganador}`, 'system');
-        // Si alguien ganó dos rondas, termina la mano
-        let ganadorMano = determinarGanadorMano();
-        if (ganadorMano) {
-            sumarPuntosMano(ganadorMano);
-        } else if (gameState.rondaGanada.length < 3) {
-            // Si no hay ganador, sigue la siguiente ronda
-            gameState.rondaActual++;
-            // El que ganó la ronda anterior empieza la siguiente, si fue parda sigue el que empezó la ronda
-            gameState.turno = ganador === 'parda'
-                ? gameState.rondaEmpieza
-                : (ganador === gameState.playerName ? 'player' : 'ia');
-            if (gameState.turno === 'ia') setTimeout(iaTurno, 1200);
+    // ...lógica para determinar si alguien ganó dos rondas...
+    let ganadorMano = determinarGanadorMano();
+    if (ganadorMano) {
+        sumarPuntosMano(ganadorMano);
+        // Consulta al JSON de fin de mano
+        const ronda = gameState.rondaActual;
+        if (esFinDeMano('Se ganan las dos primeras rondas', 'Siempre', ronda)) {
+            terminarMano();
+            return;
         }
+    } else if (gameState.rondaGanada.length < 3) {
+        // Si no hay ganador, sigue la siguiente ronda
+        gameState.rondaActual++;
+        // El que ganó la ronda anterior empieza la siguiente, si fue parda sigue el que empezó la ronda
+        gameState.turno = ganador === 'parda'
+            ? gameState.rondaEmpieza
+            : (ganador === gameState.playerName ? 'player' : 'ia');
+        if (gameState.turno === 'ia') setTimeout(iaTurno, 1200);
     }
     renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
     updateCantosUI();
@@ -420,7 +414,7 @@ export function rechazarCanto(quien) {
     addMessageToHistory(`¡${ganador} suma ${puntos} punto${puntos > 1 ? 's' : ''} por rechazo!`, 'system');
     renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
 
-    // NUEVO: consulta al JSON de fin de mano
+    // Consulta al JSON de fin de mano
     const ronda = gameState.rondaActual;
     if (esFinDeMano(tipo, 'No Quiero', ronda)) {
         terminarMano();
@@ -431,7 +425,6 @@ export function rechazarCanto(quien) {
     gameState.quienDebeResponder = null;
     gameState.cantoPendiente = null;
     updateCantosUI();
-    // Continuar la mano si corresponde
     if (gameState.turno === 'ia' && !gameState.partidaTerminada) setTimeout(iaTurno, 1200);
 }
 
@@ -531,11 +524,6 @@ function resolverCanto(evento, resultado) {
     // ...resto de la lógica...
 }
 
-const ronda = gameState.rondaActual;
-if (esFinDeMano('Se ganan las dos primeras rondas', 'Siempre', ronda)) {
-    terminarMano();
-    return;
-}
 
 function terminarMano() {
     alternarMano();
@@ -547,14 +535,24 @@ function terminarMano() {
 
 // NUEVO: Manejo de puntos reglamentario (continuación)
 
-const ronda = gameState.rondaActual;
-if (esFinDeMano('Me voy al maso', 'Siempre', ronda)) {
-    terminarMano();
-    return;
-}
 
-const ronda = gameState.rondaActual;
-if (esFinDeMano('Se ganan las dos primeras rondas', 'Siempre', ronda)) {
-    terminarMano();
-    return;
+function handleMeVoyAlMazo() {
+    const ronda = gameState.rondaActual;
+    if (esFinDeMano('Me voy al maso', 'Siempre', ronda)) {
+        terminarMano();
+        return;
+    }
+    // Aquí podrías sumar puntos al rival, mostrar mensaje, etc.
+    // Por ejemplo:
+    let ganador = (gameState.turno === 'player') ? 'TrucoEstrella' : gameState.playerName;
+    if (ganador === gameState.playerName) gameState.playerScore += 1;
+    else gameState.iaScore += 1;
+    addMessageToHistory(`${ganador} suma 1 punto porque el rival se fue al mazo.`, 'system');
+    renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
+    // Si no terminó la mano, continuar normalmente
+    alternarMano();
+    setTimeout(() => {
+        initializeGame();
+        updateCantosUI();
+    }, 2000);
 }
