@@ -474,6 +474,7 @@ function resolverFlor(tipo) {
 function alternarMano() {
     gameState.manoPlayerId = (gameState.manoPlayerId === 'player') ? 'ia' : 'player';
     gameState.turno = gameState.manoPlayerId;
+    gameState.rondaEmpieza = gameState.manoPlayerId;
 }
 
 // Modal Fin de Partido
