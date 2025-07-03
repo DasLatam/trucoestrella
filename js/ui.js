@@ -75,7 +75,7 @@ export function renderMarcador(playerScore, iaScore, puntosMax) {
             <span class="text-5xl">${iaScore}</span>
         </div>
         <div class="text-base text-gray-400 mt-2">A ${puntosMax} puntos</div>
-        <div class="text-xs text-gray-500 mt-1">Versión: <b>Beta 3.6 Copilot</b></div>
+        <div class="text-xs text-gray-500 mt-1">Versión: <b>Beta 3.7 Copilot</b></div>
     `;
 }
 
@@ -122,6 +122,7 @@ export function renderCantoBotonera(gameState) {
                         document.getElementById('modal-fin-partida').classList.remove('hidden');
                     } else {
                         window.initializeGame();
+                        window.updateCantosUI();
                     }
                 } else if (canto === 'Volver al Menú') {
                     window.location.reload();
@@ -164,6 +165,7 @@ export function renderCantoBotonera(gameState) {
                     document.getElementById('modal-fin-partida').classList.remove('hidden');
                 } else {
                     window.initializeGame();
+                    window.updateCantosUI();
                 }
             } else if (canto === 'Volver al Menú') {
                 window.location.reload();

@@ -140,6 +140,10 @@ function initializeGame() {
     }
 }
 
+function updateCantosUI() {
+    renderCantoBotonera(gameState);
+}
+
 // Lógica de jugada de carta
 function onPlayerCardClick(idx) {
     if (gameState.turno !== 'player' || gameState.partidaTerminada || gameState.esperandoRespuesta) return;
@@ -150,6 +154,7 @@ function onPlayerCardClick(idx) {
     renderPlayerHand(gameState.playerHand, 'mesa-player', true, onPlayerCardClick);
     renderMesaRondas(gameState.playedCards, gameState.playerName);
     addMessageToHistory(`${gameState.playerName} jugó ${carta.numero} ${carta.palo}`, 'player');
+    updateCantosUI();
     gameState.turno = 'ia';
     checkFinRonda();
     if (!gameState.partidaTerminada) setTimeout(iaTurno, 1200);
@@ -172,6 +177,7 @@ function iaTurno() {
     renderIAHand(gameState.iaHand, 'mesa-ia');
     renderMesaRondas(gameState.playedCards, gameState.playerName);
     addMessageToHistory(`TrucoEstrella jugó ${carta.numero} ${carta.palo}`, 'ia');
+    updateCantosUI();
     gameState.turno = 'player';
     checkFinRonda();
 }
@@ -203,6 +209,7 @@ function checkFinRonda() {
         }
     }
     renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
+    updateCantosUI();
 }
 
 function determinarGanadorMano() {
@@ -237,14 +244,16 @@ function sumarPuntosMano(ganador) {
         showFinPartidaModal(gameState.playerScore >= gameState.puntosMax ? gameState.playerName : 'TrucoEstrella');
     } else {
         alternarMano();
-        setTimeout(initializeGame, 2000);
+        setTimeout(() => {
+            initializeGame();
+            updateCantosUI();
+        }, 2000);
     }
 }
 
 // --- NUEVO: Manejo de puntos reglamentario ---
 
 function calcularPuntosEnvido(historial, querido = true) {
-    // historial: array de {quien, tipo}
     let cantos = historial.map(h => h.tipo);
     let puntos = 0;
     let envidos = cantos.filter(c => c === 'Envido').length;
@@ -252,7 +261,6 @@ function calcularPuntosEnvido(historial, querido = true) {
     let falta = cantos.includes('Falta Envido');
 
     if (falta) {
-        // Falta Envido: los puntos que le faltan al rival para llegar a 15/30
         return 'falta';
     }
     if (real && envidos === 2) puntos = querido ? 7 : 4;
@@ -283,10 +291,7 @@ function calcularPuntosTruco(historial, querido = true) {
 
 // Máquina de estados para cantos y subidas
 function iniciarCanto(quien, tipo) {
-    // No permitir cantar si hay canto pendiente (bloqueo)
     if (gameState.esperandoRespuesta) return;
-
-    // Si hay un canto pendiente, es una subida
     if (gameState.cantoPendiente) {
         gameState.cantoPendiente.historial.push({ quien, tipo });
         gameState.cantoPendiente.tipo = tipo;
@@ -296,7 +301,6 @@ function iniciarCanto(quien, tipo) {
         gameState.cantoPendiente.ultimoQueSubio = quien;
         gameState.quienDebeResponder = (quien === 'player') ? 'ia' : 'player';
     } else {
-        // Nuevo canto
         gameState.cantoPendiente = {
             tipo,
             quien,
@@ -311,8 +315,6 @@ function iniciarCanto(quien, tipo) {
     gameState.esperandoRespuesta = true;
     addMessageToHistory(`${quien === 'player' ? gameState.playerName : 'TrucoEstrella'} canta ${tipo.toUpperCase()}!`, quien);
     updateCantosUI();
-
-    // Si la IA debe responder, lo hace automáticamente
     if (gameState.quienDebeResponder === 'ia') {
         setTimeout(() => responderCantoIA(gameState.cantoPendiente.tipo), 1000);
     }
@@ -332,7 +334,7 @@ function obtenerOpcionesCanto(tipo) {
 }
 
 function puedeCantar(quien, tipo) {
-    if (gameState.esperandoRespuesta) return false; // Bloqueo si hay canto pendiente
+    if (gameState.esperandoRespuesta) return false;
     if (tipo === 'Envido' || tipo === 'Real Envido' || tipo === 'Falta Envido') {
         if (gameState.envidoCantado || gameState.florCantada) return false;
         if (gameState.playedCards.length > 0) return false;
@@ -408,7 +410,6 @@ export function rechazarCanto(quien) {
         puntos = calcularPuntosTruco(historial, false);
     }
 
-    // El último que subió el canto es quien suma los puntos
     let ultimo = gameState.cantoPendiente.ultimoQueSubio || gameState.cantoPendiente.quien;
     let ganador = (ultimo === 'player') ? gameState.playerName : 'TrucoEstrella';
     if (ganador === gameState.playerName) gameState.playerScore += puntos;
@@ -425,7 +426,6 @@ export function rechazarCanto(quien) {
     }
 }
 
-// --- MODIFICADO: Resolución de Envido ---
 function resolverEnvido(tipo) {
     const playerEnvido = calcularEnvido(gameState.playerHand);
     const iaEnvido = calcularEnvido(gameState.iaHand);
@@ -449,7 +449,6 @@ function resolverEnvido(tipo) {
     }
 }
 
-// --- MODIFICADO: Resolución de Flor ---
 function resolverFlor(tipo) {
     const playerFlor = tieneFlor(gameState.playerHand) ? calcularEnvido(gameState.playerHand) : 0;
     const iaFlor = tieneFlor(gameState.iaHand) ? calcularEnvido(gameState.iaHand) : 0;
@@ -473,6 +472,10 @@ function resolverFlor(tipo) {
     }
 }
 
+function alternarMano() {
+    gameState.manoPlayerId = (gameState.manoPlayerId === 'player') ? 'ia' : 'player';
+}
+
 // Modal Fin de Partido
 function showFinPartidaModal(winner) {
     document.getElementById('modal-fin-partida-content').textContent = `Ganador: ${winner}`;
@@ -492,6 +495,7 @@ function setupEventListeners() {
     document.getElementById('btn-revancha').addEventListener('click', () => {
         document.getElementById('modal-fin-partida').classList.add('hidden');
         initializeGame();
+        updateCantosUI();
     });
 }
 
@@ -504,3 +508,4 @@ window.iniciarCanto = iniciarCanto;
 window.aceptarCanto = aceptarCanto;
 window.rechazarCanto = rechazarCanto;
 window.initializeGame = initializeGame;
+window.updateCantosUI = updateCantosUI;
