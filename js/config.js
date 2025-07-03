@@ -13,5 +13,5 @@ export const GAME_CONSTANTS = {
         [3, '', 10], [2, '', 9], [1, 'copa', 8], [1, 'oro', 8], [12, '', 7], [11, '', 6], [10, '', 5],
         [7, 'basto', 4], [7, 'copa', 4], [6, '', 3], [5, '', 2], [4, '', 1]
     ],
-    VERSION: 'Beta 3.7 Copilot'
+    VERSION: 'Beta 3.8 Copilot'
 };

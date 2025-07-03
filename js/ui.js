@@ -1,4 +1,5 @@
 import { GAME_CONSTANTS } from './config.js';
+import { puedeCantar } from './main.js';
 
 export function renderPlayerHand(hand, containerId, enableClick = false, onCardClick = null) {
     const container = document.getElementById(containerId);
@@ -75,7 +76,7 @@ export function renderMarcador(playerScore, iaScore, puntosMax) {
             <span class="text-5xl">${iaScore}</span>
         </div>
         <div class="text-base text-gray-400 mt-2">A ${puntosMax} puntos</div>
-        <div class="text-xs text-gray-500 mt-1">Versión: <b>Beta 3.7 Copilot</b></div>
+        <div class="text-xs text-gray-500 mt-1">Versión: <b>Beta 3.8 Copilot</b></div>
     `;
 }
 
@@ -92,8 +93,9 @@ export function renderCantoBotonera(gameState) {
     const cantosCol = document.getElementById('cantos-col');
     cantosCol.innerHTML = '';
 
-    // Si hay un canto pendiente y el jugador debe responder, mostrar SOLO las opciones válidas + "Me voy al mazo" y "Volver al Menú"
+    // Si hay un canto pendiente y el jugador debe responder
     if (gameState.cantoPendiente && gameState.esperandoRespuesta && gameState.quienDebeResponder === 'player') {
+        // Opciones válidas para el canto pendiente
         gameState.cantoPendiente.opciones.forEach(opcion => {
             const btn = document.createElement('button');
             btn.className = 'game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-3 rounded text-lg font-bold mb-1';
@@ -105,12 +107,11 @@ export function renderCantoBotonera(gameState) {
             };
             cantosCol.appendChild(btn);
         });
-        // Agregar "Me voy al mazo" y "Volver al Menú"
+        // Siempre mostrar "Me voy al Mazo" y "Volver al Menú"
         ['Me voy al Mazo', 'Volver al Menú'].forEach(canto => {
             const btn = document.createElement('button');
             btn.className = 'game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-3 rounded text-lg font-bold mb-1';
             btn.textContent = canto;
-            btn.setAttribute('data-canto', canto);
             btn.onclick = () => {
                 if (canto === 'Me voy al Mazo') {
                     const rival = 'TrucoEstrella';
@@ -135,7 +136,8 @@ export function renderCantoBotonera(gameState) {
 
     // Si NO hay canto pendiente, mostrar los cantos iniciales válidos + "Me voy al mazo" y "Volver al Menú"
     let opciones = [];
-    if (!gameState.trucoCantado && !gameState.envidoCantado && !gameState.florCantada && gameState.playedCards.length === 0) {
+    // Permitir Envido antes de jugar carta, incluso si la IA cantó Truco y no fue aceptado
+    if (!gameState.envidoCantado && !gameState.florCantada && gameState.playedCards.length === 0) {
         opciones = ['Truco', 'Envido', 'Real Envido', 'Falta Envido'];
         if (gameState.flor) opciones.push('Flor');
     }
@@ -149,31 +151,33 @@ export function renderCantoBotonera(gameState) {
         opciones = ['ReTruco', 'Vale Cuatro'];
     }
     opciones.push('Me voy al Mazo', 'Volver al Menú');
+    const cantosPosibles = ['Truco', 'Envido', 'Real Envido', 'Falta Envido', 'Flor', 'Contra Flor', 'Contra Flor al Resto', 'ReTruco', 'Vale Cuatro'];
     opciones.forEach(canto => {
-        const btn = document.createElement('button');
-        btn.className = 'game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-3 rounded text-lg font-bold mb-1';
-        btn.textContent = canto;
-        btn.setAttribute('data-canto', canto);
-        btn.onclick = () => {
-            if (canto === 'Me voy al Mazo') {
-                const rival = 'TrucoEstrella';
-                addMessageToHistory(`${gameState.playerName} se fue al mazo. Punto para ${rival}`, 'system');
-                gameState.iaScore += puntosEnDisputa(gameState);
-                renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
-                if (gameState.iaScore >= gameState.puntosMax) {
-                    document.getElementById('modal-fin-partida-content').textContent = `Ganador: TrucoEstrella`;
-                    document.getElementById('modal-fin-partida').classList.remove('hidden');
+        if (puedeCantar('player', canto)) {
+            const btn = document.createElement('button');
+            btn.className = 'game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-3 rounded text-lg font-bold mb-1';
+            btn.textContent = canto;
+            btn.onclick = () => {
+                if (canto === 'Me voy al Mazo') {
+                    const rival = 'TrucoEstrella';
+                    addMessageToHistory(`${gameState.playerName} se fue al mazo. Punto para ${rival}`, 'system');
+                    gameState.iaScore += puntosEnDisputa(gameState);
+                    renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
+                    if (gameState.iaScore >= gameState.puntosMax) {
+                        document.getElementById('modal-fin-partida-content').textContent = `Ganador: TrucoEstrella`;
+                        document.getElementById('modal-fin-partida').classList.remove('hidden');
+                    } else {
+                        window.initializeGame();
+                        window.updateCantosUI();
+                    }
+                } else if (canto === 'Volver al Menú') {
+                    window.location.reload();
                 } else {
-                    window.initializeGame();
-                    window.updateCantosUI();
+                    window.iniciarCanto('player', canto);
                 }
-            } else if (canto === 'Volver al Menú') {
-                window.location.reload();
-            } else {
-                window.iniciarCanto('player', canto);
-            }
-        };
-        cantosCol.appendChild(btn);
+            };
+            cantosCol.appendChild(btn);
+        }
     });
 }
 

@@ -1,0 +1,224 @@
+{
+  "PRIMERA": {
+    "mano_no_jugo": {
+      "Envido": true,
+      "Real Envido": true,
+      "Falta Envido": true,
+      "Flor": "SI, si tenes FLOR",
+      "Contra Flor": false,
+      "Contra Flor al Resto": false,
+      "Truco": true,
+      "ReTruco": false,
+      "Vale Cuatro": false,
+      "Me Voy al Mazo": true
+    },
+    "mano_jugo": {
+      "Envido": false,
+      "Real Envido": false,
+      "Falta Envido": false,
+      "Flor": false,
+      "Contra Flor": false,
+      "Contra Flor al Resto": false,
+      "Truco": true,
+      "ReTruco": false,
+      "Vale Cuatro": false,
+      "Me Voy al Mazo": true
+    },
+    "mano_subio": {
+      "Envido": true,
+      "Real Envido": true,
+      "Falta Envido": true,
+      "Flor": false,
+      "Contra Flor": "SI, si vos tambien tenes FLOR",
+      "Contra Flor al Resto": "SI, si vos tambien tenes FLOR",
+      "Truco": false,
+      "ReTruco": "SI, si estoy subiendo un TRUCO",
+      "Vale Cuatro": "SI, si estoy subiendo un QUIERO RE_TRUCO",
+      "Me Voy al Mazo": true
+    },
+    "no_mano_no_jugo": {
+      "Envido": true,
+      "Real Envido": true,
+      "Falta Envido": true,
+      "Flor": "SI, si tenes FLOR",
+      "Contra Flor": false,
+      "Contra Flor al Resto": false,
+      "Truco": true,
+      "ReTruco": false,
+      "Vale Cuatro": false,
+      "Me Voy al Mazo": true
+    },
+    "no_mano_jugo": {
+      "Envido": false,
+      "Real Envido": false,
+      "Falta Envido": false,
+      "Flor": false,
+      "Contra Flor": false,
+      "Contra Flor al Resto": false,
+      "Truco": true,
+      "ReTruco": false,
+      "Vale Cuatro": false,
+      "Me Voy al Mazo": true
+    },
+    "no_mano_subio": {
+      "Envido": true,
+      "Real Envido": true,
+      "Falta Envido": true,
+      "Flor": false,
+      "Contra Flor": "SI, si vos tambien tenes FLOR",
+      "Contra Flor al Resto": "SI, si vos tambien tenes FLOR",
+      "Truco": false,
+      "ReTruco": "SI, si estoy subiendo un TRUCO",
+      "Vale Cuatro": "SI, si estoy subiendo un QUIERO RE_TRUCO",
+      "Me Voy al Mazo": true
+    }
+  },
+  "SEGUNDA": {
+    "mano_no_jugo": {
+      "Envido": false,
+      "Real Envido": false,
+      "Falta Envido": false,
+      "Flor": false,
+      "Contra Flor": false,
+      "Contra Flor al Resto": false,
+      "Truco": true,
+      "ReTruco": false,
+      "Vale Cuatro": false,
+      "Me Voy al Mazo": true
+    },
+    "mano_jugo": {
+      "Envido": false,
+      "Real Envido": false,
+      "Falta Envido": false,
+      "Flor": false,
+      "Contra Flor": false,
+      "Contra Flor al Resto": false,
+      "Truco": true,
+      "ReTruco": false,
+      "Vale Cuatro": false,
+      "Me Voy al Mazo": true
+    },
+    "mano_subio": {
+      "Envido": false,
+      "Real Envido": false,
+      "Falta Envido": false,
+      "Flor": false,
+      "Contra Flor": false,
+      "Contra Flor al Resto": false,
+      "Truco": false,
+      "ReTruco": "SI, si estoy subiendo un TRUCO",
+      "Vale Cuatro": "SI, si estoy subiendo un QUIERO RE_TRUCO",
+      "Me Voy al Mazo": true
+    },
+    "no_mano_no_jugo": {
+      "Envido": false,
+      "Real Envido": false,
+      "Falta Envido": false,
+      "Flor": false,
+      "Contra Flor": false,
+      "Contra Flor al Resto": false,
+      "Truco": true,
+      "ReTruco": false,
+      "Vale Cuatro": false,
+      "Me Voy al Mazo": true
+    },
+    "no_mano_jugo": {
+      "Envido": false,
+      "Real Envido": false,
+      "Falta Envido": false,
+      "Flor": false,
+      "Contra Flor": false,
+      "Contra Flor al Resto": false,
+      "Truco": true,
+      "ReTruco": false,
+      "Vale Cuatro": false,
+      "Me Voy al Mazo": true
+    },
+    "no_mano_subio": {
+      "Envido": false,
+      "Real Envido": false,
+      "Falta Envido": false,
+      "Flor": false,
+      "Contra Flor": false,
+      "Contra Flor al Resto": false,
+      "Truco": false,
+      "ReTruco": "SI, si estoy subiendo un TRUCO",
+      "Vale Cuatro": "SI, si estoy subiendo un QUIERO RE_TRUCO",
+      "Me Voy al Mazo": true
+    }
+  },
+  "TERCERA": {
+    "mano_no_jugo": {
+      "Envido": false,
+      "Real Envido": false,
+      "Falta Envido": false,
+      "Flor": false,
+      "Contra Flor": false,
+      "Contra Flor al Resto": false,
+      "Truco": true,
+      "ReTruco": false,
+      "Vale Cuatro": false,
+      "Me Voy al Mazo": true
+    },
+    "mano_jugo": {
+      "Envido": false,
+      "Real Envido": false,
+      "Falta Envido": false,
+      "Flor": false,
+      "Contra Flor": false,
+      "Contra Flor al Resto": false,
+      "Truco": true,
+      "ReTruco": false,
+      "Vale Cuatro": false,
+      "Me Voy al Mazo": true
+    },
+    "mano_subio": {
+      "Envido": false,
+      "Real Envido": false,
+      "Falta Envido": false,
+      "Flor": false,
+      "Contra Flor": false,
+      "Contra Flor al Resto": false,
+      "Truco": false,
+      "ReTruco": "SI, si estoy subiendo un TRUCO",
+      "Vale Cuatro": "SI, si estoy subiendo un QUIERO RE_TRUCO",
+      "Me Voy al Mazo": true
+    },
+    "no_mano_no_jugo": {
+      "Envido": false,
+      "Real Envido": false,
+      "Falta Envido": false,
+      "Flor": false,
+      "Contra Flor": false,
+      "Contra Flor al Resto": false,
+      "Truco": true,
+      "ReTruco": false,
+      "Vale Cuatro": false,
+      "Me Voy al Mazo": true
+    },
+    "no_mano_jugo": {
+      "Envido": false,
+      "Real Envido": false,
+      "Falta Envido": false,
+      "Flor": false,
+      "Contra Flor": false,
+      "Contra Flor al Resto": false,
+      "Truco": true,
+      "ReTruco": false,
+      "Vale Cuatro": false,
+      "Me Voy al Mazo": true
+    },
+    "no_mano_subio": {
+      "Envido": false,
+      "Real Envido": false,
+      "Falta Envido": false,
+      "Flor": false,
+      "Contra Flor": false,
+      "Contra Flor al Resto": false,
+      "Truco": false,
+      "ReTruco": "SI, si estoy subiendo un TRUCO",
+      "Vale Cuatro": "SI, si estoy subiendo un QUIERO RE_TRUCO",
+      "Me Voy al Mazo": true
+    }
+  }
+}

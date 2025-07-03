@@ -1,6 +1,7 @@
 import { GAME_CONSTANTS } from './config.js';
 import { renderPlayerHand, renderIAHand, renderMesaRondas, renderMarcador, addMessageToHistory, renderCantoBotonera } from './ui.js';
 import { iaElegirCarta, iaResponderCanto, iaCantarCanto } from './ia.js';
+import { cargarReglasCantos, esCantoValido } from './cantosReglas.js';
 
 // Estado global del partido
 export let gameState = {
@@ -334,26 +335,20 @@ function obtenerOpcionesCanto(tipo) {
 }
 
 function puedeCantar(quien, tipo) {
+    if (!reglasCargadas) return false;
     if (gameState.esperandoRespuesta) return false;
-    if (tipo === 'Envido' || tipo === 'Real Envido' || tipo === 'Falta Envido') {
-        if (gameState.envidoCantado || gameState.florCantada) return false;
-        if (gameState.playedCards.length > 0) return false;
-        if (gameState.trucoCantado) return false;
-    }
-    if (tipo === 'Flor') {
-        if (!gameState.flor || gameState.florCantada || gameState.envidoCantado) return false;
-        if (gameState.playedCards.length > 0) return false;
-    }
-    if (tipo === 'Truco') {
-        if (gameState.trucoCantado) return false;
-    }
-    if (tipo === 'ReTruco') {
-        if (!gameState.trucoCantado || gameState.cantoPendiente?.tipo !== 'Truco') return false;
-    }
-    if (tipo === 'Vale Cuatro') {
-        if (!gameState.trucoCantado || gameState.cantoPendiente?.tipo !== 'ReTruco') return false;
-    }
-    return true;
+
+    const ronda = gameState.rondaActual;
+    const esMano = (gameState.manoPlayerId === quien);
+    const jugoCarta = (gameState.playedCards.filter(pc => pc.jugador === quien && pc.ronda === ronda).length > 0);
+    const subioApuesta = !!gameState.cantoPendiente;
+
+    return esCantoValido({
+        ronda,
+        esMano,
+        jugoCarta,
+        subioApuesta
+    }, tipo);
 }
 
 function responderCantoIA(tipo) {
@@ -420,10 +415,8 @@ export function rechazarCanto(quien) {
     gameState.quienDebeResponder = null;
     gameState.cantoPendiente = null;
     updateCantosUI();
-    if (gameState.playerScore >= gameState.puntosMax || gameState.iaScore >= gameState.puntosMax) {
-        gameState.partidaTerminada = true;
-        showFinPartidaModal(gameState.playerScore >= gameState.puntosMax ? gameState.playerName : 'TrucoEstrella');
-    }
+    // Continuar la mano si corresponde
+    if (gameState.turno === 'ia' && !gameState.partidaTerminada) setTimeout(iaTurno, 1200);
 }
 
 function resolverEnvido(tipo) {
@@ -443,10 +436,8 @@ function resolverEnvido(tipo) {
     gameState.quienDebeResponder = null;
     gameState.cantoPendiente = null;
     updateCantosUI();
-    if (gameState.playerScore >= gameState.puntosMax || gameState.iaScore >= gameState.puntosMax) {
-        gameState.partidaTerminada = true;
-        showFinPartidaModal(gameState.playerScore >= gameState.puntosMax ? gameState.playerName : 'TrucoEstrella');
-    }
+    // Continuar la mano si corresponde
+    if (gameState.turno === 'ia' && !gameState.partidaTerminada) setTimeout(iaTurno, 1200);
 }
 
 function resolverFlor(tipo) {
@@ -466,14 +457,13 @@ function resolverFlor(tipo) {
     gameState.quienDebeResponder = null;
     gameState.cantoPendiente = null;
     updateCantosUI();
-    if (gameState.playerScore >= gameState.puntosMax || gameState.iaScore >= gameState.puntosMax) {
-        gameState.partidaTerminada = true;
-        showFinPartidaModal(gameState.playerScore >= gameState.puntosMax ? gameState.playerName : 'TrucoEstrella');
-    }
+    // Continuar la mano si corresponde
+    if (gameState.turno === 'ia' && !gameState.partidaTerminada) setTimeout(iaTurno, 1200);
 }
 
 function alternarMano() {
     gameState.manoPlayerId = (gameState.manoPlayerId === 'player') ? 'ia' : 'player';
+    gameState.turno = gameState.manoPlayerId;
 }
 
 // Modal Fin de Partido
@@ -499,7 +489,11 @@ function setupEventListeners() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+let reglasCargadas = false;
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await cargarReglasCantos();
+    reglasCargadas = true;
     showStartScreen();
     setupEventListeners();
 });
