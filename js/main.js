@@ -2,6 +2,7 @@ import { GAME_CONSTANTS } from './config.js';
 import { renderPlayerHand, renderIAHand, renderMesaRondas, renderMarcador, addMessageToHistory, renderCantoBotonera } from './ui.js';
 import { iaElegirCarta, iaResponderCanto, iaCantarCanto } from './ia.js';
 import { cargarReglasCantos, esCantoValido } from './cantosReglas.js';
+import { cargarReglasFinMano, esFinDeMano } from './finManoReglas.js';
 
 // Estado global del partido
 export let gameState = {
@@ -321,28 +322,35 @@ function iniciarCanto(quien, tipo) {
     }
 }
 
-function obtenerOpcionesCanto(tipo) {
+function obtenerOpcionesCanto(tipo, rivalTieneFlor = false) {
     if (tipo === 'Envido') return ['Quiero', 'Real Envido', 'Falta Envido', 'No Quiero'];
     if (tipo === 'Real Envido') return ['Quiero', 'Falta Envido', 'No Quiero'];
     if (tipo === 'Falta Envido') return ['Quiero', 'No Quiero'];
-    if (tipo === 'Flor') return ['Quiero', 'Contra Flor', 'Contra Flor al Resto', 'No Quiero'];
-    if (tipo === 'Contra Flor') return ['Quiero', 'Contra Flor al Resto', 'No Quiero'];
-    if (tipo === 'Contra Flor al Resto') return ['Quiero', 'No Quiero'];
     if (tipo === 'Truco') return ['Quiero', 'ReTruco', 'No Quiero'];
     if (tipo === 'ReTruco') return ['Quiero', 'Vale Cuatro', 'No Quiero'];
     if (tipo === 'Vale Cuatro') return ['Quiero', 'No Quiero'];
+    if (tipo === 'Flor') {
+        // Solo se puede responder con Flor si el rival tiene Flor
+        if (rivalTieneFlor) return ['Flor', 'Contra Flor', 'Contra Flor al Resto'];
+        return []; // No hay respuesta posible si el rival no tiene Flor
+    }
+    if (tipo === 'Contra Flor') {
+        if (rivalTieneFlor) return ['Contra Flor al Resto'];
+        return [];
+    }
+    if (tipo === 'Contra Flor al Resto') {
+        return [];
+    }
     return [];
 }
 
 export function puedeCantar(quien, tipo) {
     if (!reglasCargadas) return false;
-    if (gameState.esperandoRespuesta) return false;
-
+    // NO bloquees por esperandoRespuesta
     const ronda = gameState.rondaActual;
     const esMano = (gameState.manoPlayerId === quien);
     const jugoCarta = (gameState.playedCards.filter(pc => pc.jugador === quien && pc.ronda === ronda).length > 0);
     const subioApuesta = !!gameState.cantoPendiente;
-
     return esCantoValido({
         ronda,
         esMano,
@@ -411,6 +419,14 @@ export function rechazarCanto(quien) {
     else gameState.iaScore += puntos;
     addMessageToHistory(`¡${ganador} suma ${puntos} punto${puntos > 1 ? 's' : ''} por rechazo!`, 'system');
     renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
+
+    // NUEVO: consulta al JSON de fin de mano
+    const ronda = gameState.rondaActual;
+    if (esFinDeMano(tipo, 'No Quiero', ronda)) {
+        terminarMano();
+        return;
+    }
+
     gameState.esperandoRespuesta = false;
     gameState.quienDebeResponder = null;
     gameState.cantoPendiente = null;
@@ -490,10 +506,13 @@ function setupEventListeners() {
 }
 
 let reglasCargadas = false;
+let reglasFinManoCargadas = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
     await cargarReglasCantos();
+    await cargarReglasFinMano();
     reglasCargadas = true;
+    reglasFinManoCargadas = true;
     showStartScreen();
     setupEventListeners();
 });
@@ -503,3 +522,39 @@ window.aceptarCanto = aceptarCanto;
 window.rechazarCanto = rechazarCanto;
 window.initializeGame = initializeGame;
 window.updateCantosUI = updateCantosUI;
+
+function resolverCanto(evento, resultado) {
+    const ronda = gameState.rondaActual; // o como determines la ronda
+    if (esFinDeMano(evento, resultado, ronda)) {
+        terminarMano();
+    }
+    // ...resto de la lógica...
+}
+
+const ronda = gameState.rondaActual;
+if (esFinDeMano('Se ganan las dos primeras rondas', 'Siempre', ronda)) {
+    terminarMano();
+    return;
+}
+
+function terminarMano() {
+    alternarMano();
+    setTimeout(() => {
+        initializeGame();
+        updateCantosUI();
+    }, 2000);
+}
+
+// NUEVO: Manejo de puntos reglamentario (continuación)
+
+const ronda = gameState.rondaActual;
+if (esFinDeMano('Me voy al maso', 'Siempre', ronda)) {
+    terminarMano();
+    return;
+}
+
+const ronda = gameState.rondaActual;
+if (esFinDeMano('Se ganan las dos primeras rondas', 'Siempre', ronda)) {
+    terminarMano();
+    return;
+}

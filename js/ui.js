@@ -93,91 +93,42 @@ export function renderCantoBotonera(gameState) {
     const cantosCol = document.getElementById('cantos-col');
     cantosCol.innerHTML = '';
 
-    // Si hay un canto pendiente y el jugador debe responder
-    if (gameState.cantoPendiente && gameState.esperandoRespuesta && gameState.quienDebeResponder === 'player') {
-        // Opciones válidas para el canto pendiente
-        gameState.cantoPendiente.opciones.forEach(opcion => {
-            const btn = document.createElement('button');
-            btn.className = 'game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-3 rounded text-lg font-bold mb-1';
-            btn.textContent = opcion;
-            btn.onclick = () => {
-                if (opcion === 'Quiero') window.aceptarCanto('player');
-                else if (opcion === 'No Quiero') window.rechazarCanto('player');
-                else window.iniciarCanto('player', opcion);
-            };
-            cantosCol.appendChild(btn);
-        });
-        // Siempre mostrar "Me voy al Mazo" y "Volver al Menú"
-        ['Me voy al Mazo', 'Volver al Menú'].forEach(canto => {
-            const btn = document.createElement('button');
-            btn.className = 'game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-3 rounded text-lg font-bold mb-1';
-            btn.textContent = canto;
-            btn.onclick = () => {
-                if (canto === 'Me voy al Mazo') {
-                    const rival = 'TrucoEstrella';
-                    addMessageToHistory(`${gameState.playerName} se fue al mazo. Punto para ${rival}`, 'system');
-                    gameState.iaScore += puntosEnDisputa(gameState);
-                    renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
-                    if (gameState.iaScore >= gameState.puntosMax) {
-                        document.getElementById('modal-fin-partida-content').textContent = `Ganador: TrucoEstrella`;
-                        document.getElementById('modal-fin-partida').classList.remove('hidden');
-                    } else {
-                        window.initializeGame();
-                        window.updateCantosUI();
-                    }
-                } else if (canto === 'Volver al Menú') {
-                    window.location.reload();
-                }
-            };
-            cantosCol.appendChild(btn);
-        });
-        return;
-    }
-
-    // Si NO hay canto pendiente, mostrar los cantos iniciales válidos + "Me voy al mazo" y "Volver al Menú"
-    let opciones = [];
-    // Permitir Envido antes de jugar carta, incluso si la IA cantó Truco y no fue aceptado
-    if (!gameState.envidoCantado && !gameState.florCantada && gameState.playedCards.length === 0) {
-        opciones = ['Truco', 'Envido', 'Real Envido', 'Falta Envido'];
-        if (gameState.flor) opciones.push('Flor');
-    }
-    if (gameState.florCantada && !gameState.envidoCantado) {
-        opciones = ['Flor'];
-        if (tieneFlor(gameState.playerHand) && tieneFlor(gameState.iaHand)) {
-            opciones.push('Contra Flor', 'Contra Flor al Resto');
-        }
-    }
-    if (gameState.trucoCantado && !gameState.cantoPendiente) {
-        opciones = ['ReTruco', 'Vale Cuatro'];
-    }
-    opciones.push('Me voy al Mazo', 'Volver al Menú');
+    // Lista de cantos posibles (sin "Me voy al Mazo" ni "Volver al Menú")
     const cantosPosibles = ['Truco', 'Envido', 'Real Envido', 'Falta Envido', 'Flor', 'Contra Flor', 'Contra Flor al Resto', 'ReTruco', 'Vale Cuatro'];
-    opciones.forEach(canto => {
+
+    cantosPosibles.forEach(canto => {
         if (puedeCantar('player', canto)) {
             const btn = document.createElement('button');
             btn.className = 'game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-3 rounded text-lg font-bold mb-1';
             btn.textContent = canto;
-            btn.onclick = () => {
-                if (canto === 'Me voy al Mazo') {
-                    const rival = 'TrucoEstrella';
-                    addMessageToHistory(`${gameState.playerName} se fue al mazo. Punto para ${rival}`, 'system');
-                    gameState.iaScore += puntosEnDisputa(gameState);
-                    renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
-                    if (gameState.iaScore >= gameState.puntosMax) {
-                        document.getElementById('modal-fin-partida-content').textContent = `Ganador: TrucoEstrella`;
-                        document.getElementById('modal-fin-partida').classList.remove('hidden');
-                    } else {
-                        window.initializeGame();
-                        window.updateCantosUI();
-                    }
-                } else if (canto === 'Volver al Menú') {
-                    window.location.reload();
-                } else {
-                    window.iniciarCanto('player', canto);
-                }
-            };
+            btn.onclick = () => window.iniciarCanto('player', canto);
             cantosCol.appendChild(btn);
         }
+    });
+
+    // SIEMPRE agregar "Me voy al Mazo" y "Volver al Menú"
+    ['Me voy al Mazo', 'Volver al Menú'].forEach(canto => {
+        const btn = document.createElement('button');
+        btn.className = 'game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-3 rounded text-lg font-bold mb-1';
+        btn.textContent = canto;
+        btn.onclick = () => {
+            if (canto === 'Me voy al Mazo') {
+                const rival = 'TrucoEstrella';
+                addMessageToHistory(`${gameState.playerName} se fue al mazo. Punto para ${rival}`, 'system');
+                gameState.iaScore += puntosEnDisputa(gameState);
+                renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
+                if (gameState.iaScore >= gameState.puntosMax) {
+                    document.getElementById('modal-fin-partida-content').textContent = `Ganador: TrucoEstrella`;
+                    document.getElementById('modal-fin-partida').classList.remove('hidden');
+                } else {
+                    window.initializeGame();
+                    window.updateCantosUI();
+                }
+            } else if (canto === 'Volver al Menú') {
+                window.location.reload();
+            }
+        };
+        cantosCol.appendChild(btn);
     });
 }
 
@@ -193,4 +144,16 @@ function puntosEnDisputa(gameState) {
         if (tipo === 'Vale Cuatro') return 4;
     }
     return 1;
+}
+
+const ronda = gameState.rondaActual;
+if (esFinDeMano('Me voy al maso', 'Siempre', ronda)) {
+    terminarMano();
+    return;
+}
+
+const ronda = gameState.rondaActual;
+if (esFinDeMano('Se ganan las dos primeras rondas', 'Siempre', ronda)) {
+    terminarMano();
+    return;
 }

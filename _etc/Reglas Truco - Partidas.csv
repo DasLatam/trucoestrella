@@ -1,0 +1,12 @@
+,Cuando positivo,Cuando Negativo,En que Ronda
+Me voy al maso,Siempre,Siempre,Todas
+TRUCO,Ganado,No Quiero,Todas
+QUIERO RE-TRUCO,Ganado,No Quiero,Todas
+QUIERO VALE CUATRO,Ganado,No Quiero,Todas
+FALTA ENVIDO,Ganado,No Aplica,Primera
+CONTRA FLOR AL RESTO,Ganado,No Aplica,Primera
+Se Juegan las tres rondas,Siempre,Siempre,Tres
+Se ganan las dos primeras rondas,Siempre,No Aplica,Dos
+Se pierden las dos primeras rondas,Siempre,No Aplica,Dos
+Se emparda la primera y gana la segunda ronda,Siempre,No Aplica,Dos
+"Se emparda la primera, emparda la segunda y gana la tercera ronda",Siempre,No Aplica,Tres

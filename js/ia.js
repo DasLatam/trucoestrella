@@ -1,4 +1,4 @@
-import { calcularEnvido } from './main.js';
+import { calcularEnvido, tieneFlor } from './main.js';
 
 export function iaElegirCarta(mano, cartasJugadas) {
     let disponibles = mano.filter(c => !c.jugada);
@@ -7,6 +7,7 @@ export function iaElegirCarta(mano, cartasJugadas) {
 }
 
 export function iaResponderCanto(canto, gameState) {
+    
     if (canto === 'Envido' || canto === 'Real Envido' || canto === 'Falta Envido') {
         let envido = calcularEnvido(gameState.iaHand);
         if (envido >= 30) return (canto === 'Falta Envido') ? 'Quiero' : 'Falta Envido';
@@ -47,7 +48,13 @@ export function iaCantarCanto(gameState) {
     }
     return null;
 }
-
-function tieneFlor(mano) {
-    return mano[0].palo === mano[1].palo && mano[1].palo === mano[2].palo;
+const ronda = gameState.rondaActual;
+if (esFinDeMano('Me voy al maso', 'Siempre', ronda)) {
+    terminarMano();
+    return;
+}
+const ronda = gameState.rondaActual;
+if (esFinDeMano('Se ganan las dos primeras rondas', 'Siempre', ronda)) {
+    terminarMano();
+    return;
 }

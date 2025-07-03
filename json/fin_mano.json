@@ -1,0 +1,70 @@
+{
+  "fin_mano": [
+    {
+      "evento": "Me voy al maso",
+      "cuando_positivo": "Siempre",
+      "cuando_negativo": "Siempre",
+      "ronda": "Todas"
+    },
+    {
+      "evento": "TRUCO",
+      "cuando_positivo": "Ganado",
+      "cuando_negativo": "No Quiero",
+      "ronda": "Todas"
+    },
+    {
+      "evento": "QUIERO RE-TRUCO",
+      "cuando_positivo": "Ganado",
+      "cuando_negativo": "No Quiero",
+      "ronda": "Todas"
+    },
+    {
+      "evento": "QUIERO VALE CUATRO",
+      "cuando_positivo": "Ganado",
+      "cuando_negativo": "No Quiero",
+      "ronda": "Todas"
+    },
+    {
+      "evento": "FALTA ENVIDO",
+      "cuando_positivo": "Ganado",
+      "cuando_negativo": "No Aplica",
+      "ronda": "Primera"
+    },
+    {
+      "evento": "CONTRA FLOR AL RESTO",
+      "cuando_positivo": "Ganado",
+      "cuando_negativo": "No Aplica",
+      "ronda": "Primera"
+    },
+    {
+      "evento": "Se Juegan las tres rondas",
+      "cuando_positivo": "Siempre",
+      "cuando_negativo": "Siempre",
+      "ronda": "Tres"
+    },
+    {
+      "evento": "Se ganan las dos primeras rondas",
+      "cuando_positivo": "Siempre",
+      "cuando_negativo": "No Aplica",
+      "ronda": "Dos"
+    },
+    {
+      "evento": "Se pierden las dos primeras rondas",
+      "cuando_positivo": "Siempre",
+      "cuando_negativo": "No Aplica",
+      "ronda": "Dos"
+    },
+    {
+      "evento": "Se emparda la primera y gana la segunda ronda",
+      "cuando_positivo": "Siempre",
+      "cuando_negativo": "No Aplica",
+      "ronda": "Dos"
+    },
+    {
+      "evento": "Se emparda la primera, emparda la segunda y gana la tercera ronda",
+      "cuando_positivo": "Siempre",
+      "cuando_negativo": "No Aplica",
+      "ronda": "Tres"
+    }
+  ]
+}
