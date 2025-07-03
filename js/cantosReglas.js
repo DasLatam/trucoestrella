@@ -2,7 +2,7 @@ let reglasCantos = null;
 
 export async function cargarReglasCantos() {
     if (!reglasCantos) {
-        const resp = await fetch('/json/cantos_reglas.json');
+        const resp = await fetch('json/cantos_reglas.json');
         reglasCantos = await resp.json();
     }
     return reglasCantos;
