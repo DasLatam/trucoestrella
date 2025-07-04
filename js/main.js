@@ -166,3 +166,14 @@ export function calcularEnvido(mano) {
 }
 
 // Aquí puedes agregar el resto de tus helpers, lógica de UI, etc.
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // Cargar reglas si es necesario
+    await cargarReglasFinMano();
+    // Botón de inicio
+    document.getElementById('startGameBtn').addEventListener('click', () => {
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        initializeGame();
+    });
+});
