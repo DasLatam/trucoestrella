@@ -14,6 +14,7 @@ const UI = {
     gameLog: document.getElementById('game-log'),
     chatInput: document.getElementById('chat-input'),
     chatSend: document.getElementById('chat-send'),
+    reloadUI: document.getElementById('reload-ui'),
     pointsPopup: document.getElementById('points-popup'),
     popupTitle: document.getElementById('popup-title'),
     popupContent: document.getElementById('popup-content'),
@@ -27,6 +28,7 @@ const UI = {
             window.location.reload();
         });
         document.getElementById('back-to-menu').addEventListener('click', () => window.location.reload());
+        UI.reloadUI.addEventListener('click', () => main.forceRedraw());
         
         UI.chatSend.addEventListener('click', UI.sendChatMessage);
         UI.chatInput.addEventListener('keyup', (event) => {

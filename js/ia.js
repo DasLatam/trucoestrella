@@ -1,5 +1,6 @@
 const IA = {
     makeDecision: (gameState) => {
+        // AI's turn is unlocked, it will decide and act.
         setTimeout(() => {
             const availableActions = main.getAvailableActions();
             const action = IA.decideAction(gameState, availableActions);
@@ -13,10 +14,16 @@ const IA = {
     },
 
     decideAction: (gameState, availableActions) => {
-        const chantActions = availableActions.filter(a => a !== 'Jugar Carta' && a !== 'Me Voy al Mazo');
-        const { scores, withFlor, florChanted, hands } = gameState;
+        // If there are no actions, play a card by default
+        if (availableActions.length === 0) {
+             const cardToPlay = IA.decideCardToPlay(gameState);
+             return { type: 'play', value: cardToPlay.id };
+        }
 
-        if (withFlor && IA.calculateFlor(hands.ia).hasFlor && !florChanted.ia) {
+        const chantActions = availableActions.filter(a => a !== 'Jugar Carta' && a !== 'Me Voy al Mazo');
+        const { scores, withFlor, hands } = gameState;
+
+        if (withFlor && IA.calculateFlor(hands.ia).hasFlor) {
             if (chantActions.includes('Flor')) return { type: 'chant', value: 'Flor' };
         }
         
@@ -37,6 +44,7 @@ const IA = {
             }
         }
 
+        // If no chant was decided, play a card
         const cardToPlay = IA.decideCardToPlay(gameState);
         return { type: 'play', value: cardToPlay.id };
     },
@@ -46,6 +54,7 @@ const IA = {
         const myHand = [...hands.ia].sort((a, b) => a.valor - b.valor);
 
         if (myHand.length === 0) return null;
+
         if (roundWins.player > roundWins.ia && rondaNumero > 1) return myHand.at(-1);
         if (roundWins.ia > roundWins.player && rondaNumero > 1) return myHand[0];
         if (rondaNumero === 2 && table.player.at(0)?.valor === table.ia.at(0)?.valor) return myHand.at(-1);
