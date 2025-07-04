@@ -120,10 +120,10 @@ const main = {
     },
     
     getAvailableActions: () => {
-        const { rondaNumero, table, chantState, turnOwner, withFlor, envidoChantedBy } = main.gameState;
+        const { rondaNumero, table, chantState, turnOwner, withFlor, envidoChantedBy, florChanted } = main.gameState;
         let available = [];
 
-        if (chantState.active && chantState.responder === turnOwner) {
+        if (chantState.active && chantState.responder === turnOwner) { // Respondiendo a un canto
             available.push('Quiero', 'No Quiero');
             const lastChant = chantState.history.at(-1);
             if (chantState.type === 'truco') {
@@ -135,19 +135,24 @@ const main = {
                 available.push(...Object.keys(REGLAS_CANTO.RESPUESTA_FLOR[lastChant]));
             }
              if(chantState.type === 'flor') available.push('Con Flor me Achico');
-        } else if (!chantState.active) {
-            const jugo = table[turnOwner].length > 0;
-            if (rondaNumero === 1 && !jugo && !withFlor && !envidoChantedBy) {
-                available.push(...Object.keys(REGLAS_CANTO.PRIMERA.no_jugo));
-            }
+        } else { // Proponiendo un canto nuevo
             const trucoHistory = chantState.history.filter(c => ['Truco', 'ReTruco', 'ValeCuatro'].includes(c));
             if (trucoHistory.length === 0) {
                 available.push('Truco');
-            } else {
-                const lastTruco = trucoHistory.at(-1);
-                const responseKey = lastTruco === 'Truco' ? 'con_truco' : 'con_retruco';
-                if (REGLAS_CANTO.CUALQUIER_RONDA[responseKey]) {
-                     available.push(...Object.keys(REGLAS_CANTO.CUALQUIER_RONDA[responseKey]));
+            } else { // El truco ya fue aceptado, se puede subir la apuesta
+                if (chantState.responder === turnOwner) {
+                     const lastTruco = trucoHistory.at(-1);
+                     const responseKey = lastTruco === 'Truco' ? 'con_truco' : 'con_retruco';
+                     if (REGLAS_CANTO.CUALQUIER_RONDA[responseKey]) available.push(...Object.keys(REGLAS_CANTO.CUALQUIER_RONDA[responseKey]));
+                }
+            }
+
+            if (rondaNumero === 1 && table.player.length === 0 && table.ia.length === 0) {
+                if (withFlor && main.gameState[`${turnOwner}Flor`].hasFlor && !florChanted[turnOwner]) {
+                    available.push('Flor');
+                }
+                if (!withFlor && !envidoChantedBy) {
+                    available.push(...Object.keys(REGLAS_CANTO.PRIMERA.no_jugo));
                 }
             }
         }
@@ -156,11 +161,11 @@ const main = {
     
     unlockActionsForTurn: () => {
         main.gameState.actionsLocked = false;
-        if(main.gameState.turnOwner === 'player'){
+        if (main.gameState.turnOwner === 'player') {
             UI.updateActionButtons(main.getAvailableActions());
         } else {
-            main.gameState.actionsLocked = true;
-            setTimeout(() => IA.makeDecision(main.gameState), 500);
+            main.gameState.actionsLocked = true; // Bloqueamos para que el player no haga nada
+            IA.makeDecision(main.gameState);
         }
     },
     
@@ -168,9 +173,15 @@ const main = {
         const playerType = isIA ? 'ia' : 'player';
         if (main.gameState.turnOwner !== playerType || main.gameState.actionsLocked) return;
 
+        main.gameState.actionsLocked = true; // Lock actions as soon as a valid play starts
+        UI.updateActionButtons([]); // Clear buttons immediately
+
         const hand = main.gameState.hands[playerType];
         const cardIndex = hand.findIndex(c => c.id === cardId);
-        if (cardIndex === -1) return;
+        if (cardIndex === -1) {
+            main.gameState.actionsLocked = false; // Unlock if card is not found
+            return;
+        }
 
         const card = hand.splice(cardIndex, 1)[0];
         main.gameState.table[playerType].push(card);
@@ -179,13 +190,12 @@ const main = {
         UI.drawHands(main.gameState.hands.player, main.gameState.hands.ia);
         UI.drawCardOnTable(card, playerType);
 
-        main.gameState.turnOwner = (playerType === 'player') ? 'ia' : 'player';
-        main.gameState.actionsLocked = true;
-        UI.updateActionButtons([]);
+        const bothPlayed = main.gameState.table.player.length === main.gameState.rondaNumero && main.gameState.table.ia.length === main.gameState.rondaNumero;
 
-        if (main.gameState.table.player.length === main.gameState.rondaNumero && main.gameState.table.ia.length === main.gameState.rondaNumero) {
+        if (bothPlayed) {
             setTimeout(main.evaluateRound, 1000);
         } else {
+            main.gameState.turnOwner = (playerType === 'player') ? 'ia' : 'player';
             main.unlockActionsForTurn();
         }
     },
@@ -234,7 +244,8 @@ const main = {
 
         if (quitter) {
             handWinner = (quitter === 'player') ? 'ia' : 'player';
-            if(main.gameState.chantState.type !== 'truco') points = 1;
+            // Si te vas al mazo y hay un truco cantado, el oponente gana los puntos del truco. Si no, solo 1.
+            points = main.gameState.chantState.type === 'truco' ? main.gameState.chantState.pointsOnTable : 1;
         } else {
             const { player, ia } = main.gameState.roundWins;
             if (player > ia) handWinner = 'player';
@@ -297,20 +308,22 @@ const main = {
     },
 
     resolveChant: async (response, responder) => {
-        const { type, caller } = main.gameState.chantState;
+        const { type, caller, history } = main.gameState.chantState;
         
         UI.logEvent(`${responder === 'player' ? main.gameState.playerName : 'TrucoEstrella'} responde: <b>${response}</b>`, responder);
         UI.showChant(responder, response);
 
         if (response === 'No Quiero' || response === 'Con Flor me Achico') {
-            const chantKey = main.gameState.chantState.history.join(',');
+            const chantKey = history.join(',');
             const pointsData = PUNTOS_CANTO.find(p => p.canto.replace(/ /g, '') === chantKey);
             const points = pointsData ? pointsData.puntos_no_quiero : 1;
             main.awardPoints(caller, points, `por ${type} no querido`);
 
-            if (type === 'truco') main.endHand();
+            if (type === 'truco') {
+                setTimeout(() => main.endHand(), 1500); // Termina la mano, pero no da puntos extra
+            }
             else {
-                main.gameState.chantState = { active: false, type: null, history: [], pointsOnTable: main.gameState.chantState.pointsOnTable };
+                main.gameState.chantState = { ...main.gameState.chantState, active: false, type: null, history: [] };
                 main.unlockActionsForTurn();
             }
         } else if (response === 'Quiero') {
@@ -325,9 +338,10 @@ const main = {
     
     resolveTrucoQuiero: () => {
         const lastTruco = main.gameState.chantState.history.filter(c => ['Truco', 'ReTruco', 'ValeCuatro'].includes(c)).at(-1);
-        const pointsData = PUNTOS_CANTO.find(p => p.canto === lastTruco);
+        const pointsData = PUNTOS_CANTO.find(p => p.canto.replace(/ /g, '') === lastTruco);
         if (pointsData) main.gameState.chantState.pointsOnTable = pointsData.puntos_ganador;
         UI.logEvent(`El <b>TRUCO</b> se juega por <b>${main.gameState.chantState.pointsOnTable}</b> puntos.`, 'system');
+        main.gameState.chantState.type = 'truco'; // Se marca que el truco está activo
         main.unlockActionsForTurn();
     },
 

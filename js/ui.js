@@ -187,8 +187,7 @@ const UI = {
             divider.style.position = 'absolute';
             divider.style.width = '100%';
             divider.style.borderTop = '2px dashed #9ca3af';
-            // This needs to be calculated based on the height of 3 score boxes
-            divider.style.top = 'calc(3 * (60px + 10px) + 2rem)'; // 3 boxes height + 3 margins + name height
+            divider.style.top = 'calc(3 * (60px + 10px) + 2rem)';
             UI.scoreContainer.appendChild(divider);
         }
     },
