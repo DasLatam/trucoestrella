@@ -1,7 +1,9 @@
 const IA = {
     makeDecision: (gameState) => {
         setTimeout(() => {
-            const action = IA.decideAction(gameState);
+            const availableActions = main.getAvailableActions();
+            const action = IA.decideAction(gameState, availableActions);
+            
             if (action.type === 'chant') {
                 main.handleIaAction(action.value);
             } else if (action.type === 'play') {
@@ -10,46 +12,53 @@ const IA = {
         }, 1200);
     },
 
-    decideAction: (gameState) => {
-        if (gameState.withFlor && IA.calculateFlor(gameState.hands.ia).hasFlor && !gameState.florChanted.ia) {
-            return { type: 'chant', value: 'FLOR' };
+    decideAction: (gameState, availableActions) => {
+        const chantActions = availableActions.filter(a => a !== 'Jugar Carta' && a !== 'Me Voy al Mazo');
+        const { scores, withFlor, florChanted, hands } = gameState;
+
+        // 1. Obligación: Cantar flor si la tiene y está disponible la acción
+        if (withFlor && IA.calculateFlor(hands.ia).hasFlor && !florChanted.ia) {
+            if (chantActions.includes('Flor')) return { type: 'chant', value: 'Flor' };
         }
         
-        if (gameState.envidoAvailable) {
-            const myEnvido = IA.calculateEnvido(gameState.hands.ia);
-            if (myEnvido >= 30 && gameState.scores.ia <= gameState.scores.player) {
-                return { type: 'chant', value: 'REAL ENVIDO' };
+        // 2. Oportunismo: Cantar envido si es una buena jugada
+        if (chantActions.some(a => a.includes('Envido'))) {
+            const myEnvido = IA.calculateEnvido(hands.ia);
+            if (myEnvido >= 30 && scores.ia <= scores.player && chantActions.includes('Real Envido')) {
+                return { type: 'chant', value: 'Real Envido' };
             }
-            if (myEnvido >= 28) {
-                return { type: 'chant', value: 'ENVIDO' };
+            if (myEnvido >= 28 && chantActions.includes('Envido')) {
+                return { type: 'chant', value: 'Envido' };
             }
         }
         
-        if (!gameState.chantState.type || gameState.chantState.type !== 'truco') {
-            const goodCards = gameState.hands.ia.filter(c => c.valor >= 11).length;
-            if (goodCards >= 2 || (goodCards >= 1 && gameState.scores.ia < gameState.scores.player)) {
-                return { type: 'chant', value: 'TRUCO' };
+        // 3. Oportunismo: Cantar truco
+        if (chantActions.includes('Truco')) {
+            const goodCards = hands.ia.filter(c => c.valor >= 11).length;
+            if (goodCards >= 2 || (goodCards >= 1 && scores.ia < scores.player)) {
+                return { type: 'chant', value: 'Truco' };
             }
         }
 
+        // 4. Por defecto: Jugar una carta
         const cardToPlay = IA.decideCardToPlay(gameState);
         return { type: 'play', value: cardToPlay.id };
     },
 
     decideCardToPlay: (gameState) => {
-        const { hands, table, roundWins, isHand, currentRound } = gameState;
+        const { hands, table, roundWins, isHand, rondaNumero } = gameState;
         const myHand = [...hands.ia].sort((a, b) => a.valor - b.valor);
 
         if (myHand.length === 0) return null;
 
-        if (roundWins.player > roundWins.ia && currentRound > 1) return myHand[myHand.length - 1];
-        if (roundWins.ia > roundWins.player && currentRound > 1) return myHand[0];
-        if (currentRound === 2 && table.player[0].valor === table.ia[0].valor) return myHand[myHand.length - 1];
-        if (currentRound === 3 && roundWins.player === roundWins.ia) return myHand[myHand.length - 1];
-        if (currentRound === 1 && isHand === 'ia') return myHand[myHand.length - 1];
+        if (roundWins.player > roundWins.ia && rondaNumero > 1) return myHand[myHand.length - 1];
+        if (roundWins.ia > roundWins.player && rondaNumero > 1) return myHand[0];
+        if (rondaNumero === 2 && table.player[0].valor === table.ia[0].valor) return myHand[myHand.length - 1];
+        if (rondaNumero === 3 && roundWins.player === roundWins.ia) return myHand[myHand.length - 1];
+        if (rondaNumero === 1 && isHand === 'ia') return myHand[myHand.length - 1];
         
-        if (table.player.length === currentRound) {
-            const playerCard = table.player[currentRound - 1];
+        if (table.player.length === rondaNumero) {
+            const playerCard = table.player[rondaNumero - 1];
             const winningCard = myHand.find(c => c.valor > playerCard.valor);
             if (winningCard) return winningCard;
         }
@@ -57,38 +66,38 @@ const IA = {
         return myHand[0];
     },
 
-    respondToChant: (chant, gameState) => {
+    respondToChant: (chant, availableResponses, gameState) => {
         UI.logEvent('TrucoEstrella está pensando...', 'ia');
         return new Promise(resolve => {
             setTimeout(() => {
-                let response = 'NO QUIERO';
-                const { level, type } = chant;
-                const { scores, playerFlor, iaFlor } = gameState;
+                let response = 'No Quiero'; // Respuesta por defecto
+                const { type } = chant;
+                const { scores, playerFlor, iaFlor, hands } = gameState;
 
                 if (type === 'truco') {
-                    const goodCards = gameState.hands.ia.filter(c => c.valor >= 10).length;
-                    const bestCardValue = Math.max(...gameState.hands.ia.map(c => c.valor));
+                    const goodCards = hands.ia.filter(c => c.valor >= 10).length;
+                    const bestCardValue = Math.max(...hands.ia.map(c => c.valor));
                     
-                    if (level === 'TRUCO') {
-                        if (bestCardValue >= 12 && scores.ia < scores.player + 5) response = 'RETRUCO';
-                        else if (goodCards >= 1 || bestCardValue >= 11) response = 'QUIERO';
-                    } else if (level === 'RETRUCO') {
-                        if (bestCardValue >= 13) response = 'QUIERO';
-                    } else if (level === 'VALE CUATRO') {
-                         if (bestCardValue === 14) response = 'QUIERO';
+                    if (availableResponses.includes('ReTruco') && bestCardValue >= 12 && scores.ia < scores.player + 5) response = 'ReTruco';
+                    else if (availableResponses.includes('Quiero')) {
+                        if (goodCards >= 1 || bestCardValue >= 11) response = 'Quiero';
                     }
                 } else if (type === 'envido') {
-                    const myEnvido = IA.calculateEnvido(gameState.hands.ia);
-                    if (myEnvido >= 27) response = 'QUIERO';
-                    if (myEnvido >= 31 && level === 'ENVIDO') response = 'REAL ENVIDO';
-                    else if (myEnvido >= 29 && level === 'ENVIDO') response = 'ENVIDO';
+                    const myEnvido = IA.calculateEnvido(hands.ia);
+                     if (availableResponses.includes('Real Envido') && myEnvido >= 31) response = 'Real Envido';
+                     else if (availableResponses.includes('Envido') && myEnvido >= 29) response = 'Envido';
+                     else if (availableResponses.includes('Quiero') && myEnvido >= 27) response = 'Quiero';
+
                 } else if (type === 'flor') {
-                    if (level === 'FLOR') { // Respondiendo al canto inicial de flor del otro
-                        if (iaFlor.points > playerFlor.points) response = 'CONTRAFLOR';
-                        else response = 'CON FLOR ME ACHICO';
-                    } else { // Respondiendo a CONTRAFLOR
-                        if (iaFlor.points >= playerFlor.points) response = 'QUIERO';
-                    }
+                    if (availableResponses.includes('Contra Flor') && iaFlor.points > playerFlor.points) response = 'Contra Flor';
+                    else if (availableResponses.includes('Con Flor me Achico')) response = 'Con Flor me Achico';
+                    else if (availableResponses.includes('Quiero')) response = 'Quiero'; // Para Contraflor
+                }
+                
+                // Si la respuesta decidida no es válida, optar por la más segura.
+                if (!availableResponses.includes(response)) {
+                    if (availableResponses.includes('Quiero')) response = 'Quiero';
+                    else response = 'No Quiero';
                 }
                 resolve(response);
             }, 1500);

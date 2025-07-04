@@ -101,39 +101,10 @@ const UI = {
         if(slot) slot.classList.add('winner-glow');
     },
     
-    updateActionButtons: (gameState) => {
+    updateActionButtons: (availableActions) => {
         UI.actionsContainer.innerHTML = '';
-        const { chantState, envidoAvailable, turnOwner, actionsLocked } = gameState;
-        let actions = [];
 
-        if (turnOwner === 'player' && !actionsLocked && !chantState.active) {
-            if (chantState.type !== 'truco') {
-                actions.push('TRUCO');
-            } else {
-                if (chantState.level === 'TRUCO') actions.push('RETRUCO');
-                if (chantState.level === 'RETRUCO') actions.push('VALE CUATRO');
-            }
-            if (envidoAvailable) {
-                actions.push('ENVIDO', 'REAL ENVIDO', 'FALTA ENVIDO');
-            }
-        }
-       
-        if (chantState.active && chantState.responder === 'player') {
-            if (chantState.type === 'flor' && chantState.level === 'FLOR') {
-                 actions.push('CON FLOR ME ACHICO', 'CONTRAFLOR');
-            } else {
-                actions = ['QUIERO', 'NO QUIERO'];
-                if (chantState.type === 'truco') {
-                     if (chantState.level === 'TRUCO') actions.push('RETRUCO');
-                     if (chantState.level === 'RETRUCO') actions.push('VALE CUATRO');
-                }
-                 if (chantState.type === 'envido') {
-                    actions.push('ENVIDO', 'REAL ENVIDO', 'FALTA ENVIDO');
-                }
-            }
-        }
-
-        actions.forEach(action => {
+        availableActions.forEach(action => {
             const button = document.createElement('button');
             button.textContent = action;
             button.className = 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full text-sm mb-1';
@@ -141,13 +112,11 @@ const UI = {
             UI.actionsContainer.appendChild(button);
         });
         
-        if (turnOwner === 'player') {
-            const mazoButton = document.createElement('button');
-            mazoButton.textContent = 'IR AL MAZO';
-            mazoButton.className = 'bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full mt-auto';
-            mazoButton.addEventListener('click', () => main.handlePlayerAction('IR AL MAZO'));
-            UI.actionsContainer.appendChild(mazoButton);
-        }
+        const mazoButton = document.createElement('button');
+        mazoButton.textContent = 'Me Voy al Mazo';
+        mazoButton.className = 'bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full mt-auto';
+        mazoButton.addEventListener('click', () => main.handlePlayerAction('Me Voy al Mazo'));
+        UI.actionsContainer.appendChild(mazoButton);
     },
     
     showChant: (playerType, text) => {

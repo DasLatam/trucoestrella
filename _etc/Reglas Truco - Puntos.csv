@@ -1,0 +1,16 @@
+Canto,Puntos No Quiero,Puntos Ganador
+Envido,1,2
+Envido + Envido,2,4
+Envido + Real Envido,2,5
+Envido + Envido + Real Envido,4,7
+Falta Envido,1,Los puntos que le faltan al contrincante por ganar
+Envido + Falta Envido,2,Los puntos que le faltan al contrincante por ganar
+Envido + Envido + Falta Envido,4,Los puntos que le faltan al contrincante por ganar
+Envido + Real Envido + Falta Envido,5,Los puntos que le faltan al contrincante por ganar
+Envido + Envido + Real Envido + Falta Envido,7,Los puntos que le faltan al contrincante por ganar
+Flor,No aplica,3
+Contra Flor,No aplica,6
+Contra Flor al resto,No aplica,Los puntos que le faltan al contrincante por ganar
+Truco,1,2
+Truco + Quiero Re-Truco,2,3
+Truco + Quiero Re-Truco + Quiero Vale Cuatro,3,4

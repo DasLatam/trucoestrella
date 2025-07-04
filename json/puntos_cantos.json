@@ -1,0 +1,77 @@
+[
+  {
+    "canto": "Envido",
+    "puntos_no_quiero": 1,
+    "puntos_ganador": 2
+  },
+  {
+    "canto": "Envido + Envido",
+    "puntos_no_quiero": 2,
+    "puntos_ganador": 4
+  },
+  {
+    "canto": "Envido + Real Envido",
+    "puntos_no_quiero": 2,
+    "puntos_ganador": 5
+  },
+  {
+    "canto": "Envido + Envido + Real Envido",
+    "puntos_no_quiero": 4,
+    "puntos_ganador": 7
+  },
+  {
+    "canto": "Falta Envido",
+    "puntos_no_quiero": 1,
+    "puntos_ganador": "Los puntos que le faltan al contrincante por ganar"
+  },
+  {
+    "canto": "Envido + Falta Envido",
+    "puntos_no_quiero": 2,
+    "puntos_ganador": "Los puntos que le faltan al contrincante por ganar"
+  },
+  {
+    "canto": "Envido + Envido + Falta Envido",
+    "puntos_no_quiero": 4,
+    "puntos_ganador": "Los puntos que le faltan al contrincante por ganar"
+  },
+  {
+    "canto": "Envido + Real Envido + Falta Envido",
+    "puntos_no_quiero": 5,
+    "puntos_ganador": "Los puntos que le faltan al contrincante por ganar"
+  },
+  {
+    "canto": "Envido + Envido + Real Envido + Falta Envido",
+    "puntos_no_quiero": 7,
+    "puntos_ganador": "Los puntos que le faltan al contrincante por ganar"
+  },
+  {
+    "canto": "Flor",
+    "puntos_no_quiero": null,
+    "puntos_ganador": 3
+  },
+  {
+    "canto": "Contra Flor",
+    "puntos_no_quiero": null,
+    "puntos_ganador": 6
+  },
+  {
+    "canto": "Contra Flor al resto",
+    "puntos_no_quiero": null,
+    "puntos_ganador": "Los puntos que le faltan al contrincante por ganar"
+  },
+  {
+    "canto": "Truco",
+    "puntos_no_quiero": 1,
+    "puntos_ganador": 2
+  },
+  {
+    "canto": "Truco + Quiero Re-Truco",
+    "puntos_no_quiero": 2,
+    "puntos_ganador": 3
+  },
+  {
+    "canto": "Truco + Quiero Re-Truco + Quiero Vale Cuatro",
+    "puntos_no_quiero": 3,
+    "puntos_ganador": 4
+  }
+]
