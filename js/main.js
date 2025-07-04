@@ -324,23 +324,6 @@ function iaTurno() {
 // --- NUEVO: Manejo de puntos reglamentario (continuación)
 
 
-function handleMeVoyAlMazo() {
-    const ronda = gameState.rondaActual;
-    if (esFinDeMano('Me voy al maso', 'Siempre', ronda)) {
-        terminarMano();
-        return;
-    }
-    let ganador = (gameState.turno === 'player') ? 'TrucoEstrella' : gameState.playerName;
-    if (ganador === gameState.playerName) gameState.playerScore += 1;
-    else gameState.iaScore += 1;
-    addMessageToHistory(`${ganador} suma 1 punto porque el rival se fue al mazo.`, 'system');
-    renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
-    alternarMano();
-    setTimeout(() => {
-        initializeGame();
-        updateCantosUI();
-    }, 2000);
-}
 
 // resolver canto
 function resolverCanto(evento, resultado) {
