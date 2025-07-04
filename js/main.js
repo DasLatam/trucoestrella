@@ -13,9 +13,7 @@ const main = {
             for (const numero of CONFIG.numeros) {
                 const cardId = `${numero} de ${palo}`;
                 let valor = CONFIG.valoresCartas[numero];
-                if (CONFIG.valoresCartas[cardId]) {
-                    valor = CONFIG.valoresCartas[cardId];
-                }
+                if (CONFIG.valoresCartas[cardId]) valor = CONFIG.valoresCartas[cardId];
                 main.deck.push({ id: cardId, numero, palo, valor });
             }
         }
@@ -93,45 +91,37 @@ const main = {
     },
 
     handleFlor: () => {
-        const { withFlor, playerFlor, iaFlor } = main.gameState;
-        if (!withFlor) {
+        const { withFlor, playerFlor, iaFlor, isHand } = main.gameState;
+        if (!withFlor || (!playerFlor.hasFlor && !iaFlor.hasFlor)) {
             main.unlockActionsForTurn();
             return;
         }
 
-        const playerHasFlor = playerFlor.hasFlor;
-        const iaHasFlor = iaFlor.hasFlor;
-
-        if (!playerHasFlor && !iaHasFlor) {
-            main.unlockActionsForTurn();
-            return;
-        }
-        
         main.gameState.envidoAvailable = false;
         
-        if (playerHasFlor) {
+        if (playerFlor.hasFlor) {
             UI.logEvent(`${main.gameState.playerName} canta: <b>FLOR</b>`, 'jugador');
             UI.showChant('player', 'FLOR');
             main.gameState.florChanted.player = true;
         }
-        if (iaHasFlor) {
+        if (iaFlor.hasFlor) {
             UI.logEvent(`TrucoEstrella canta: <b>FLOR</b>`, 'ia');
             UI.showChant('ia', 'FLOR');
             main.gameState.florChanted.ia = true;
         }
 
-        if (playerHasFlor && !iaHasFlor) {
-            main.baseGameState.scores.player += CONFIG.PUNTOS_CANTO.flor.normal;
-            UI.logEvent(`<b>${main.gameState.playerName}</b> se anota 3 puntos de flor.`, 'system');
-        } else if (!playerHasFlor && iaHasFlor) {
-            main.baseGameState.scores.ia += CONFIG.PUNTOS_CANTO.flor.normal;
-            UI.logEvent(`<b>TrucoEstrella</b> se anota 3 puntos de flor.`, 'system');
+        if (playerFlor.hasFlor && !iaFlor.hasFlor) {
+            main.awardPoints('player', CONFIG.PUNTOS_CANTO.flor.normal, 'de flor');
+            main.unlockActionsForTurn();
+        } else if (!playerFlor.hasFlor && iaFlor.hasFlor) {
+            main.awardPoints('ia', CONFIG.PUNTOS_CANTO.flor.normal, 'de flor');
+            main.unlockActionsForTurn();
         } else {
-             UI.logEvent('Ambos jugadores tienen flor. Se define por canto.', 'system');
-             // TODO: Implementar la secuencia de "CONTRAFLOR"
+            UI.logEvent('Ambos jugadores tienen flor. Se define por canto.', 'system');
+            const firstToAct = isHand;
+            const secondToAct = isHand === 'player' ? 'ia' : 'player';
+            main.initiateChant('FLOR', firstToAct, secondToAct);
         }
-        UI.updateScoreboard(main.baseGameState.scores.player, main.baseGameState.scores.ia, main.baseGameState.targetScore);
-        main.unlockActionsForTurn();
     },
 
     unlockActionsForTurn: () => {
@@ -183,24 +173,18 @@ const main = {
 
         if (playerCard.valor > iaCard.valor) roundWinner = 'player';
         else if (iaCard.valor > playerCard.valor) roundWinner = 'ia';
-        else roundWinner = 'tie';
+        else { roundWinner = 'tie'; main.gameState.roundWins.player++; main.gameState.roundWins.ia++; }
 
         if (roundWinner !== 'tie') {
             main.gameState.roundWins[roundWinner]++;
             UI.highlightWinner(roundWinner);
             UI.logEvent(`<b>${roundWinner === 'player' ? main.gameState.playerName : 'IA'}</b> gana la ${main.gameState.currentRound}° ronda.`, 'system');
         } else {
-            main.gameState.roundWins.player++; main.gameState.roundWins.ia++; // parda
             UI.logEvent(`La ${main.gameState.currentRound}° ronda es <b>parda</b>.`, 'system');
         }
 
         const { player, ia } = main.gameState.roundWins;
-        if (player >= 2 || ia >= 2) {
-            setTimeout(main.endHand, 1500);
-            return;
-        }
-
-        if(main.gameState.currentRound >= 3) {
+        if (player >= 2 || ia >= 2 || main.gameState.currentRound >= 3) {
             setTimeout(main.endHand, 1500);
             return;
         }
@@ -213,77 +197,70 @@ const main = {
         UI.clearTable();
         UI.logEvent(`--- Ronda ${main.gameState.currentRound} ---`, 'system');
 
+        const lastPlayerCard = main.gameState.table.player[main.gameState.currentRound - 2];
+        const lastIaCard = main.gameState.table.ia[main.gameState.currentRound - 2];
         let lastRoundWinner = 'tie';
-        const pCard = main.gameState.table.player[main.gameState.currentRound - 2];
-        const iCard = main.gameState.table.ia[main.gameState.currentRound - 2];
-        if(pCard.valor > iCard.valor) lastRoundWinner = 'player';
-        if(iCard.valor > pCard.valor) lastRoundWinner = 'ia';
-
-        main.gameState.turnOwner = lastRoundWinner === 'tie' ? main.gameState.isHand : lastRoundWinner;
+        if (lastPlayerCard.valor > lastIaCard.valor) lastRoundWinner = 'player';
+        else if (lastIaCard.valor > lastPlayerCard.valor) lastRoundWinner = 'ia';
         
+        main.gameState.turnOwner = lastRoundWinner === 'tie' ? main.gameState.isHand : lastRoundWinner;
         main.unlockActionsForTurn();
     },
 
     endHand: (quitter) => {
         let handWinner;
-        if(quitter) {
+        if (quitter) {
             handWinner = (quitter === 'player') ? 'ia' : 'player';
         } else {
             const { player, ia } = main.gameState.roundWins;
-            if(player > ia) handWinner = 'player';
+            if (player > ia) handWinner = 'player';
             else if (ia > player) handWinner = 'ia';
             else handWinner = main.gameState.isHand;
         }
 
-        const points = main.gameState.chantState.pointsOnTable;
-        main.baseGameState.scores[handWinner] += points;
+        main.awardPoints(handWinner, main.gameState.chantState.pointsOnTable, 'de la mano');
         
-        UI.logEvent(`<b>${handWinner === 'player' ? main.gameState.playerName : 'IA'}</b> gana la mano y <b>${points}</b> punto(s).`, 'system');
-
-        main.gameState.scores = main.baseGameState.scores;
-        UI.updateScoreboard(main.gameState.scores.player, main.gameState.scores.ia, main.gameState.targetScore);
-
-        if (main.gameState.scores.player >= main.gameState.targetScore || main.gameState.scores.ia >= main.gameState.targetScore) {
-            main.checkGameOver();
-        } else {
-            main.baseGameState.isHand = (main.baseGameState.isHand === 'player') ? 'ia' : 'player';
-            setTimeout(main.startNewHand, 2000);
+        if (main.baseGameState.scores[handWinner] < main.baseGameState.targetScore) {
+             main.baseGameState.isHand = (main.baseGameState.isHand === 'player') ? 'ia' : 'player';
+             setTimeout(main.startNewHand, 2000);
         }
     },
 
     checkGameOver: () => {
-        const { player, ia } = main.gameState.scores;
-        const target = main.gameState.targetScore;
-        if(player >= target) UI.showEndGameModal('player');
+        const { player, ia } = main.baseGameState.scores;
+        const target = main.baseGameState.targetScore;
+        if (player >= target) UI.showEndGameModal('player');
         else if (ia >= target) UI.showEndGameModal('ia');
     },
 
     handlePlayerAction: (action) => {
         if (main.gameState.actionsLocked && !main.gameState.chantState.active) return;
         if (action === 'IR AL MAZO') { main.endHand('player'); return; }
-        if (['QUIERO', 'NO QUIERO'].includes(action) || (main.gameState.chantState.active && main.gameState.chantState.responder === 'player')) {
+        
+        if (main.gameState.chantState.active && main.gameState.chantState.responder === 'player') {
             main.resolveChant(action, 'player');
         } else {
-            main.initiateChant(action, 'player');
+            main.initiateChant(action, 'player', 'ia');
         }
     },
     
     handleIaAction: (action) => {
-        main.initiateChant(action, 'ia');
+        main.initiateChant(action, 'ia', 'player');
     },
 
-    initiateChant: async (action, caller) => {
+    initiateChant: async (action, caller, responder) => {
         main.gameState.actionsLocked = true;
-        const responder = caller === 'player' ? 'ia' : 'player';
-        
         UI.logEvent(`${caller === 'player' ? main.gameState.playerName : 'TrucoEstrella'} canta: <b>${action}</b>`, caller);
         UI.showChant(caller, action);
         
-        const chantType = ['TRUCO', 'RETRUCO', 'VALE CUATRO'].includes(action) ? 'truco' : 'envido';
-        main.gameState.chantState = {
-            active: true, type: chantType, level: action, caller: caller, responder: responder, 
-            pointsOnTable: main.gameState.chantState.pointsOnTable, history: [action]
-        };
+        const chantType = ['TRUCO', 'RETRUCO', 'VALE CUATRO'].includes(action) ? 'truco' : (action.includes('FLOR')) ? 'flor' : 'envido';
+        
+        main.gameState.chantState.active = true;
+        main.gameState.chantState.type = chantType;
+        main.gameState.chantState.level = action;
+        main.gameState.chantState.caller = caller;
+        main.gameState.chantState.responder = responder;
+        main.gameState.chantState.history.push(action);
 
         if (chantType === 'envido') main.gameState.envidoAvailable = false;
         
@@ -299,61 +276,106 @@ const main = {
     },
 
     resolveChant: async (response, responder) => {
-        const { level, caller } = main.gameState.chantState;
-        const callerName = caller === 'player' ? main.gameState.playerName : 'TrucoEstrella';
-        const responderName = responder === 'player' ? main.gameState.playerName : 'TrucoEstrella';
+        const { type, caller } = main.gameState.chantState;
         
-        UI.logEvent(`${responderName} responde: <b>${response}</b>`, responder);
+        UI.logEvent(`${responder === 'player' ? main.gameState.playerName : 'TrucoEstrella'} responde: <b>${response}</b>`, responder);
         UI.showChant(responder, response);
 
-        if (response === 'NO QUIERO') {
-            const chantConfig = CONFIG.PUNTOS_CANTO[level.toLowerCase().replace(" ", "")];
-            const points = chantConfig.noQuiero;
-            
-            main.baseGameState.scores[caller] += points;
-            UI.logEvent(`<b>${callerName}</b> gana <b>${points}</b> punto(s).`, 'system');
-            UI.updateScoreboard(main.baseGameState.scores.player, main.baseGameState.scores.ia, main.baseGameState.targetScore);
-
-            main.gameState.chantState = { active: false, type: null, level: null, pointsOnTable: 1 };
-            if (main.gameState.chantState.type === 'truco') main.endHand();
-            else main.unlockActionsForTurn();
-
+        if (response === 'NO QUIERO' || response === 'CON FLOR ME ACHICO') {
+            main.resolveNoQuiero(response);
         } else if (response === 'QUIERO') {
             main.gameState.chantState.active = false;
-            
-            if (main.gameState.chantState.type === 'truco') {
-                main.gameState.chantState.pointsOnTable = CONFIG.PUNTOS_CANTO[level.toLowerCase()].quiero;
-                UI.logEvent(`El <b>TRUCO</b> se juega por <b>${main.gameState.chantState.pointsOnTable}</b> puntos.`, 'system');
-                main.unlockActionsForTurn();
-            } else {
-                main.resolveEnvido();
-            }
+            if (type === 'truco') main.resolveTrucoQuiero();
+            else if (type === 'envido') main.resolveEnvido();
+            else if (type === 'flor') main.resolveFlor();
         } else {
-            await main.initiateChant(response, responder);
+            await main.initiateChant(response, responder, caller);
         }
     },
 
-    resolveEnvido: () => {
-        const playerTantos = main.gameState.playerEnvido;
-        const iaTantos = main.gameState.iaEnvido;
-        let winner, winnerName, points = 0;
+    calculateChantPoints: (history) => {
+        let quieroPoints = 0; let noQuieroPoints = 0; let isFalta = false;
+        history.forEach(chant => {
+            if (chant === 'ENVIDO') { quieroPoints += 2; }
+            if (chant === 'REAL ENVIDO') { quieroPoints += 3; }
+            if (chant === 'FALTA ENVIDO') isFalta = true;
+        });
+        noQuieroPoints = quieroPoints === 0 ? 1 : quieroPoints;
+        return { quiero: quieroPoints, noQuiero: noQuieroPoints, isFalta: isFalta };
+    },
 
-        if (playerTantos > iaTantos) winner = 'player';
-        else if (iaTantos > playerTantos) winner = 'ia';
-        else winner = main.gameState.isHand;
-        
-        winnerName = winner === 'player' ? main.gameState.playerName : 'TrucoEstrella';
-        
-        // TODO: Calcular puntos correctamente para Falta Envido y cantos acumulados
-        points = CONFIG.PUNTOS_CANTO.envido.quiero;
-        main.baseGameState.scores[winner] += points;
+    resolveNoQuiero: (response) => {
+        const { type, history, caller } = main.gameState.chantState;
+        let points = 0; let reason = 'no querido';
 
-        UI.showPointsPopup('ENVIDO', playerTantos, iaTantos, winnerName);
-        UI.logEvent(`Envido: ${main.gameState.playerName} (${playerTantos}) vs IA (${iaTantos}). Gana <b>${winnerName}</b> ${points} puntos.`, 'system');
-        UI.updateScoreboard(main.baseGameState.scores.player, main.baseGameState.scores.ia, main.baseGameState.targetScore);
+        if (type === 'envido') points = main.calculateChantPoints(history).noQuiero;
+        else if (type === 'truco') points = CONFIG.PUNTOS_CANTO[history[history.length - 1].toLowerCase()].noQuiero;
+        else if (type === 'flor') {
+            points = CONFIG.PUNTOS_CANTO.flor.contraflor.noQuiero;
+            if (response === 'CON FLOR ME ACHICO') reason = 'achique';
+        }
         
-        main.gameState.chantState = { ...main.gameState.chantState, active: false, type: null, level: null };
+        main.awardPoints(caller, points, `por ${type} ${reason}`);
+
+        if (type === 'truco') { main.endHand(); } 
+        else {
+            main.gameState.chantState = { active: false, type: null, level: null, pointsOnTable: main.gameState.chantState.pointsOnTable, history: [] };
+            main.unlockActionsForTurn();
+        }
+    },
+    
+    resolveTrucoQuiero: () => {
+        const level = main.gameState.chantState.history.at(-1);
+        main.gameState.chantState.pointsOnTable = CONFIG.PUNTOS_CANTO[level.toLowerCase()].quiero;
+        main.gameState.chantState.type = 'truco';
+        main.gameState.chantState.level = level;
+        UI.logEvent(`El <b>TRUCO</b> se juega por <b>${main.gameState.chantState.pointsOnTable}</b> puntos.`, 'system');
         main.unlockActionsForTurn();
+    },
+
+    resolveEnvido: () => {
+        const { playerEnvido, iaEnvido, isHand, scores, targetScore, chantState } = main.gameState;
+        let winner;
+        if (playerEnvido > iaEnvido) winner = 'player';
+        else if (iaEnvido > playerEnvido) winner = 'ia';
+        else winner = isHand;
+        
+        const pointData = main.calculateChantPoints(chantState.history);
+        let points = pointData.quiero;
+        if (pointData.isFalta) {
+            const loser = winner === 'player' ? 'ia' : 'player';
+            points = targetScore - scores[loser];
+        }
+
+        UI.showPointsPopup('ENVIDO', playerEnvido, iaEnvido, winner === 'player' ? main.gameState.playerName : 'TrucoEstrella');
+        main.awardPoints(winner, points, 'de envido');
+        
+        main.gameState.chantState = { ...main.gameState.chantState, active: false, type: null, level: null, history: [] };
+        main.unlockActionsForTurn();
+    },
+
+    resolveFlor: () => {
+        const { playerFlor, iaFlor, isHand } = main.gameState;
+        let winner;
+        if (playerFlor.points > iaFlor.points) winner = 'player';
+        else if (iaFlor.points > iaFlor.points) winner = 'ia';
+        else winner = isHand;
+        
+        const points = CONFIG.PUNTOS_CANTO.flor.contraflor.quiero; // Simplificado
+
+        UI.showPointsPopup('FLOR', playerFlor.points, iaFlor.points, winner === 'player' ? main.gameState.playerName : 'TrucoEstrella');
+        main.awardPoints(winner, points, 'de flor');
+        
+        main.gameState.chantState = { ...main.gameState.chantState, active: false, type: null, level: null, history: [] };
+        main.unlockActionsForTurn();
+    },
+
+    awardPoints: (player, points, reason) => {
+        main.baseGameState.scores[player] += points;
+        const playerName = player === 'player' ? main.baseGameState.playerName : 'TrucoEstrella';
+        UI.logEvent(`<b>${playerName}</b> se anota <b>${points}</b> punto(s) ${reason}.`, 'system');
+        UI.updateScoreboard(main.baseGameState.scores.player, main.baseGameState.scores.ia, main.baseGameState.targetScore);
+        main.checkGameOver();
     }
 };
 

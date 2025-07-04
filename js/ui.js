@@ -1,5 +1,4 @@
 const UI = {
-    // Elementos de la UI
     homeScreen: document.getElementById('home-screen'),
     gameScreen: document.getElementById('game-screen'),
     playerNameInput: document.getElementById('player-name'),
@@ -46,7 +45,7 @@ const UI = {
         cardDiv.className = `card ${isPlayerCard ? 'playable' : ''}`;
         cardDiv.dataset.card = card.id;
 
-        const suitSymbols = { 'Oro': '♦', 'Copa': '♥', 'Espada': '♠', 'Basto': '♣' };
+        const suitSymbols = { 'Oro': '💰', 'Copa': '🍷', 'Espada': '⚔️', 'Basto': '🌲' };
         
         const numberTop = document.createElement('span');
         numberTop.className = 'card-number top-left';
@@ -58,7 +57,6 @@ const UI = {
         
         const suitCenter = document.createElement('span');
         suitCenter.className = 'card-suit';
-        suitCenter.style.color = (card.palo === 'Oro' || card.palo === 'Copa') ? '#ef4444' : '#1f2937';
         suitCenter.textContent = suitSymbols[card.palo];
 
         cardDiv.appendChild(numberTop);
@@ -108,30 +106,30 @@ const UI = {
         const { chantState, envidoAvailable, turnOwner, actionsLocked } = gameState;
         let actions = [];
 
-        if (turnOwner === 'player' && !actionsLocked) {
-             if (chantState.type === 'truco') {
-                if (chantState.level === 'TRUCO' && chantState.responder === 'player') actions.push('RETRUCO');
-                if (chantState.level === 'RETRUCO' && chantState.responder === 'player') actions.push('VALE CUATRO');
-            } else if (!chantState.type) {
+        if (turnOwner === 'player' && !actionsLocked && !chantState.active) {
+            if (chantState.type !== 'truco') {
                 actions.push('TRUCO');
+            } else {
+                if (chantState.level === 'TRUCO') actions.push('RETRUCO');
+                if (chantState.level === 'RETRUCO') actions.push('VALE CUATRO');
             }
-    
             if (envidoAvailable) {
                 actions.push('ENVIDO', 'REAL ENVIDO', 'FALTA ENVIDO');
             }
         }
        
         if (chantState.active && chantState.responder === 'player') {
-            actions = ['QUIERO', 'NO QUIERO'];
-            if (chantState.type === 'truco') {
-                 if (chantState.level === 'TRUCO') actions.push('RETRUCO');
-                 if (chantState.level === 'RETRUCO') actions.push('VALE CUATRO');
-            }
-             if (chantState.type === 'envido') {
-                actions.push('ENVIDO', 'REAL ENVIDO', 'FALTA ENVIDO');
-            }
-            if (chantState.type === 'flor' && chantState.level === 'FLOR'){
-                 actions.push('CONTRAFLOR', 'CONTRAFLOR AL RESTO');
+            if (chantState.type === 'flor' && chantState.level === 'FLOR') {
+                 actions.push('CON FLOR ME ACHICO', 'CONTRAFLOR');
+            } else {
+                actions = ['QUIERO', 'NO QUIERO'];
+                if (chantState.type === 'truco') {
+                     if (chantState.level === 'TRUCO') actions.push('RETRUCO');
+                     if (chantState.level === 'RETRUCO') actions.push('VALE CUATRO');
+                }
+                 if (chantState.type === 'envido') {
+                    actions.push('ENVIDO', 'REAL ENVIDO', 'FALTA ENVIDO');
+                }
             }
         }
 
