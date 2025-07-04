@@ -1,143 +1,156 @@
-import { GAME_CONSTANTS } from './config.js';
-import { puedeCantar } from './main.js';
+const UI = {
+    // Elementos de la UI
+    homeScreen: document.getElementById('home-screen'),
+    gameScreen: document.getElementById('game-screen'),
+    playerNameInput: document.getElementById('player-name'),
+    
+    actionsContainer: document.getElementById('actions-container'),
+    iaHandContainer: document.getElementById('ia-hand-container'),
+    tableContainer: document.getElementById('table-container'),
+    playerSlot: document.getElementById('player-slot'),
+    iaSlot: document.getElementById('ia-slot'),
+    playerNameGame: document.getElementById('player-name-game'),
+    playerHandContainer: document.getElementById('player-hand-container'),
 
-export function renderPlayerHand(hand, containerId, enableClick = false, onCardClick = null) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = '';
-    hand.forEach((card, idx) => {
-        const div = document.createElement('div');
-        div.className = `card ${card.palo} ${card.jugada ? 'jugada' : ''}`;
-        div.innerHTML = `
-            <span class="corner top-left">${card.numero}</span>
-            <span class="center">${GAME_CONSTANTS.PALOS_EMOJI[card.palo]}</span>
-            <span class="corner bottom-right">${card.numero}</span>
-        `;
-        if (enableClick && !card.jugada) {
-            div.addEventListener('click', () => onCardClick(idx));
-            div.classList.add('hover:shadow-lg', 'hover:border-yellow-400', 'cursor-pointer');
+    iaChantArea: document.getElementById('ia-chant-area'),
+    playerChantArea: document.getElementById('player-chant-area'),
+    scoreContainer: document.getElementById('score-container'),
+    gameLog: document.getElementById('game-log'),
+
+    // Métodos de la UI
+    initialize: (playerName, startGameCallback) => {
+        document.getElementById('start-vs-ia').addEventListener('click', startGameCallback);
+        document.getElementById('clear-cache').addEventListener('click', () => {
+            localStorage.clear();
+            window.location.reload();
+        });
+        document.getElementById('back-to-menu').addEventListener('click', () => {
+            window.location.reload();
+        });
+
+        const savedName = localStorage.getItem('trucoPlayerName');
+        if (savedName) {
+            UI.playerNameInput.value = savedName;
         }
-        container.appendChild(div);
-    });
-}
+    },
 
-export function renderIAHand(hand, containerId) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = '';
-    hand.forEach(card => {
-        const div = document.createElement('div');
-        div.className = `card bg-gray-300 border-gray-400`;
-        div.innerHTML = `
-            <span class="corner top-left">?</span>
-            <span class="center">🂠</span>
-            <span class="corner bottom-right">?</span>
-        `;
-        container.appendChild(div);
-    });
-}
+    showGameScreen: () => {
+        UI.homeScreen.classList.add('hidden');
+        UI.gameScreen.classList.remove('hidden');
+    },
 
-export function renderMesaRondas(playedCards, playerName) {
-    const mesaRondas = document.getElementById('mesa-rondas');
-    mesaRondas.innerHTML = '';
-    const nombres = ['Primera', 'Segunda', 'Tercera'];
-    for (let ronda = 1; ronda <= 3; ronda++) {
-        const col = document.createElement('div');
-        col.className = 'flex flex-col items-center gap-1';
-        let cartaIA = playedCards.find(pc => pc.jugador === 'TrucoEstrella' && pc.ronda === ronda);
-        let cartaPlayer = playedCards.find(pc => pc.jugador === playerName && pc.ronda === ronda);
-        col.innerHTML = `
-            <div>${cartaIA ? renderCardHTML(cartaIA.carta) : renderEmptyCard()}</div>
-            <div class="mx-2 text-base font-bold text-gray-300">${nombres[ronda-1]}</div>
-            <div>${cartaPlayer ? renderCardHTML(cartaPlayer.carta) : renderEmptyCard()}</div>
-        `;
-        mesaRondas.appendChild(col);
-    }
-}
-
-function renderCardHTML(card) {
-    return `<div class="card ${card.palo} jugada" style="pointer-events:none;">
-        <span class="corner top-left">${card.numero}</span>
-        <span class="center">${GAME_CONSTANTS.PALOS_EMOJI[card.palo]}</span>
-        <span class="corner bottom-right">${card.numero}</span>
-    </div>`;
-}
-function renderEmptyCard() {
-    return `<div class="card bg-gray-200 border-gray-300 jugada" style="pointer-events:none;opacity:0.3;"></div>`;
-}
-
-export function renderMarcador(playerScore, iaScore, puntosMax) {
-    const marcador = document.getElementById('marcador');
-    marcador.innerHTML = `
-        <div class="flex justify-between items-center">
-            <span>Jugador 1: <b>${playerScore}</b></span>
-            <span>TrucoEstrella: <b>${iaScore}</b></span>
-            <span>Puntos: <b>${puntosMax}</b></span>
-        </div>
-        <div class="text-xs text-gray-500 mt-1">Versión: <b>${GAME_CONSTANTS.VERSION}</b></div>
-    `;
-}
-
-export function addMessageToHistory(msg, who = 'system') {
-    const historial = document.getElementById('historial');
-    const div = document.createElement('div');
-    div.className = `historial-${who}`;
-    div.innerHTML = msg;
-    historial.appendChild(div);
-    historial.scrollTop = historial.scrollHeight;
-}
-
-export function renderCantoBotonera(gameState) {
-    const cantosCol = document.getElementById('cantos-col');
-    cantosCol.innerHTML = '';
-
-    // Lista de cantos posibles (sin "Me voy al Mazo" ni "Volver al Menú")
-    const cantosPosibles = ['Truco', 'Envido', 'Real Envido', 'Falta Envido', 'Flor', 'Contra Flor', 'Contra Flor al Resto', 'ReTruco', 'Vale Cuatro'];
-
-    cantosPosibles.forEach(canto => {
-        if (puedeCantar('player', canto)) {
-            const btn = document.createElement('button');
-            btn.className = 'game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-3 rounded text-lg font-bold mb-1';
-            btn.textContent = canto;
-            btn.onclick = () => window.iniciarCanto('player', canto);
-            cantosCol.appendChild(btn);
+    createCardHTML: (card, isPlayerCard = false, isFaceDown = false) => {
+        const cardDiv = document.createElement('div');
+        if (isFaceDown) {
+            cardDiv.className = 'card card-back';
+            return cardDiv;
         }
-    });
 
-    // SIEMPRE agregar "Me voy al Mazo" y "Volver al Menú"
-    ['Me voy al Mazo', 'Volver al Menú'].forEach(canto => {
-        const btn = document.createElement('button');
-        btn.className = 'game-canto-btn bg-yellow-700 hover:bg-yellow-800 py-3 rounded text-lg font-bold mb-1';
-        btn.textContent = canto;
-        btn.onclick = () => {
-            if (canto === 'Me voy al Mazo') {
-                const rival = 'TrucoEstrella';
-                addMessageToHistory(`${gameState.playerName} se fue al mazo. Punto para ${rival}`, 'system');
-                gameState.iaScore += puntosEnDisputa(gameState);
-                renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
-                if (gameState.iaScore >= gameState.puntosMax) {
-                    document.getElementById('modal-fin-partida-content').textContent = `Ganador: TrucoEstrella`;
-                    document.getElementById('modal-fin-partida').classList.remove('hidden');
-                } else {
-                    window.initializeGame();
-                    window.updateCantosUI();
+        cardDiv.className = `card ${isPlayerCard ? 'playable' : ''}`;
+        cardDiv.dataset.card = card.id;
+
+        const suitSymbols = { 'Oro': '♦', 'Copa': '♥', 'Espada': '♠', 'Basto': '♣' };
+        
+        const numberTop = document.createElement('span');
+        numberTop.className = 'card-number top-left';
+        numberTop.textContent = card.numero;
+        
+        const numberBottom = document.createElement('span');
+        numberBottom.className = 'card-number bottom-right';
+        numberBottom.textContent = card.numero;
+        
+        const suitCenter = document.createElement('span');
+        suitCenter.className = 'card-suit';
+        suitCenter.style.color = (card.palo === 'Oro' || card.palo === 'Copa') ? '#ef4444' : '#1f2937';
+        suitCenter.textContent = suitSymbols[card.palo];
+
+        cardDiv.appendChild(numberTop);
+        cardDiv.appendChild(suitCenter);
+        cardDiv.appendChild(numberBottom);
+        
+        return cardDiv;
+    },
+
+    drawHands: (playerHand, iaHand) => {
+        UI.playerHandContainer.innerHTML = '';
+        UI.iaHandContainer.innerHTML = '';
+        UI.playerNameGame.textContent = localStorage.getItem('trucoPlayerName') || 'Jugador';
+
+        playerHand.forEach(card => {
+            const cardElement = UI.createCardHTML(card, true, false);
+            cardElement.addEventListener('click', () => main.playCard(card.id));
+            UI.playerHandContainer.appendChild(cardElement);
+        });
+
+        iaHand.forEach(() => {
+            const cardElement = UI.createCardHTML(null, false, true);
+            UI.iaHandContainer.appendChild(cardElement);
+        });
+    },
+    
+    updateScoreboard: (playerScore, iaScore, targetScore) => {
+        UI.scoreContainer.innerHTML = '';
+        const scoreWrapper = document.createElement('div');
+        scoreWrapper.className = 'flex justify-around w-full';
+
+        const createScoreColumn = (name, score) => {
+            const column = document.createElement('div');
+            column.className = 'flex flex-col items-center';
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'text-xl font-bold';
+            nameDiv.textContent = name;
+            const scoreDiv = document.createElement('div');
+            scoreDiv.className = 'flex flex-wrap w-full justify-center';
+            
+            let remainingScore = score;
+            while(remainingScore > 0) {
+                const pointsInBox = Math.min(remainingScore, 5);
+                const box = document.createElement('div');
+                box.className = 'score-box';
+                for(let i=1; i<=pointsInBox; i++) {
+                    const line = document.createElement('div');
+                    line.className = 'score-line';
+                    if (i === 1) line.classList.add('left');
+                    if (i === 2) line.classList.add('bottom');
+                    if (i === 3) line.classList.add('right');
+                    if (i === 4) line.classList.add('top');
+                    if (i === 5) line.classList.add('diag');
+                    box.appendChild(line);
                 }
-            } else if (canto === 'Volver al Menú') {
-                window.location.reload();
+                scoreDiv.appendChild(box);
+                remainingScore -= pointsInBox;
             }
-        };
-        cantosCol.appendChild(btn);
-    });
-}
+            
+            column.appendChild(nameDiv);
+            column.appendChild(scoreDiv);
+            return column;
+        }
 
-function tieneFlor(mano) {
-    return mano[0].palo === mano[1].palo && mano[1].palo === mano[2].palo;
-}
+        scoreWrapper.appendChild(createScoreColumn(CONFIG.nombresJugadores.jugador, playerScore));
+        scoreWrapper.appendChild(createScoreColumn(CONFIG.nombresJugadores.ia, iaScore));
 
-function puntosEnDisputa(gameState) {
-    if (gameState.cantoPendiente) {
-        const tipo = gameState.cantoPendiente.tipo;
-        if (tipo === 'Truco') return 2;
-        if (tipo === 'ReTruco') return 3;
-        if (tipo === 'Vale Cuatro') return 4;
+        UI.scoreContainer.appendChild(scoreWrapper);
+        // Add divider for 30 point games
+        if (targetScore === 30) {
+            const divider = document.createElement('div');
+            divider.className = 'absolute w-full border-t-2 border-dashed border-gray-400';
+            divider.style.top = '50%';
+            UI.scoreContainer.style.position = 'relative';
+            UI.scoreContainer.appendChild(divider);
+        }
+    },
+
+    logEvent: (message, player) => {
+        const p = document.createElement('p');
+        p.textContent = message;
+        if(player === 'jugador') {
+            p.style.color = '#60a5fa'; // blue-400
+        } else if (player === 'ia') {
+            p.style.color = '#f87171'; // red-400
+        } else {
+             p.style.color = '#a3a3a3'; // neutral-400
+        }
+        UI.gameLog.appendChild(p);
+        UI.gameLog.scrollTop = UI.gameLog.scrollHeight;
     }
-    return 1;
-}
+};

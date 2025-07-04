@@ -1,179 +1,108 @@
-import { GAME_CONSTANTS } from './config.js';
-import { cargarReglasFinMano, esFinDeMano } from './finManoReglas.js';
-import { iaElegirCarta, iaResponderCanto } from './ia.js';
+const main = {
+    deck: [],
+    gameState: {},
 
-// Estado global del juego
-let gameState = {
-    manoPlayerId: 'player',
-    turno: 'player',
-    rondaEmpieza: 'player',
-    rondaActual: 1,
-    rondaGanada: [],
-    playerScore: 0,
-    iaScore: 0,
-    puntosMax: 15,
-    partidaTerminada: false,
-    esperandoRespuesta: false,
-    cantoPendiente: null,
-    playedCards: [],
-    iaHand: [],
-    playerName: 'Jugador 1'
-    // ...otros campos según tu juego...
-};
+    initialize: () => {
+        UI.initialize(main.startGame);
+    },
 
-// Alternar mano y turno inicial
-function alternarMano() {
-    gameState.manoPlayerId = (gameState.manoPlayerId === 'player') ? 'ia' : 'player';
-    gameState.turno = gameState.manoPlayerId;
-    gameState.rondaEmpieza = gameState.manoPlayerId;
-}
+    createDeck: () => {
+        main.deck = [];
+        for (const palo of CONFIG.palos) {
+            for (const numero of CONFIG.numeros) {
+                const cardId = `${numero} de ${palo}`;
+                let valor = CONFIG.valoresCartas[numero];
+                if (CONFIG.valoresCartas[cardId]) {
+                    valor = CONFIG.valoresCartas[cardId];
+                }
+                main.deck.push({ id: cardId, numero, palo, valor });
+            }
+        }
+    },
 
-// Inicializar juego
-function initializeGame() {
-    gameState.turno = gameState.manoPlayerId;
-    gameState.rondaEmpieza = gameState.manoPlayerId;
-    gameState.rondaActual = 1;
-    gameState.rondaGanada = [];
-    gameState.playedCards = [];
-    gameState.cantoPendiente = null;
-    gameState.esperandoRespuesta = false;
-    // ...tu lógica de repartir cartas, etc...
-}
+    shuffleDeck: () => {
+        for (let i = main.deck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [main.deck[i], main.deck[j]] = [main.deck[j], main.deck[i]];
+        }
+    },
+    
+    dealCards: () => {
+        main.gameState.hands.player = main.deck.slice(0, 3);
+        main.gameState.hands.ia = main.deck.slice(3, 6);
+        console.log("Mano Jugador:", main.gameState.hands.player);
+        console.log("Mano IA:", main.gameState.hands.ia);
+    },
 
-// Fin de mano
-function terminarMano() {
-    alternarMano();
-    setTimeout(() => {
-        initializeGame();
-        updateCantosUI();
-    }, 2000);
-}
+    startGame: () => {
+        const playerName = UI.playerNameInput.value || 'Jugador';
+        localStorage.setItem('trucoPlayerName', playerName);
+        
+        const targetScore = document.querySelector('input[name="points"]:checked').value;
+        const withFlor = document.getElementById('with-flor').checked;
 
-// "Me voy al Mazo"
-function handleMeVoyAlMazo() {
-    const ronda = gameState.rondaActual;
-    if (esFinDeMano('Me voy al maso', 'Siempre', ronda)) {
-        terminarMano();
-        return;
-    }
-    let ganador = (gameState.turno === 'player') ? 'TrucoEstrella' : gameState.playerName;
-    if (ganador === gameState.playerName) gameState.playerScore += 1;
-    else gameState.iaScore += 1;
-    addMessageToHistory(`${ganador} suma 1 punto porque el rival se fue al mazo.`, 'system');
-    renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
-    alternarMano();
-    setTimeout(() => {
-        initializeGame();
-        updateCantosUI();
-    }, 2000);
-}
+        main.gameState = {
+            playerName: playerName,
+            targetScore: parseInt(targetScore),
+            withFlor: withFlor,
+            scores: { player: 0, ia: 0 },
+            hands: { player: [], ia: [] },
+            table: { player: [], ia: [] },
+            currentPlayer: 'player',
+            isHand: 'player', // Quien es "mano"
+            round: 1,
+            gameLog: []
+        };
+        
+        UI.showGameScreen();
+        UI.logEvent(`Partida nueva a ${targetScore} puntos.`, 'system');
+        main.startNewHand();
+    },
 
-// Rechazo de canto
-export function rechazarCanto(quien) {
-    let tipo = gameState.cantoPendiente.tipo;
-    let puntos = 1;
-    let ultimo = gameState.cantoPendiente.ultimoQueSubio || gameState.cantoPendiente.quien;
-    let ganador = (ultimo === 'player') ? gameState.playerName : 'TrucoEstrella';
-    if (ganador === gameState.playerName) gameState.playerScore += puntos;
-    else gameState.iaScore += puntos;
-    addMessageToHistory(`¡${ganador} suma ${puntos} punto${puntos > 1 ? 's' : ''} por rechazo!`, 'system');
-    renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
+    startNewHand: () => {
+        main.createDeck();
+        main.shuffleDeck();
+        main.dealCards();
 
-    const ronda = gameState.rondaActual;
-    if (esFinDeMano(tipo, 'No Quiero', ronda)) {
-        terminarMano();
-        return;
-    }
+        UI.drawHands(main.gameState.hands.player, main.gameState.hands.ia);
+        UI.updateScoreboard(main.gameState.scores.player, main.gameState.scores.ia, main.gameState.targetScore);
+        UI.logEvent('--- Nueva Mano ---', 'system');
+        UI.logEvent(`Es mano ${main.gameState.isHand === 'player' ? main.gameState.playerName : 'IA'}.`, 'system');
+    },
 
-    gameState.esperandoRespuesta = false;
-    gameState.quienDebeResponder = null;
-    gameState.cantoPendiente = null;
-    updateCantosUI();
-    if (gameState.turno === 'ia' && !gameState.partidaTerminada) setTimeout(iaTurno, 1200);
-}
-
-// Chequeo de fin de ronda
-function checkFinRonda() {
-    let ganadorMano = determinarGanadorMano();
-    if (ganadorMano) {
-        sumarPuntosMano(ganadorMano);
-        const ronda = gameState.rondaActual;
-        if (esFinDeMano('Se ganan las dos primeras rondas', 'Siempre', ronda)) {
-            terminarMano();
+    playCard: (cardId, isIA = false) => {
+        const hand = isIA ? main.gameState.hands.ia : main.gameState.hands.player;
+        const cardIndex = hand.findIndex(c => c.id === cardId);
+        
+        if (cardIndex === -1) {
+            console.error("La carta no está en la mano.", cardId, hand);
             return;
         }
-    } else if (gameState.rondaGanada.length < 3) {
-        gameState.rondaActual++;
-        let ganador = gameState.rondaGanada[gameState.rondaGanada.length - 1];
-        gameState.turno = ganador === 'parda'
-            ? gameState.rondaEmpieza
-            : (ganador === gameState.playerName ? 'player' : 'ia');
-        if (gameState.turno === 'ia') setTimeout(iaTurno, 1200);
-    }
-    renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
-    updateCantosUI();
-}
 
-// Turno de la IA
-function iaTurno() {
-    if (gameState.turno !== 'ia' || gameState.partidaTerminada || gameState.esperandoRespuesta) return;
-    // ... IA canta si corresponde ...
-    let idx = iaElegirCarta(gameState.iaHand, gameState.playedCards);
-    let carta = gameState.iaHand[idx];
-    carta.jugada = true;
-    gameState.playedCards.push({ jugador: 'TrucoEstrella', carta, ronda: gameState.rondaActual });
-    renderIAHand(gameState.iaHand, 'mesa-ia');
-    renderMesaRondas(gameState.playedCards, gameState.playerName);
-    addMessageToHistory(`TrucoEstrella jugó ${carta.numero} ${carta.palo}`, 'ia');
-    updateCantosUI();
-    gameState.turno = 'player';
-    checkFinRonda();
-}
+        const card = hand.splice(cardIndex, 1)[0];
+        
+        if (isIA) {
+            main.gameState.table.ia.push(card);
+             UI.logEvent(`TrucoEstrella juega: ${card.id}`, 'ia');
+        } else {
+            main.gameState.table.player.push(card);
+            UI.logEvent(`${main.gameState.playerName} juega: ${card.id}`, 'jugador');
+        }
 
-// Función tieneFlor exportada
-export function tieneFlor(mano) {
-    return mano[0].palo === mano[1].palo && mano[1].palo === mano[2].palo;
-}
-
-// Resolver canto (ejemplo)
-function resolverCanto(evento, resultado) {
-    const ronda = gameState.rondaActual;
-    if (esFinDeMano(evento, resultado, ronda)) {
-        terminarMano();
-    }
-    // ...resto de la lógica...
-}
-
-// Calcular Envido exportado
-export function calcularEnvido(mano) {
-    // Ejemplo simple: suma los valores de las cartas del mismo palo, o tu lógica real
-    let palos = {};
-    mano.forEach(carta => {
-        if (!palos[carta.palo]) palos[carta.palo] = [];
-        palos[carta.palo].push(carta.numero > 9 ? 0 : carta.numero);
-    });
-    let max = 0;
-    for (let palo in palos) {
-        if (palos[palo].length >= 2) {
-            let valores = palos[palo].sort((a, b) => b - a);
-            let suma = 20 + valores[0] + valores[1];
-            if (suma > max) max = suma;
-        } else if (palos[palo].length === 1) {
-            if (palos[palo][0] > max) max = palos[palo][0];
+        // Actualizar la UI (redibujar manos y mesa)
+        UI.drawHands(main.gameState.hands.player, main.gameState.hands.ia); // Redibuja las manos
+        // TODO: Dibujar las cartas en la mesa (en player-slot y ia-slot)
+        
+        // TODO: Añadir lógica para determinar ganador de la mano y cambiar de turno
+        // Por ahora, solo pasa el turno a la IA
+        if (!isIA) {
+            main.gameState.currentPlayer = 'ia';
+            IA.makeDecision(main.gameState);
+        } else {
+             main.gameState.currentPlayer = 'player';
         }
     }
-    return max;
-}
+};
 
-// Aquí puedes agregar el resto de tus helpers, lógica de UI, etc.
-
-document.addEventListener('DOMContentLoaded', async () => {
-    // Cargar reglas si es necesario
-    await cargarReglasFinMano();
-    // Botón de inicio
-    document.getElementById('startGameBtn').addEventListener('click', () => {
-        document.getElementById('start-screen').classList.add('hidden');
-        document.getElementById('game-screen').classList.remove('hidden');
-        initializeGame();
-    });
-});
+// Iniciar la aplicación cuando el DOM esté cargado
+document.addEventListener('DOMContentLoaded', main.initialize);
