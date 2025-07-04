@@ -13,7 +13,7 @@ const CONFIG = {
     palos: ['Oro', 'Copa', 'Espada', 'Basto'],
     numeros: ['1', '2', '3', '4', '5', '6', '7', '10', '11', '12'],
     nombresJugadores: {
-        jugador: "VOS", ia: "IA", nosotros: "NOS", ellos: "ELLOS"
+        jugador: "VOS", ia: "IA"
     }
 };
 
@@ -37,7 +37,6 @@ const PUNTOS_CANTO = [
 const REGLAS_CANTO = {
   "PRIMERA": {
     "no_jugo": { "Envido": true, "Real Envido": true, "Falta Envido": true },
-    "jugo": { }
   },
   "CUALQUIER_RONDA": {
       "sin_truco": { "Truco": true },

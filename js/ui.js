@@ -149,7 +149,7 @@ const UI = {
         
         const createScoreColumn = (name, score) => {
             const column = document.createElement('div');
-            column.className = 'flex flex-col items-center';
+            column.className = 'flex flex-col items-center w-1/2';
             const nameDiv = document.createElement('div');
             nameDiv.className = 'text-xl font-bold mb-2';
             nameDiv.textContent = name;
@@ -184,7 +184,11 @@ const UI = {
 
         if (targetScore === 30) {
             const divider = document.createElement('div');
-            divider.className = 'absolute w-full border-t-2 border-dashed border-gray-400 top-1/2 -translate-y-1/2';
+            divider.style.position = 'absolute';
+            divider.style.width = '100%';
+            divider.style.borderTop = '2px dashed #9ca3af';
+            // This needs to be calculated based on the height of 3 score boxes
+            divider.style.top = 'calc(3 * (60px + 10px) + 2rem)'; // 3 boxes height + 3 margins + name height
             UI.scoreContainer.appendChild(divider);
         }
     },

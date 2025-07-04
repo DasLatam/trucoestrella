@@ -120,7 +120,7 @@ const main = {
     },
     
     getAvailableActions: () => {
-        const { rondaNumero, table, chantState, turnOwner, florChanted, withFlor, envidoChantedBy } = main.gameState;
+        const { rondaNumero, table, chantState, turnOwner, withFlor, envidoChantedBy } = main.gameState;
         let available = [];
 
         if (chantState.active && chantState.responder === turnOwner) {
@@ -140,12 +140,15 @@ const main = {
             if (rondaNumero === 1 && !jugo && !withFlor && !envidoChantedBy) {
                 available.push(...Object.keys(REGLAS_CANTO.PRIMERA.no_jugo));
             }
-            if (!chantState.history.includes('Truco')) {
+            const trucoHistory = chantState.history.filter(c => ['Truco', 'ReTruco', 'ValeCuatro'].includes(c));
+            if (trucoHistory.length === 0) {
                 available.push('Truco');
-            } else if (chantState.responder === turnOwner) { // Solo puede subir si le cantaron a él
-                const lastTruco = chantState.history.filter(c => ['Truco', 'ReTruco', 'Vale Cuatro'].includes(c)).at(-1);
+            } else {
+                const lastTruco = trucoHistory.at(-1);
                 const responseKey = lastTruco === 'Truco' ? 'con_truco' : 'con_retruco';
-                if (REGLAS_CANTO.CUALQUIER_RONDA[responseKey]) available.push(...Object.keys(REGLAS_CANTO.CUALQUIER_RONDA[responseKey]));
+                if (REGLAS_CANTO.CUALQUIER_RONDA[responseKey]) {
+                     available.push(...Object.keys(REGLAS_CANTO.CUALQUIER_RONDA[responseKey]));
+                }
             }
         }
         return [...new Set(available)];
@@ -227,17 +230,19 @@ const main = {
 
     endHand: (quitter) => {
         let handWinner;
+        let points = main.gameState.chantState.pointsOnTable;
+
         if (quitter) {
             handWinner = (quitter === 'player') ? 'ia' : 'player';
-            if(main.gameState.chantState.type === 'truco') main.gameState.chantState.pointsOnTable = 1;
+            if(main.gameState.chantState.type !== 'truco') points = 1;
         } else {
             const { player, ia } = main.gameState.roundWins;
             if (player > ia) handWinner = 'player';
             else if (ia > player) handWinner = 'ia';
             else handWinner = main.gameState.isHand;
         }
-        main.awardPoints(handWinner, main.gameState.chantState.pointsOnTable, 'de la mano');
-        if (main.baseGameState.scores[handWinner] < main.baseGameState.targetScore) {
+        main.awardPoints(handWinner, points, 'de la mano');
+        if (!main.checkGameOver()) {
              main.baseGameState.isHand = main.baseGameState.isHand === 'player' ? 'ia' : 'player';
              setTimeout(main.startNewHand, 2000);
         }
@@ -292,13 +297,13 @@ const main = {
     },
 
     resolveChant: async (response, responder) => {
-        const { type, caller, history } = main.gameState.chantState;
+        const { type, caller } = main.gameState.chantState;
         
         UI.logEvent(`${responder === 'player' ? main.gameState.playerName : 'TrucoEstrella'} responde: <b>${response}</b>`, responder);
         UI.showChant(responder, response);
 
         if (response === 'No Quiero' || response === 'Con Flor me Achico') {
-            const chantKey = history.join(',');
+            const chantKey = main.gameState.chantState.history.join(',');
             const pointsData = PUNTOS_CANTO.find(p => p.canto.replace(/ /g, '') === chantKey);
             const points = pointsData ? pointsData.puntos_no_quiero : 1;
             main.awardPoints(caller, points, `por ${type} no querido`);
@@ -351,7 +356,7 @@ const main = {
 
     resolveFlor: () => {
          const { playerFlor, iaFlor, isHand } = main.gameState;
-         let winner = (playerFlor.points > iaFlor.points) ? 'player' : (iaFlor.points > playerFlor.points) ? 'ia' : isHand;
+         let winner = (playerFlor.points > iaFlor.points) ? 'player' : (iaFlor.points > iaFlor.points) ? 'ia' : isHand;
          const points = 6;
          UI.showPointsPopup('FLOR', playerFlor.points, iaFlor.points, winner === 'player' ? main.gameState.playerName : 'TrucoEstrella');
          if(!main.awardPoints(winner, points, 'de flor')) {
