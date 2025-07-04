@@ -12,10 +12,13 @@ const UI = {
     playerChantArea: document.getElementById('player-chant-area'),
     scoreContainer: document.getElementById('score-container'),
     gameLog: document.getElementById('game-log'),
+    chatInput: document.getElementById('chat-input'),
+    chatSend: document.getElementById('chat-send'),
     pointsPopup: document.getElementById('points-popup'),
     popupTitle: document.getElementById('popup-title'),
     popupContent: document.getElementById('popup-content'),
     popupWinner: document.getElementById('popup-winner'),
+    chantTimeout: null,
 
     initialize: (startGameCallback) => {
         document.getElementById('start-vs-ia').addEventListener('click', startGameCallback);
@@ -23,11 +26,23 @@ const UI = {
             localStorage.clear();
             window.location.reload();
         });
-        document.getElementById('back-to-menu').addEventListener('click', () => {
-            window.location.reload();
+        document.getElementById('back-to-menu').addEventListener('click', () => window.location.reload());
+        
+        UI.chatSend.addEventListener('click', UI.sendChatMessage);
+        UI.chatInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') UI.sendChatMessage();
         });
+
         const savedName = localStorage.getItem('trucoPlayerName');
-        if (savedName) { UI.playerNameInput.value = savedName; }
+        if (savedName) UI.playerNameInput.value = savedName;
+    },
+
+    sendChatMessage: () => {
+        const message = UI.chatInput.value.trim();
+        if (message) {
+            UI.logEvent(`${main.gameState.playerName}: ${message}`, 'jugador');
+            UI.chatInput.value = '';
+        }
     },
 
     showGameScreen: () => {
@@ -44,32 +59,26 @@ const UI = {
 
         cardDiv.className = `card ${isPlayerCard ? 'playable' : ''}`;
         cardDiv.dataset.card = card.id;
-
         const suitSymbols = { 'Oro': '💰', 'Copa': '🍷', 'Espada': '⚔️', 'Basto': '🌲' };
         
         const numberTop = document.createElement('span');
         numberTop.className = 'card-number top-left';
         numberTop.textContent = card.numero;
-        
         const numberBottom = document.createElement('span');
         numberBottom.className = 'card-number bottom-right';
         numberBottom.textContent = card.numero;
-        
         const suitCenter = document.createElement('span');
         suitCenter.className = 'card-suit';
         suitCenter.textContent = suitSymbols[card.palo];
 
-        cardDiv.appendChild(numberTop);
-        cardDiv.appendChild(suitCenter);
-        cardDiv.appendChild(numberBottom);
-        
+        cardDiv.appendChild(numberTop); cardDiv.appendChild(suitCenter); cardDiv.appendChild(numberBottom);
         return cardDiv;
     },
     
     drawHands: (playerHand, iaHand) => {
         UI.playerHandContainer.innerHTML = '';
         UI.iaHandContainer.innerHTML = '';
-        UI.playerNameGame.textContent = localStorage.getItem('trucoPlayerName') || 'Jugador';
+        UI.playerNameGame.textContent = localStorage.getItem('trucoPlayerName') || 'Jugador 1';
 
         playerHand.forEach(card => {
             const cardElement = UI.createCardHTML(card, true, false);
@@ -78,7 +87,7 @@ const UI = {
         });
 
         iaHand.forEach(card => {
-            const cardElement = UI.createCardHTML(card, false, false);
+            const cardElement = UI.createCardHTML(card, false, true); // AI cards are face down
             UI.iaHandContainer.appendChild(cardElement);
         });
     },
@@ -121,79 +130,61 @@ const UI = {
     
     showChant: (playerType, text) => {
         const area = playerType === 'player' ? UI.playerChantArea : UI.iaChantArea;
-        area.textContent = text.toUpperCase() + '!';
-        setTimeout(() => { area.textContent = ''; }, 2000);
+        clearTimeout(UI.chantTimeout);
+        area.className = 'h-1/3 flex items-center justify-center text-yellow-400 font-bold p-2 text-3xl uppercase';
+        area.textContent = text + '!';
+        UI.chantTimeout = setTimeout(() => { area.textContent = ''; }, 5000);
     },
     
     showPointsPopup: (title, playerTantos, iaTantos, winnerName) => {
         UI.popupTitle.textContent = title;
-        UI.popupContent.innerHTML = `
-            <p>${main.gameState.playerName}: ${playerTantos} Puntos</p>
-            <p>TrucoEstrella: ${iaTantos} Puntos</p>
-        `;
+        UI.popupContent.innerHTML = `<p>${main.gameState.playerName}: ${playerTantos} Puntos</p><p>TrucoEstrella: ${iaTantos} Puntos</p>`;
         UI.popupWinner.textContent = `Gana ${winnerName}`;
-        
-        UI.pointsPopup.classList.remove('hidden', 'opacity-0');
-        UI.pointsPopup.classList.add('opacity-100');
-
-        setTimeout(() => {
-            UI.pointsPopup.classList.remove('opacity-100');
-            UI.pointsPopup.classList.add('opacity-0');
-            setTimeout(() => UI.pointsPopup.classList.add('hidden'), 300);
-        }, 3000);
+        UI.pointsPopup.classList.remove('hidden');
+        setTimeout(() => UI.pointsPopup.classList.add('hidden'), 3000);
     },
 
     updateScoreboard: (playerScore, iaScore, targetScore) => {
         UI.scoreContainer.innerHTML = '';
-        const scoreWrapper = document.createElement('div');
-        scoreWrapper.className = 'flex justify-around w-full';
-
+        
         const createScoreColumn = (name, score) => {
             const column = document.createElement('div');
             column.className = 'flex flex-col items-center';
             const nameDiv = document.createElement('div');
-            nameDiv.className = 'text-xl font-bold';
+            nameDiv.className = 'text-xl font-bold mb-2';
             nameDiv.textContent = name;
-            const scoreDiv = document.createElement('div');
-            scoreDiv.className = 'flex flex-wrap w-full justify-center';
-            
-            let remainingScore = score;
-            const groupsOfFive = Math.floor(remainingScore / 5);
-            for(let g=0; g < groupsOfFive; g++){
-                const box = document.createElement('div');
-                box.className = 'score-box';
-                for(let i=1; i<=5; i++) {
-                    const line = document.createElement('div'); line.className = 'score-line';
-                    if (i === 1) line.classList.add('left'); if (i === 2) line.classList.add('bottom');
-                    if (i === 3) line.classList.add('right'); if (i === 4) line.classList.add('top');
-                    if (i === 5) line.classList.add('diag');
-                    box.appendChild(line);
-                }
-                scoreDiv.appendChild(box);
-            }
-            remainingScore %= 5;
-            if(remainingScore > 0){
-                const box = document.createElement('div'); box.className = 'score-box';
-                for(let i=1; i<=remainingScore; i++) {
-                    const line = document.createElement('div'); line.className = 'score-line';
-                    if (i === 1) line.classList.add('left'); if (i === 2) line.classList.add('bottom');
-                    if (i === 3) line.classList.add('right'); if (i === 4) line.classList.add('top');
-                    box.appendChild(line);
-                }
-                scoreDiv.appendChild(box);
-            }
-            column.appendChild(nameDiv); column.appendChild(scoreDiv); return column;
-        }
+            column.appendChild(nameDiv);
 
+            for (let s = 1; s <= score; s++) {
+                if ((s - 1) % 5 === 0) {
+                    const box = document.createElement('div');
+                    box.className = 'score-box';
+                    box.dataset.score = Math.floor((s-1)/5);
+                    column.appendChild(box);
+                }
+                const currentBox = column.querySelector(`[data-score="${Math.floor((s-1)/5)}"]`);
+                const line = document.createElement('div');
+                line.className = 'score-line';
+                const pointInBox = s % 5 === 0 ? 5 : s % 5;
+                if (pointInBox === 1) line.classList.add('left');
+                if (pointInBox === 2) line.classList.add('top');
+                if (pointInBox === 3) line.classList.add('right');
+                if (pointInBox === 4) line.classList.add('bottom');
+                if (pointInBox === 5) line.classList.add('diag');
+                currentBox.appendChild(line);
+            }
+            return column;
+        };
+        
+        const scoreWrapper = document.createElement('div');
+        scoreWrapper.className = 'flex justify-around w-full';
         scoreWrapper.appendChild(createScoreColumn(CONFIG.nombresJugadores.jugador, playerScore));
         scoreWrapper.appendChild(createScoreColumn(CONFIG.nombresJugadores.ia, iaScore));
-
         UI.scoreContainer.appendChild(scoreWrapper);
-        if (targetScore === 30 && !UI.scoreContainer.querySelector('.divider')) {
+
+        if (targetScore === 30) {
             const divider = document.createElement('div');
-            divider.className = 'divider absolute w-full border-t-2 border-dashed border-gray-400';
-            divider.style.top = '50%';
-            UI.scoreContainer.style.position = 'relative';
+            divider.className = 'absolute w-full border-t-2 border-dashed border-gray-400 top-1/2 -translate-y-1/2';
             UI.scoreContainer.appendChild(divider);
         }
     },

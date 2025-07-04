@@ -30,6 +30,7 @@
     justify-content: center;
     align-items: center;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    user-select: none;
 }
 .card.playable:hover {
     transform: translateY(-15px);
@@ -83,7 +84,7 @@
 }
 .score-line.diag {
     width: 135%; height: 4px; top: 50%; left: -17.5%;
-    transform: rotate(-45deg);
+    transform: rotate(45deg);
 }
 
 /* Estilo para resaltar la carta ganadora */

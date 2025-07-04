@@ -17,17 +17,15 @@ const CONFIG = {
     }
 };
 
-// --- DATOS INTEGRADOS DE ARCHIVOS JSON ---
-
 const PUNTOS_CANTO = [
   { "canto": "Envido", "puntos_no_quiero": 1, "puntos_ganador": 2 },
   { "canto": "Real Envido", "puntos_no_quiero": 1, "puntos_ganador": 3 },
   { "canto": "Falta Envido", "puntos_no_quiero": 1, "puntos_ganador": "Falta" },
-  { "canto": "Envido, Envido", "puntos_no_quiero": 2, "puntos_ganador": 4 },
-  { "canto": "Envido, Real Envido", "puntos_no_quiero": 2, "puntos_ganador": 5 },
-  { "canto": "Envido, Falta Envido", "puntos_no_quiero": 2, "puntos_ganador": "Falta" },
-  { "canto": "Envido, Envido, Real Envido", "puntos_no_quiero": 4, "puntos_ganador": 7 },
-  { "canto": "Envido, Envido, Falta Envido", "puntos_no_quiero": 4, "puntos_ganador": "Falta" },
+  { "canto": "Envido,Envido", "puntos_no_quiero": 2, "puntos_ganador": 4 },
+  { "canto": "Envido,Real Envido", "puntos_no_quiero": 2, "puntos_ganador": 5 },
+  { "canto": "Envido,Falta Envido", "puntos_no_quiero": 2, "puntos_ganador": "Falta" },
+  { "canto": "Envido,Envido,Real Envido", "puntos_no_quiero": 4, "puntos_ganador": 7 },
+  { "canto": "Envido,Envido,Falta Envido", "puntos_no_quiero": 4, "puntos_ganador": "Falta" },
   { "canto": "Flor", "puntos_no_quiero": null, "puntos_ganador": 3 },
   { "canto": "Contra Flor", "puntos_no_quiero": 4, "puntos_ganador": 6 },
   { "canto": "Contra Flor al Resto", "puntos_no_quiero": 6, "puntos_ganador": "Falta" },
@@ -38,32 +36,19 @@ const PUNTOS_CANTO = [
 
 const REGLAS_CANTO = {
   "PRIMERA": {
-    "no_jugo": { "Envido": true, "Real Envido": true, "Falta Envido": true, "Truco": true },
-    "jugo": { "Truco": true }
+    "no_jugo": { "Envido": true, "Real Envido": true, "Falta Envido": true },
+    "jugo": { }
   },
-  "SEGUNDA": {
-    "cualquiera": { "Truco": true }
-  },
-  "TERCERA": {
-    "cualquiera": { "Truco": true }
-  },
-  "RESPUESTA_TRUCO": {
-      "TRUCO": { "ReTruco": true },
-      "RETRUCO": { "Vale Cuatro": true }
+  "CUALQUIER_RONDA": {
+      "sin_truco": { "Truco": true },
+      "con_truco": { "ReTruco": true },
+      "con_retruco": { "Vale Cuatro": true }
   },
   "RESPUESTA_ENVIDO": {
-      "ENVIDO": { "Envido": true, "Real Envido": true, "Falta Envido": true },
-      "REAL ENVIDO": { "Falta Envido": true }
+      "Envido": { "Envido": true, "Real Envido": true, "Falta Envido": true },
+      "Real Envido": { "Falta Envido": true }
   },
    "RESPUESTA_FLOR": {
-      "FLOR": { "Contra Flor": true, "Contra Flor al Resto": true }
+      "Flor": { "Contra Flor": true }
   }
 };
-
-const CONDICIONES_FIN_MANO = [
-    { "evento": "Me voy al maso" },
-    { "evento": "TRUCO no querido" },
-    { "evento": "Se Juegan las tres rondas" },
-    { "evento": "Se ganan las dos primeras rondas" },
-    { "evento": "Se emparda la primera y gana la segunda ronda" }
-];
