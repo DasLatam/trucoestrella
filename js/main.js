@@ -144,4 +144,25 @@ function resolverCanto(evento, resultado) {
     // ...resto de la lógica...
 }
 
+// Calcular Envido exportado
+export function calcularEnvido(mano) {
+    // Ejemplo simple: suma los valores de las cartas del mismo palo, o tu lógica real
+    let palos = {};
+    mano.forEach(carta => {
+        if (!palos[carta.palo]) palos[carta.palo] = [];
+        palos[carta.palo].push(carta.numero > 9 ? 0 : carta.numero);
+    });
+    let max = 0;
+    for (let palo in palos) {
+        if (palos[palo].length >= 2) {
+            let valores = palos[palo].sort((a, b) => b - a);
+            let suma = 20 + valores[0] + valores[1];
+            if (suma > max) max = suma;
+        } else if (palos[palo].length === 1) {
+            if (palos[palo][0] > max) max = palos[palo][0];
+        }
+    }
+    return max;
+}
+
 // Aquí puedes agregar el resto de tus helpers, lógica de UI, etc.
