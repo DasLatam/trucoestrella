@@ -1,25 +1,21 @@
 const UI = {
-    // Elementos de la UI
+    // Elementos de la UI (sin cambios)
     homeScreen: document.getElementById('home-screen'),
     gameScreen: document.getElementById('game-screen'),
     playerNameInput: document.getElementById('player-name'),
-    
     actionsContainer: document.getElementById('actions-container'),
     iaHandContainer: document.getElementById('ia-hand-container'),
-    tableContainer: document.getElementById('table-container'),
     playerSlot: document.getElementById('player-slot'),
     iaSlot: document.getElementById('ia-slot'),
     playerNameGame: document.getElementById('player-name-game'),
     playerHandContainer: document.getElementById('player-hand-container'),
-
     iaChantArea: document.getElementById('ia-chant-area'),
     playerChantArea: document.getElementById('player-chant-area'),
     scoreContainer: document.getElementById('score-container'),
     gameLog: document.getElementById('game-log'),
 
-    // Métodos de la UI
-    initialize: (playerName, startGameCallback) => {
-        document.getElementById('start-vs-ia').addEventListener('click', startGameCallback);
+    initialize: () => {
+        document.getElementById('start-vs-ia').addEventListener('click', main.startGame);
         document.getElementById('clear-cache').addEventListener('click', () => {
             localStorage.clear();
             window.location.reload();
@@ -27,11 +23,8 @@ const UI = {
         document.getElementById('back-to-menu').addEventListener('click', () => {
             window.location.reload();
         });
-
         const savedName = localStorage.getItem('trucoPlayerName');
-        if (savedName) {
-            UI.playerNameInput.value = savedName;
-        }
+        if (savedName) { UI.playerNameInput.value = savedName; }
     },
 
     showGameScreen: () => {
@@ -71,6 +64,8 @@ const UI = {
         return cardDiv;
     },
 
+    // --- NUEVAS Y MODIFICADAS FUNCIONES ---
+
     drawHands: (playerHand, iaHand) => {
         UI.playerHandContainer.innerHTML = '';
         UI.iaHandContainer.innerHTML = '';
@@ -82,12 +77,51 @@ const UI = {
             UI.playerHandContainer.appendChild(cardElement);
         });
 
-        iaHand.forEach(() => {
-            const cardElement = UI.createCardHTML(null, false, true);
+        iaHand.forEach(card => {
+            // Mostramos las cartas de la IA boca arriba para debug, cambiar a true para jugar normal
+            const cardElement = UI.createCardHTML(card, false, false);
             UI.iaHandContainer.appendChild(cardElement);
         });
     },
+
+    drawCardOnTable: (card, playerType) => {
+        const slot = playerType === 'player' ? UI.playerSlot : UI.iaSlot;
+        slot.innerHTML = '';
+        slot.appendChild(UI.createCardHTML(card, false, false));
+    },
+
+    clearTable: () => {
+        UI.playerSlot.innerHTML = '';
+        UI.iaSlot.innerHTML = '';
+        UI.playerSlot.classList.remove('winner-glow');
+        UI.iaSlot.classList.remove('winner-glow');
+    },
+
+    highlightWinner: (playerType) => {
+        const slot = playerType === 'player' ? UI.playerSlot : UI.iaSlot;
+        slot.classList.add('winner-glow');
+    },
     
+    updateActionButtons: (availableActions) => {
+        UI.actionsContainer.innerHTML = '';
+        availableActions.forEach(action => {
+            const button = document.createElement('button');
+            button.textContent = action;
+            button.className = 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full';
+            if (action === 'IR AL MAZO') {
+                button.className = 'bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full mt-auto';
+            }
+            button.addEventListener('click', () => main.handlePlayerAction(action));
+            UI.actionsContainer.appendChild(button);
+        });
+    },
+    
+    showChant: (playerType, text) => {
+        const area = playerType === 'player' ? UI.playerChantArea : UI.iaChantArea;
+        area.textContent = text.toUpperCase() + '!';
+        setTimeout(() => { area.textContent = ''; }, 2000); // El canto desaparece después de 2 segundos
+    },
+
     updateScoreboard: (playerScore, iaScore, targetScore) => {
         UI.scoreContainer.innerHTML = '';
         const scoreWrapper = document.createElement('div');
@@ -103,11 +137,11 @@ const UI = {
             scoreDiv.className = 'flex flex-wrap w-full justify-center';
             
             let remainingScore = score;
-            while(remainingScore > 0) {
-                const pointsInBox = Math.min(remainingScore, 5);
+            const groupsOfFive = Math.floor(remainingScore / 5);
+            for(let g=0; g < groupsOfFive; g++){
                 const box = document.createElement('div');
                 box.className = 'score-box';
-                for(let i=1; i<=pointsInBox; i++) {
+                for(let i=1; i<=5; i++) {
                     const line = document.createElement('div');
                     line.className = 'score-line';
                     if (i === 1) line.classList.add('left');
@@ -118,7 +152,21 @@ const UI = {
                     box.appendChild(line);
                 }
                 scoreDiv.appendChild(box);
-                remainingScore -= pointsInBox;
+            }
+            remainingScore %= 5;
+            if(remainingScore > 0){
+                const box = document.createElement('div');
+                box.className = 'score-box';
+                for(let i=1; i<=remainingScore; i++) {
+                    const line = document.createElement('div');
+                    line.className = 'score-line';
+                    if (i === 1) line.classList.add('left');
+                    if (i === 2) line.classList.add('bottom');
+                    if (i === 3) line.classList.add('right');
+                    if (i === 4) line.classList.add('top');
+                    box.appendChild(line);
+                }
+                scoreDiv.appendChild(box);
             }
             
             column.appendChild(nameDiv);
@@ -130,10 +178,9 @@ const UI = {
         scoreWrapper.appendChild(createScoreColumn(CONFIG.nombresJugadores.ia, iaScore));
 
         UI.scoreContainer.appendChild(scoreWrapper);
-        // Add divider for 30 point games
-        if (targetScore === 30) {
+        if (targetScore === 30 && !UI.scoreContainer.querySelector('.divider')) {
             const divider = document.createElement('div');
-            divider.className = 'absolute w-full border-t-2 border-dashed border-gray-400';
+            divider.className = 'divider absolute w-full border-t-2 border-dashed border-gray-400';
             divider.style.top = '50%';
             UI.scoreContainer.style.position = 'relative';
             UI.scoreContainer.appendChild(divider);
@@ -142,15 +189,32 @@ const UI = {
 
     logEvent: (message, player) => {
         const p = document.createElement('p');
-        p.textContent = message;
+        p.innerHTML = message; // Usar innerHTML para poder añadir colores
         if(player === 'jugador') {
-            p.style.color = '#60a5fa'; // blue-400
+            p.style.color = '#60a5fa';
         } else if (player === 'ia') {
-            p.style.color = '#f87171'; // red-400
+            p.style.color = '#f87171';
         } else {
-             p.style.color = '#a3a3a3'; // neutral-400
+             p.style.color = '#a3a3a3';
         }
         UI.gameLog.appendChild(p);
         UI.gameLog.scrollTop = UI.gameLog.scrollHeight;
+    },
+
+    showEndGameModal: (winner) => {
+        const modal = document.createElement('div');
+        modal.className = 'absolute inset-0 bg-black bg-opacity-75 flex flex-col justify-center items-center';
+        const message = document.createElement('h2');
+        message.className = 'text-5xl font-bold mb-8';
+        message.textContent = winner === 'player' ? '¡GANASTE!' : 'PERDISTE';
+
+        const revanchaButton = document.createElement('button');
+        revanchaButton.textContent = 'Revancha';
+        revanchaButton.className = 'bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded-lg text-2xl';
+        revanchaButton.onclick = () => main.startGame();
+
+        modal.appendChild(message);
+        modal.appendChild(revanchaButton);
+        document.body.appendChild(modal);
     }
 };
