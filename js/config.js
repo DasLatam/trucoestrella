@@ -15,7 +15,6 @@ const CONFIG = {
     nombresJugadores: {
         jugador: "VOS", ia: "IA", nosotros: "NOS", ellos: "ELLOS"
     },
-    // --- NUEVA SECCIÓN ---
     PUNTOS_CANTO: {
         truco: { noQuiero: 1, quiero: 2 },
         retruco: { noQuiero: 2, quiero: 3 },
@@ -38,4 +37,11 @@ const REGLAS_CANTO = {
     }
 };
 
-// ... (resto del archivo sin cambios) ...
+const REGLAS_FIN_MANO = {
+    condiciones: [
+        "Ambos jugadores jugaron 3 cartas",
+        "Un jugador se fue al mazo",
+        "Se cantó y se quiso un envido/flor y se terminaron los puntos en juego",
+        "Un jugador gana las dos primeras manos"
+    ]
+};
