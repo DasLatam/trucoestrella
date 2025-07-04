@@ -1,104 +1,217 @@
-const IA = {
-    makeDecision: (gameState) => {
-        console.log("IA está pensando...", gameState);
+const main = {
+    // ... (deck sin cambios) ...
+    gameState: {},
+    baseGameState: {}, // Guardará el estado entre manos
+
+    // ... (initialize, createDeck, shuffleDeck, dealCards sin cambios) ...
+
+    startGame: () => {
+        // ... (lógica de limpieza y configuración inicial sin cambios) ...
+        main.baseGameState = {
+            playerName: playerName,
+            targetScore: parseInt(targetScore),
+            withFlor: withFlor,
+            scores: { player: 0, ia: 0 },
+            isHand: 'player'
+        };
+        // ... (resto sin cambios) ...
+    },
+
+    startNewHand: () => {
+        UI.clearTable();
+        main.createDeck();
+        main.shuffleDeck();
         
-        setTimeout(() => {
-            // TODO: Lógica para decidir si cantar algo antes de jugar
+        main.gameState = {
+            ...main.baseGameState,
+            hands: { player: [], ia: [] },
+            table: { player: [], ia: [] },
+            roundWins: { player: 0, ia: 0 },
+            currentRound: 1,
+            turnOwner: main.baseGameState.isHand,
+            actionsLocked: true, // Bloquear acciones hasta chequear la flor
+            envidoAvailable: true,
+            florChanted: { player: false, ia: false },
+            chantState: {
+                active: false, type: null, level: null, caller: null, responder: null,
+                pointsOnTable: 1, history: []
+            }
+        };
+        
+        main.dealCards();
+        main.gameState.playerEnvido = IA.calculateEnvido(main.gameState.hands.player);
+        main.gameState.iaEnvido = IA.calculateEnvido(main.gameState.hands.ia);
+        main.gameState.playerFlor = IA.calculateFlor(main.gameState.hands.player);
+        main.gameState.iaFlor = IA.calculateFlor(main.gameState.hands.ia);
+        
+        UI.drawHands(main.gameState.hands.player, main.gameState.hands.ia);
+        UI.updateScoreboard(main.gameState.scores.player, main.gameState.scores.ia, main.gameState.targetScore);
+        UI.logEvent('--- Nueva Mano ---', 'system');
+        UI.logEvent(`Es mano <b>${main.gameState.isHand === 'player' ? main.gameState.playerName : 'IA'}</b>.`, 'system');
+
+        // La lógica de la flor tiene prioridad
+        setTimeout(main.handleFlor, 500);
+    },
+
+    handleFlor: () => {
+        const { withFlor, playerFlor, iaFlor } = main.gameState;
+        if (!withFlor) {
+            main.unlockActionsForTurn();
+            return;
+        }
+
+        const playerHasFlor = playerFlor.hasFlor;
+        const iaHasFlor = iaFlor.hasFlor;
+
+        if (!playerHasFlor && !iaHasFlor) {
+            main.unlockActionsForTurn();
+            return;
+        }
+        
+        main.gameState.envidoAvailable = false; // Flor anula envido
+        
+        if (playerHasFlor && !iaHasFlor) {
+            UI.logEvent(`${main.gameState.playerName} canta: <b>FLOR</b>`, 'jugador');
+            main.baseGameState.scores.player += CONFIG.PUNTOS_CANTO.flor.normal;
+            UI.logEvent(`<b>${main.gameState.playerName}</b> se anota 3 puntos de flor.`, 'system');
+            main.gameState.florChanted.player = true;
+            main.unlockActionsForTurn();
+        } else if (!playerHasFlor && iaHasFlor) {
+            UI.logEvent(`TrucoEstrella canta: <b>FLOR</b>`, 'ia');
+            main.baseGameState.scores.ia += CONFIG.PUNTOS_CANTO.flor.normal;
+            UI.logEvent(`<b>TrucoEstrella</b> se anota 3 puntos de flor.`, 'system');
+            main.gameState.florChanted.ia = true;
+            main.unlockActionsForTurn();
+        } else { // Ambos tienen flor
+             UI.logEvent('Ambos jugadores tienen flor. Se define por canto.', 'system');
+             // TODO: Implementar la secuencia de "CONTRAFLOR"
+             main.unlockActionsForTurn(); // Simplificado por ahora
+        }
+        UI.updateScoreboard(main.baseGameState.scores.player, main.baseGameState.scores.ia, main.baseGameState.targetScore);
+    },
+
+    unlockActionsForTurn: () => {
+        main.gameState.actionsLocked = false;
+        UI.updateActionButtons(main.gameState);
+        if (main.gameState.turnOwner === 'ia') {
+            main.gameState.actionsLocked = true;
+            const action = IA.decideAction(main.gameState);
+            if (action.type === 'chant') main.handleIaAction(action.value);
+            else if (action.type === 'play') main.playCard(action.value, true);
+        }
+    },
+    
+    // ... (playCard, evaluateRound, startNextRound, endHand, checkGameOver sin cambios mayores) ...
+    // La mayor refactorización está en el manejo de acciones/cantos
+
+    handlePlayerAction: (action) => {
+        if (main.gameState.actionsLocked) return;
+
+        // Respuestas a un canto
+        if (['QUIERO', 'NO QUIERO'].includes(action)) {
+            main.resolveChant(action);
+            return;
+        }
+        
+        // Iniciar o escalar un canto
+        main.initiateChant(action, 'player');
+    },
+    
+    handleIaAction: (action) => {
+        main.initiateChant(action, 'ia');
+    },
+
+    initiateChant: async (action, caller) => {
+        main.gameState.actionsLocked = true;
+        const responder = caller === 'player' ? 'ia' : 'player';
+        
+        UI.logEvent(`${caller === 'player' ? main.gameState.playerName : 'TrucoEstrella'} canta: <b>${action}</b>`, caller);
+        UI.showChant(caller, action);
+        
+        const chantType = ['TRUCO', 'RETRUCO', 'VALE CUATRO'].includes(action) ? 'truco' : 'envido';
+        main.gameState.chantState = {
+            active: true, type: chantType, level: action, caller: caller, responder: responder, history: [action]
+        };
+
+        if (chantType === 'envido') main.gameState.envidoAvailable = false;
+        
+        UI.updateActionButtons(main.gameState);
+
+        if (responder === 'ia') {
+            const response = await IA.respondToChant(main.gameState.chantState, main.gameState);
+            main.resolveChant(response);
+        } else { // Turno del jugador para responder
+             main.gameState.actionsLocked = false;
+             UI.updateActionButtons(main.gameState);
+        }
+    },
+
+    resolveChant: async (response) => {
+        const { type, level, caller, responder } = main.gameState.chantState;
+        const callerName = caller === 'player' ? main.gameState.playerName : 'TrucoEstrella';
+        
+        UI.logEvent(`${responder === 'player' ? main.gameState.playerName : 'TrucoEstrella'} responde: <b>${response}</b>`, responder);
+        UI.showChant(responder, response);
+
+        if (response === 'NO QUIERO') {
+            let points = 0;
+            if (type === 'truco') points = CONFIG.PUNTOS_CANTO[level.toLowerCase()].noQuiero;
+            if (type === 'envido') points = CONFIG.PUNTOS_CANTO[level.toLowerCase()].noQuiero;
             
-            const cardToPlay = IA.decideCardToPlay(gameState);
-            if (cardToPlay) {
-                main.playCard(cardToPlay.id, true);
+            main.baseGameState.scores[caller] += points;
+            UI.logEvent(`<b>${callerName}</b> gana <b>${points}</b> punto(s).`, 'system');
+            UI.updateScoreboard(main.baseGameState.scores.player, main.baseGameState.scores.ia, main.baseGameState.targetScore);
+
+            if (type === 'truco') {
+                main.endHand(); // El truco no querido termina la mano
+            } else { // El envido no querido no termina la mano
+                main.gameState.chantState = { active: false, type: null, level: null, pointsOnTable: 1 };
+                main.unlockActionsForTurn();
             }
 
-        }, 1200);
+        } else if (response === 'QUIERO') {
+            main.gameState.chantState.active = false;
+            
+            if (type === 'truco') {
+                main.gameState.chantState.pointsOnTable = CONFIG.PUNTOS_CANTO[level.toLowerCase()].quiero;
+                UI.logEvent(`El <b>TRUCO</b> se juega por <b>${main.gameState.chantState.pointsOnTable}</b> puntos.`, 'system');
+                main.unlockActionsForTurn();
+            } else { // Es envido
+                main.resolveEnvido();
+            }
+
+        } else { // El jugador escaló el canto
+            await main.initiateChant(response, responder);
+        }
     },
 
-    decideCardToPlay: (gameState) => {
-        const { hands, table, roundWins, isHand, currentRound } = gameState;
-        const myHand = [...hands.ia].sort((a, b) => a.valor - b.valor); // Ordenar de menor a mayor
+    resolveEnvido: () => {
+        const playerTantos = main.gameState.playerEnvido;
+        const iaTantos = main.gameState.iaEnvido;
+        let winner, winnerName, points;
 
-        // Si perdí la primera, tengo que ganar la segunda con mi mejor carta.
-        if (roundWins.player === 1 && currentRound === 2) {
-            return myHand[myHand.length - 1]; // Jugar la más alta
+        if (playerTantos > iaTantos) {
+            winner = 'player';
+        } else if (iaTantos > playerTantos) {
+            winner = 'ia';
+        } else { // Empate, gana el mano
+            winner = main.gameState.isHand;
         }
         
-        // Si gané la primera, juego la más baja para guardar las buenas.
-        if (roundWins.ia === 1 && currentRound === 2) {
-            return myHand[0]; // Jugar la más baja
-        }
+        winnerName = winner === 'player' ? main.gameState.playerName : 'TrucoEstrella';
 
-        // Si la primera fue parda, juego la más alta para asegurar la segunda.
-        if (currentRound === 2 && table.player.length === 1 && table.ia.length === 1 && table.player[0].valor === table.ia[0].valor) {
-            return myHand[myHand.length - 1];
-        }
+        // TODO: Calcular puntos correctamente para Falta Envido etc.
+        points = CONFIG.PUNTOS_CANTO.envido.quiero; // Simplificado por ahora
+        main.baseGameState.scores[winner] += points;
 
-        // Si es la tercera mano y vamos 1-1, juego mi mejor carta restante.
-        if (currentRound === 3 && roundWins.player === 1 && roundWins.ia === 1) {
-            return myHand[myHand.length - 1];
-        }
-
-        // Comportamiento por defecto:
-        // Si soy mano, empiezo con mi carta más alta para marcar la cancha.
-        if (currentRound === 1 && isHand === 'ia') {
-            return myHand[myHand.length - 1];
-        }
-        // Si no soy mano, juego una carta para ganar la ronda si puedo.
-        if (table.player.length === currentRound) {
-            const playerCard = table.player[currentRound-1];
-            // Buscar la carta más baja que gane
-            const winningCard = myHand.find(c => c.valor > playerCard.valor);
-            if (winningCard) return winningCard;
-        }
-
-        // Si nada de lo anterior aplica, o si no puedo ganar, juego la más baja.
-        return myHand[0];
-    },
-
-    respondToChant: (chantType, gameState) => {
-        UI.logEvent('TrucoEstrella está pensando...', 'ia');
-        return new Promise(resolve => {
-            setTimeout(() => {
-                let response = 'NO QUIERO';
-                if (chantType === 'TRUCO') {
-                    // Lógica de respuesta al Truco
-                    const goodCards = gameState.hands.ia.filter(c => c.valor >= 10).length;
-                    const bestCardValue = Math.max(...gameState.hands.ia.map(c => c.valor));
-                    
-                    if (goodCards >= 2 || bestCardValue >= 12) {
-                        response = 'QUIERO';
-                    } else if (goodCards === 1 && gameState.scores.ia < gameState.scores.player) {
-                        // Si voy perdiendo y tengo al menos una buena, me arriesgo
-                        response = 'QUIERO';
-                    }
-                }
-                // TODO: Lógica para Envido
-                resolve(response);
-            }, 1500);
-        });
-    },
-
-    calculateEnvido: (hand) => {
-        let envidoValues = {};
-        hand.forEach(card => {
-            if (!envidoValues[card.palo]) {
-                envidoValues[card.palo] = [];
-            }
-            let value = card.numero >= 10 ? 0 : parseInt(card.numero);
-            envidoValues[card.palo].push(value);
-        });
-
-        let maxEnvido = 0;
-        for (const palo in envidoValues) {
-            if (envidoValues[palo].length >= 2) {
-                envidoValues[palo].sort((a, b) => b - a);
-                maxEnvido = Math.max(maxEnvido, 20 + envidoValues[palo][0] + envidoValues[palo][1]);
-            }
-        }
-
-        if (maxEnvido === 0) {
-            let singleCardValues = hand.map(c => c.numero >=10 ? 0 : parseInt(c.numero));
-            maxEnvido = Math.max(...singleCardValues);
-        }
-        return maxEnvido;
+        UI.showPointsPopup('ENVIDO', playerTantos, iaTantos, winnerName);
+        UI.logEvent(`Envido: ${main.gameState.playerName} (${playerTantos}) vs IA (${iaTantos}). Gana <b>${winnerName}</b> ${points} puntos.`, 'system');
+        UI.updateScoreboard(main.baseGameState.scores.player, main.baseGameState.scores.ia, main.baseGameState.targetScore);
+        
+        // El juego continúa
+        main.gameState.chantState = { active: false, type: null, level: null, pointsOnTable: 1 };
+        main.unlockActionsForTurn();
     }
 };
+
+document.addEventListener('DOMContentLoaded', main.initialize);
