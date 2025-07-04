@@ -137,15 +137,6 @@ export function tieneFlor(mano) {
     return mano[0].palo === mano[1].palo && mano[1].palo === mano[2].palo;
 }
 
-// resolver canto
-function resolverCanto(evento, resultado) {
-    const ronda = gameState.rondaActual; // o como determines la ronda
-    if (esFinDeMano(evento, resultado, ronda)) {
-        terminarMano();
-    }
-    // ...resto de la lógica...
-}
-
 // --- NUEVO: Manejo de puntos reglamentario ---
 
 function calcularPuntosEnvido(historial, querido = true) {
@@ -281,28 +272,6 @@ export function aceptarCanto(quien) {
         gameState.quienDebeResponder = null;
         updateCantosUI();
     }
-}
-
-// Chequeo de fin de ronda
-function checkFinRonda() {
-    let ganadorMano = determinarGanadorMano();
-    if (ganadorMano) {
-        sumarPuntosMano(ganadorMano);
-        const ronda = gameState.rondaActual;
-        if (esFinDeMano('Se ganan las dos primeras rondas', 'Siempre', ronda)) {
-            terminarMano();
-            return;
-        }
-    } else if (gameState.rondaGanada.length < 3) {
-        gameState.rondaActual++;
-        let ganador = gameState.rondaGanada[gameState.rondaGanada.length - 1];
-        gameState.turno = ganador === 'parda'
-            ? gameState.rondaEmpieza
-            : (ganador === gameState.playerName ? 'player' : 'ia');
-        if (gameState.turno === 'ia') setTimeout(iaTurno, 1200);
-    }
-    renderMarcador(gameState.playerScore, gameState.iaScore, gameState.puntosMax);
-    updateCantosUI();
 }
 
 // Ejemplo de iaTurno
