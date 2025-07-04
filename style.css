@@ -85,7 +85,6 @@
     width: 135%; height: 4px; top: 50%; left: -17.5%;
     transform: rotate(-45deg);
 }
-/* ... (estilos anteriores) ... */
 
 /* Estilo para resaltar la carta ganadora */
 .winner-glow {

@@ -50,11 +50,11 @@
     <div id="game-screen" class="hidden w-full h-screen p-2 bg-green-800 bg-cover" style="background-image: url('https://www.transparenttextures.com/patterns/felt.png');">
         <div class="grid grid-cols-12 gap-2 h-full">
 
-            <div id="actions-container" class="col-span-1 bg-black bg-opacity-30 rounded-lg p-2 flex flex-col justify-center items-center space-y-2">
+            <div id="actions-container" class="col-span-1 bg-black bg-opacity-30 rounded-lg p-2 flex flex-col justify-start items-center">
                 </div>
 
             <div class="col-span-7 flex flex-col justify-between items-center p-4">
-                <div id="ia-hand-container" class="w-full flex justify-center items-center h-1/3">
+                <div id="ia-hand-container" class="w-full flex justify-center items-center h-1/3 space-x-2">
                     </div>
                 <div id="table-container" class="w-full flex-grow flex justify-center items-center space-x-8">
                     <div id="player-slot" class="w-28 h-40"></div>
@@ -62,7 +62,7 @@
                 </div>
                 <div class="w-full h-1/3">
                     <div id="player-name-game" class="text-center text-xl font-bold mb-2"></div>
-                    <div id="player-hand-container" class="w-full flex justify-center items-center">
+                    <div id="player-hand-container" class="w-full flex justify-center items-center space-x-2">
                         </div>
                 </div>
             </div>
@@ -83,17 +83,18 @@
             </div>
         </div>
     </div>
-
-<div id="points-popup" class="hidden absolute inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center transition-opacity duration-300">
+    
+    <div id="points-popup" class="hidden absolute inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center transition-opacity duration-300">
         <div class="bg-gray-800 p-8 rounded-lg text-center shadow-xl border-2 border-yellow-500">
             <h3 id="popup-title" class="text-3xl font-bold text-yellow-400 mb-4"></h3>
             <div id="popup-content" class="text-2xl space-y-2"></div>
             <p id="popup-winner" class="text-xl font-bold mt-4"></p>
         </div>
     </div>
+
     <script src="js/config.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/ia.js"></script>
     <script src="js/main.js"></script>
-    </body>
+</body>
 </html>
