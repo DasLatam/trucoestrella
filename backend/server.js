@@ -1,13 +1,25 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+const cors = require('cors'); // <--- ¡Importa el paquete CORS para Express!
 
 const app = express();
 const server = http.createServer(app);
+
+// Configuración de CORS para Express (Middleware)
+// Esto es útil para cualquier petición HTTP que no sea de Socket.IO directamente,
+// pero puede complementar la configuración de Socket.IO.
+// Solo permitimos el origen de tu frontend
+app.use(cors({
+  origin: 'https://trucoestrella.vercel.app', // <--- ¡Cambia esto por la URL EXACTA de tu frontend en Vercel!
+  methods: ['GET', 'POST']
+}));
+
 const io = socketIo(server, {
   cors: {
-    origin: "*", // Permite conexiones desde cualquier origen por ahora (¡ajustar en producción!)
-    methods: ["GET", "POST"]
+    origin: 'https://trucoestrella.vercel.app', // <--- ¡Cambia esto también por la URL EXACTA de tu frontend!
+    methods: ["GET", "POST"],
+    credentials: true // Necesario si manejas cookies o headers de autorización
   }
 });
 
@@ -28,15 +40,13 @@ io.on('connection', (socket) => {
 });
 
 // Vercel necesita que exportes la instancia del servidor para que pueda iniciarla.
-// NO uses server.listen() directamente en el archivo principal si lo despliegas como Serverless Function.
-// En Vercel, si tienes una ruta como '/', es común manejarla aquí para que la función se "active".
+// La ruta raíz para Vercel Serverless Functions
 app.get('/', (req, res) => {
   res.send('Servidor de Truco Estrella funcionando!');
 });
 
-// Exporta la instancia del servidor HTTP.
-// Esto es lo que Vercel usará para levantar tu servidor.
-module.exports = app; // <--- CAMBIO CLAVE
+// Exporta la instancia de la aplicación Express para Vercel
+module.exports = app; // <--- Sigue siendo CLAVE
 
 // Si estás ejecutando localmente, aún puedes usar listen:
 if (process.env.NODE_ENV !== 'production') {
