@@ -13,10 +13,7 @@ const io = socketIo(server, {
 
 const PORT = process.env.PORT || 4000;
 
-app.get('/', (req, res) => {
-  res.send('Servidor de Truco Estrella funcionando!');
-});
-
+// Lógica de Socket.IO
 io.on('connection', (socket) => {
   console.log(`Nuevo jugador conectado: ${socket.id}`);
 
@@ -30,7 +27,20 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Servidor de Truco Estrella escuchando en el puerto ${PORT}`);
+// Vercel necesita que exportes la instancia del servidor para que pueda iniciarla.
+// NO uses server.listen() directamente en el archivo principal si lo despliegas como Serverless Function.
+// En Vercel, si tienes una ruta como '/', es común manejarla aquí para que la función se "active".
+app.get('/', (req, res) => {
+  res.send('Servidor de Truco Estrella funcionando!');
 });
 
+// Exporta la instancia del servidor HTTP.
+// Esto es lo que Vercel usará para levantar tu servidor.
+module.exports = app; // <--- CAMBIO CLAVE
+
+// Si estás ejecutando localmente, aún puedes usar listen:
+if (process.env.NODE_ENV !== 'production') {
+  server.listen(PORT, () => {
+    console.log(`Servidor de Truco Estrella escuchando en el puerto ${PORT}`);
+  });
+}

@@ -4,7 +4,7 @@ import './App.css';
 
 // *** Define la URL de tu backend aquí ***
 // Por ahora, usamos localhost. ¡Luego la cambiaremos a la de tu servidor desplegado!
-const SOCKET_SERVER_URL = 'https://trucoestrella.vercel.app/'; // Asegúrate de que coincida con el puerto de tu backend
+const SOCKET_SERVER_URL = 'https://trucoestrella-backend.vercel.app'; // Asegúrate de que coincida con el puerto de tu backend
 
 function App() {
   const [playerName, setPlayerName] = useState('Jugador 1');
