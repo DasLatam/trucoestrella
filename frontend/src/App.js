@@ -1,25 +1,65 @@
-import React, { useState } from 'react';
-import './App.css'; // Asegúrate de crear este archivo para los estilos
+import React, { useState, useEffect } from 'react'; // Importa useEffect también
+import io from 'socket.io-client'; // Importa socket.io-client
+import './App.css';
+
+// *** Define la URL de tu backend aquí ***
+// Por ahora, usamos localhost. ¡Luego la cambiaremos a la de tu servidor desplegado!
+const SOCKET_SERVER_URL = 'http://https://trucoestrella.vercel.app/'; // Asegúrate de que coincida con el puerto de tu backend
 
 function App() {
   const [playerName, setPlayerName] = useState('Jugador 1');
   const [pointsToWin, setPointsToWin] = useState('30');
-  const [gameMode, setGameMode] = useState('1v1'); // '1v1', '2v2', '3v3'
-  const [opponentType, setOpponentType] = useState('users'); // 'ai', 'users'
+  const [gameMode, setGameMode] = useState('1v1');
+  const [opponentType, setOpponentType] = useState('users');
   const [privateKey, setPrivateKey] = useState('');
+  const [socket, setSocket] = useState(null); // Estado para guardar la conexión del socket
+
+  // Efecto para inicializar la conexión de Socket.IO
+  useEffect(() => {
+    const newSocket = io(SOCKET_SERVER_URL);
+    setSocket(newSocket);
+
+    // Escuchar eventos del servidor (para depuración inicial)
+    newSocket.on('connect', () => {
+      console.log('Conectado al servidor de Socket.IO');
+    });
+
+    newSocket.on('gameJoined', (data) => {
+      console.log('Mensaje del servidor (gameJoined):', data);
+      alert(data.message); // Muestra el mensaje de bienvenida del servidor
+      // Aquí podríamos navegar a la sala de espera
+    });
+
+    newSocket.on('disconnect', () => {
+      console.log('Desconectado del servidor de Socket.IO');
+    });
+
+    // Limpiar la conexión cuando el componente se desmonte
+    return () => newSocket.disconnect();
+  }, []); // Se ejecuta solo una vez al montar el componente
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Aquí es donde enviaríamos esta información al backend para unirse o crear la sala
-    console.log({
-      playerName,
-      pointsToWin,
-      gameMode,
-      opponentType,
-      privateKey,
-    });
-    alert('Simulando ingreso a sala de espera...');
-    // Luego, navegaríamos a la sala de espera
+    if (socket) {
+      // Emitir el evento 'joinGame' al servidor con los datos del formulario
+      socket.emit('joinGame', {
+        playerName,
+        pointsToWin: parseInt(pointsToWin), // Convertir a número
+        gameMode,
+        opponentType,
+        privateKey: opponentType === 'users' ? privateKey : null, // Solo enviar si es 'users'
+      });
+      console.log('Enviando datos al servidor:', {
+        playerName,
+        pointsToWin,
+        gameMode,
+        opponentType,
+        privateKey,
+      });
+    } else {
+      console.error('Socket no está conectado.');
+      alert('Error: No se pudo conectar al servidor. Intenta de nuevo más tarde.');
+    }
   };
 
   return (
