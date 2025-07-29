@@ -7,6 +7,7 @@ function GameLobby({ socket }) {
   const [gameMode, setGameMode] = useState('1v1');
   const [opponentType, setOpponentType] = useState('users');
   const [privateKey, setPrivateKey] = useState('');
+  const [playWithFlor, setPlayWithFlor] = useState('no'); // Nuevo estado para "Flor"
 
   const [availableRooms, setAvailableRooms] = useState([]);
   const [currentRoom, setCurrentRoom] = useState(null);
@@ -51,8 +52,7 @@ function GameLobby({ socket }) {
       alert(`Error al unirse: ${error.message}`);
       setCurrentRoom(null); // Si hubo un error, no estamos en ninguna sala
       setIsLoading(false);
-      // Limpiar los logs de la sala si hubo un error al unirse a una sala específica
-      setChatLog([]); 
+      setChatLog([]); // Limpiar log de sala si hubo un error al unirse/crear
       addPublicLogMessage(`[Error] ${error.message}`); // Agrega el error al chat público
     });
 
@@ -94,7 +94,7 @@ function GameLobby({ socket }) {
       socket.off('publicChatMessage');
       if (intervalId) clearInterval(intervalId);
     };
-  }, [socket, currentRoom]);
+  }, [socket, currentRoom]); // currentRoom como dependencia para re-evaluar el polling
 
   // useEffect para hacer scroll automático en el chat de sala
   useEffect(() => {
@@ -115,7 +115,7 @@ function GameLobby({ socket }) {
   const addRoomLogMessage = (message) => {
     setChatLog(prevLog => {
       const newLog = [...prevLog, `${new Date().toLocaleTimeString('es-AR')} - ${message}`];
-      return newLog.slice(-50);
+      return newLog.slice(-50); // Mantener solo los últimos 50 mensajes
     });
   };
 
@@ -123,7 +123,7 @@ function GameLobby({ socket }) {
   const addPublicLogMessage = (message) => {
     setPublicChatLog(prevLog => {
       const newLog = [...prevLog, `${new Date().toLocaleTimeString('es-AR')} - ${message}`];
-      return newLog.slice(-50);
+      return newLog.slice(-50); // Mantener solo los últimos 50 mensajes
     });
   };
 
@@ -156,11 +156,12 @@ function GameLobby({ socket }) {
         gameMode,
         opponentType,
         privateKey: opponentType === 'users' ? privateKey : null,
+        playWithFlor: playWithFlor === 'si', // Enviar como booleano
       });
     }
   };
 
-  const handleJoinRoomFromList = (roomData, keyRequired) => {
+  const handleJoinRoomFromList = (roomData) => { // Eliminado 'keyRequired' ya que roomData.privateKey lo indica
     if (socket) {
       let key = null;
       if (roomData.privateKey) { // Usamos roomData.privateKey directamente para determinar si pide clave
@@ -180,6 +181,7 @@ function GameLobby({ socket }) {
         gameMode: roomData.gameMode,    // Usar el modo de la sala
         opponentType: roomData.opponentType, // El tipo de oponente de la sala existente
         privateKey: key || roomData.id, // Usamos el ID o la clave ingresada
+        playWithFlor: roomData.playWithFlor, // Usar la opción de Flor de la sala
       });
     }
   };
@@ -209,11 +211,12 @@ function GameLobby({ socket }) {
 
   // Vista de "Mi Sala" (cuando el jugador está dentro de una sala específica)
   if (currentRoom && (currentRoom.status === 'waiting' || currentRoom.opponentType === 'ai' || currentRoom.status === 'playing')) {
-    // Generar link solo si la sala es de usuarios y está esperando
-    const showShareLink = currentRoom.status === 'waiting' && currentRoom.opponentType === 'users' && currentRoom.id;
+    // Generar link solo si la sala es de usuarios y está esperando, O si es IA esperando compañeros
+    const showShareLink = (currentRoom.status === 'waiting' && currentRoom.opponentType === 'users' && currentRoom.id) ||
+                         (currentRoom.status === 'waiting' && currentRoom.opponentType === 'ai' && currentRoom.humanPlayersNeeded > 1);
     const linkCompartir = showShareLink ? `https://trucoestrella.vercel.app/?room=${currentRoom.id}${currentRoom.privateKey ? `&key=${currentRoom.privateKey}` : ''}` : '';
 
-    // Determinar participantes mostrados para IA
+    // Determinar participantes mostrados para IA vs PvP
     const displayCurrentPlayers = currentRoom.opponentType === 'ai' ? currentRoom.currentHumanPlayers : currentRoom.currentPlayers;
     const displayMaxPlayers = currentRoom.opponentType === 'ai' ? currentRoom.humanPlayersNeeded : currentRoom.maxPlayers;
 
@@ -231,20 +234,22 @@ function GameLobby({ socket }) {
                 )}
                 
                 <p>Hola **{playerName}**!</p>
+                <p>Puntos para ganar: **{currentRoom.pointsToWin}** - Se juega con Flor: **{currentRoom.playWithFlor ? 'Sí' : 'No'}**</p>
+
 
                 {currentRoom.opponentType === 'ai' ? (
                     currentRoom.status === 'playing' ? (
-                        <p>Partida **{currentRoom.gameMode}** a **{currentRoom.pointsToWin}** puntos contra la IA Truco Estrella ha comenzado!</p>
+                        <p>Partida **{currentRoom.gameMode}** contra la IA Truco Estrella ha comenzado!</p>
                     ) : (
                         <>
-                            <p>Has creado una partida **{currentRoom.gameMode}** a **{currentRoom.pointsToWin}** puntos contra la IA Truco Estrella.</p>
+                            <p>Has creado una partida **{currentRoom.gameMode}** contra la IA Truco Estrella.</p>
                             <p>Participantes en tu equipo: **{displayCurrentPlayers}** de **{displayMaxPlayers}**</p>
-                            <p>Esperando compañeros para tu equipo...</p>
+                            {displayCurrentPlayers < displayMaxPlayers && <p>Esperando compañeros para tu equipo...</p>}
                         </>
                     )
                 ) : ( // Lógica para partidas PvP (users)
                     <>
-                        <p>Has creado esta partida **{currentRoom.gameMode}** a **{currentRoom.pointsToWin}** puntos.</p>
+                        <p>Has creado esta partida **{currentRoom.gameMode}**.</p>
                         <p>Participantes: **{displayCurrentPlayers}** de **{displayMaxPlayers}**</p>
                         
                         {currentRoom.players.length > 0 && (
@@ -271,7 +276,8 @@ function GameLobby({ socket }) {
                     </>
                 )}
                 
-                {currentRoom.status === 'waiting' && currentRoom.opponentType !== 'ai' && (
+                {/* Botón de Abandonar Sala: visible si está en estado 'waiting' (PvP o IA esperando) */}
+                {currentRoom.status === 'waiting' && (
                      <button onClick={handleLeaveRoom} className="leave-button">Abandonar Sala</button>
                 )}
                 {currentRoom.status === 'playing' && <p className="game-started-message">¡La partida ha comenzado!</p>}
@@ -315,7 +321,7 @@ function GameLobby({ socket }) {
               {availableRooms.map((room) => (
                 <div key={room.id} className="room-item">
                   <p>
-                    Creador: **{room.creatorName}** - Modo: **{room.gameMode}** - Puntos: **{room.pointsToWin}**
+                    Creador: **{room.creatorName}** - Modo: **{room.gameMode}** - Puntos: **{room.pointsToWin}** - Flor: **{room.playWithFlor ? 'Sí' : 'No'}**
                   </p>
                   <p>
                     Participantes: **{room.currentPlayers}** de **{room.maxPlayers}** {room.privateKey && '(Privada)'}
@@ -323,7 +329,7 @@ function GameLobby({ socket }) {
                   {room.timeRemaining > 0 && (
                     <p className="time-remaining">Tiempo restante: {Math.ceil(room.timeRemaining / 60000)} min</p>
                   )}
-                  <button onClick={() => handleJoinRoomFromList(room, room.privateKey)}>
+                  <button onClick={() => handleJoinRoomFromList(room)}>
                     Unirme
                   </button>
                 </div>
@@ -351,10 +357,18 @@ function GameLobby({ socket }) {
               </select>
             </label>
             <label>
+              Se juega con Flor:
+              <select value={playWithFlor} onChange={(e) => setPlayWithFlor(e.target.value)}>
+                <option value="no">NO</option>
+                <option value="si">SI</option>
+              </select>
+            </label>
+            <label>
               Modo de juego:
               <select value={gameMode} onChange={(e) => setGameMode(e.target.value)}>
                 <option value="1v1">Uno contra uno</option>
                 <option value="2v2">Dos contra dos</option>
+                <option value="3v3">Tres contra tres</option> {/* Nueva opción */}
               </select>
             </label>
             <label>

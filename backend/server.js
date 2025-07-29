@@ -9,14 +9,14 @@ const app = express();
 const server = http.createServer(app);
 
 app.use(cors({
-  origin: 'https://trucoestrella.vercel.app',
+  origin: 'https://trucoestrella.vercel.app', // Asegúrate de que esta URL sea la de tu frontend
   methods: ['GET', 'POST'],
   credentials: true
 }));
 
 const io = socketIo(server, {
   cors: {
-    origin: 'https://trucoestrella.vercel.app',
+    origin: 'https://trucoestrella.vercel.app', // Asegúrate de que esta URL sea la de tu frontend
     methods: ["GET", "POST"],
     credentials: true
   },
@@ -32,12 +32,12 @@ const db = new Low(file, { rooms: {} }); // Inicializa con estructura por defect
 async function initializeDb() {
   await db.read();
   console.log('LowDB inicializado.');
-  cleanupOldRooms();
+  cleanupOldRooms(); // Limpiar salas antiguas al iniciar el servidor
 }
 
 initializeDb();
 
-const MAX_WAITING_TIME_MS = 30 * 60 * 1000;
+const MAX_WAITING_TIME_MS = 30 * 60 * 1000; // 30 minutos
 
 async function cleanupOldRooms() {
   await db.read();
@@ -106,7 +106,7 @@ io.on('connection', (socket) => {
 
   socket.on('joinGame', async (data) => {
     await db.read();
-    const { playerName, pointsToWin, gameMode, opponentType, privateKey } = data;
+    const { playerName, pointsToWin, gameMode, opponentType, privateKey, playWithFlor } = data; // Agregado playWithFlor
 
     // VALIDACIÓN CRÍTICA: Impedir que un jugador se una a múltiples salas
     if (socket.currentRoomId && db.data.rooms[socket.currentRoomId]) {
@@ -115,16 +115,17 @@ io.on('connection', (socket) => {
         return;
     }
 
-    let roomId = privateKey;
+    let roomId = privateKey; // Si se intenta unir por clave, se usa como roomId inicial
     let room;
 
     const humanPlayersNeeded = getHumanPlayersNeeded(gameMode);
-    const totalSlots = (opponentType === 'ai' && gameMode === '1v1') ? 2 : (humanPlayersNeeded * 2); // Slots totales para mostrar en UI
+    // Para PvP, maxPlayers es el doble de humanPlayersNeeded (2 equipos)
+    const maxPlayersPvP = humanPlayersNeeded * 2; 
 
     // Lógica para partidas contra IA
     if (opponentType === 'ai') {
       roomId = generateRoomId();
-      while (db.data.rooms[roomId]) { roomId = generateRoomId(); }
+      while (db.data.rooms[roomId]) { roomId = generateRoomId(); } // Asegurar ID único
       room = {
         id: roomId,
         creatorId: socket.id,
@@ -134,18 +135,20 @@ io.on('connection', (socket) => {
         pointsToWin,
         gameMode,
         opponentType,
-        privateKey: null,
+        privateKey: null, // Las salas de IA no tienen clave privada para unirse
         status: (gameMode === '1v1') ? 'playing' : 'waiting', // 1v1 IA inicia inmediatamente, otros modos esperan compañeros
         createdAt: Date.now(),
+        playWithFlor: playWithFlor, // Guardar opción de Flor
       };
       db.data.rooms[roomId] = room;
       await db.write();
       socket.join(roomId);
       socket.currentRoomId = roomId; // Asignar la sala al socket
+
       console.log(`[Sala IA] ${playerName} creó la sala ${roomId} contra IA. Esperando humanos: ${room.humanPlayersNeeded - room.currentHumanPlayers}`);
       
       // Emitir el evento correcto según el estado de la sala
-      if (room.status === 'playing') {
+      if (room.status === 'playing') { // Partida 1v1 IA
         io.to(socket.id).emit('gameStarted', {
           roomId: room.id,
           players: room.players, // Lista de jugadores humanos
@@ -153,13 +156,14 @@ io.on('connection', (socket) => {
           pointsToWin: room.pointsToWin,
           gameMode: room.gameMode,
           opponentType: room.opponentType,
-          totalSlots: totalSlots, // Slots totales (humanos + IA) para la UI
+          playWithFlor: room.playWithFlor,
+          // No se necesita totalSlots aquí, ya que el juego inició
         });
       } else { // Si la IA 2v2 o 3v3 espera compañeros
         io.to(socket.id).emit('roomUpdate', {
             roomId: room.id,
             currentPlayers: room.currentHumanPlayers, // Muestra jugadores humanos actuales
-            maxPlayers: room.humanPlayersNeeded, // Muestra jugadores humanos necesarios
+            maxPlayers: room.humanPlayersNeeded, // Muestra jugadores humanos necesarios para el equipo
             status: room.status,
             players: room.players, // Lista de jugadores humanos
             message: `Has creado la sala ${roomId} contra la IA. Esperando ${room.humanPlayersNeeded - room.currentHumanPlayers} compañeros...`,
@@ -167,7 +171,7 @@ io.on('connection', (socket) => {
             gameMode: room.gameMode,
             opponentType: room.opponentType,
             privateKey: room.privateKey,
-            totalSlots: totalSlots, // Slots totales para la UI
+            playWithFlor: room.playWithFlor,
         });
       }
       return;
@@ -192,6 +196,12 @@ io.on('connection', (socket) => {
         console.log(`[Sala ${roomId}] Intento de unión fallido: clave incorrecta.`);
         return;
       }
+      // Verificar que el modo de juego y puntos coincidan (para evitar unirse a una sala con settings diferentes)
+      if (room.gameMode !== gameMode || room.pointsToWin !== pointsToWin || room.playWithFlor !== playWithFlor) {
+        io.to(socket.id).emit('joinError', { message: 'Los ajustes de la sala no coinciden (modo de juego, puntos o flor).' });
+        console.log(`[Sala ${roomId}] Intento de unión fallido: ajustes de sala no coinciden.`);
+        return;
+      }
 
       room.players.push({ id: socket.id, name: playerName });
       room.currentPlayers++;
@@ -211,6 +221,7 @@ io.on('connection', (socket) => {
         gameMode: room.gameMode,
         opponentType: room.opponentType,
         privateKey: room.privateKey,
+        playWithFlor: room.playWithFlor,
       });
 
       if (room.currentPlayers === room.maxPlayers) {
@@ -225,19 +236,20 @@ io.on('connection', (socket) => {
           pointsToWin: room.pointsToWin,
           gameMode: room.gameMode,
           opponentType: room.opponentType,
+          playWithFlor: room.playWithFlor,
         });
       }
 
     } else { // Lógica para crear una nueva sala (PvP)
       roomId = generateRoomId();
-      while (db.data.rooms[roomId]) {
+      while (db.data.rooms[roomId]) { // Asegurar ID único
         roomId = generateRoomId();
       }
       room = {
         id: roomId,
         creatorId: socket.id,
         players: [{ id: socket.id, name: playerName }],
-        maxPlayers: totalSlots, // Total de slots para PvP
+        maxPlayers: maxPlayersPvP, // Total de slots para PvP
         currentPlayers: 1,
         pointsToWin,
         gameMode,
@@ -245,6 +257,7 @@ io.on('connection', (socket) => {
         privateKey: privateKey || null,
         status: 'waiting',
         createdAt: Date.now(),
+        playWithFlor: playWithFlor, // Guardar opción de Flor
       };
       db.data.rooms[roomId] = room;
       await db.write();
@@ -263,6 +276,7 @@ io.on('connection', (socket) => {
         gameMode: room.gameMode,
         opponentType: room.opponentType,
         privateKey: room.privateKey,
+        playWithFlor: room.playWithFlor,
       });
 
       room.timeout = setTimeout(async () => {
@@ -283,7 +297,7 @@ io.on('connection', (socket) => {
         }
       }, MAX_WAITING_TIME_MS);
     }
-    io.emit('availableRooms', getAvailableRooms());
+    io.emit('availableRooms', getAvailableRooms()); // Actualizar la lista de salas disponibles para todos
   });
 
   socket.on('leaveRoom', async () => {
@@ -294,14 +308,23 @@ io.on('connection', (socket) => {
       // Solo si el jugador realmente está en la lista de players de la sala
       if (room.players.some(p => p.id === socket.id)) {
         room.players = room.players.filter(p => p.id !== socket.id);
-        room.currentPlayers--;
         
         socket.leave(roomId);
         delete socket.currentRoomId; // Limpiar la sala del socket al abandonarla
 
-        console.log(`[Sala ${roomId}] Jugador ${socket.id} abandonó. Restantes: ${room.currentPlayers}`);
+        // Ajustar currentPlayers para PvP o currentHumanPlayers para IA
+        if (room.opponentType === 'users') {
+          room.currentPlayers--;
+        } else { // opponentType === 'ai'
+          room.currentHumanPlayers--;
+        }
 
-        if (room.currentPlayers === 0) {
+        console.log(`[Sala ${roomId}] Jugador ${socket.id} abandonó. Restantes: ${room.opponentType === 'users' ? room.currentPlayers : room.currentHumanPlayers}`);
+
+        // Lógica para eliminar sala si no quedan jugadores humanos
+        const remainingPlayersCount = room.opponentType === 'users' ? room.currentPlayers : room.currentHumanPlayers;
+
+        if (remainingPlayersCount === 0) {
           console.log(`[Sala ${roomId}] Sala vacía. Eliminando.`);
           clearTimeout(room.timeout);
           delete db.data.rooms[roomId];
@@ -310,8 +333,8 @@ io.on('connection', (socket) => {
           io.to(roomId).emit('chatMessage', { senderName: 'Sistema', text: message });
           io.to(roomId).emit('roomUpdate', {
             roomId: room.id,
-            currentPlayers: room.currentPlayers,
-            maxPlayers: room.maxPlayers,
+            currentPlayers: room.opponentType === 'users' ? room.currentPlayers : room.currentHumanPlayers,
+            maxPlayers: room.opponentType === 'users' ? room.maxPlayers : room.humanPlayersNeeded,
             status: room.status,
             players: room.players,
             message: message,
@@ -319,9 +342,11 @@ io.on('connection', (socket) => {
             gameMode: room.gameMode,
             opponentType: room.opponentType,
             privateKey: room.privateKey,
+            playWithFlor: room.playWithFlor,
           });
-          if (room.status === 'playing' && room.currentPlayers < room.maxPlayers) {
-            room.status = 'waiting';
+          // Si la partida estaba en juego y ahora faltan jugadores, pausarla
+          if (room.status === 'playing' && remainingPlayersCount < (room.opponentType === 'users' ? room.maxPlayers : room.humanPlayersNeeded)) {
+            room.status = 'waiting'; // Volver a estado de espera
             io.to(roomId).emit('gamePaused', { message: 'La partida se pausó, esperando más jugadores.' });
           }
         }
@@ -349,14 +374,22 @@ io.on('connection', (socket) => {
       // Solo si el jugador realmente está en la lista de players de la sala
       if (room.players.some(p => p.id === socket.id)) {
         room.players = room.players.filter(p => p.id !== socket.id);
-        room.currentPlayers--;
         
-        // No llamamos socket.leave() aquí porque el socket ya se está desconectando.
+        // Ajustar currentPlayers para PvP o currentHumanPlayers para IA
+        if (room.opponentType === 'users') {
+          room.currentPlayers--;
+        } else { // opponentType === 'ai'
+          room.currentHumanPlayers--;
+        }
+        
         delete socket.currentRoomId; // Limpiar la sala del socket al desconectarse
 
-        console.log(`[Sala ${roomId}] Jugador ${socket.id} desconectado. Restantes: ${room.currentPlayers}`);
+        console.log(`[Sala ${roomId}] Jugador ${socket.id} desconectado. Restantes: ${room.opponentType === 'users' ? room.currentPlayers : room.currentHumanPlayers}`);
 
-        if (room.currentPlayers === 0) {
+        // Lógica para eliminar sala si no quedan jugadores humanos
+        const remainingPlayersCount = room.opponentType === 'users' ? room.currentPlayers : room.currentHumanPlayers;
+
+        if (remainingPlayersCount === 0) {
           console.log(`[Sala ${roomId}] Sala vacía por desconexión. Eliminando.`);
           clearTimeout(room.timeout);
           delete db.data.rooms[roomId];
@@ -365,8 +398,8 @@ io.on('connection', (socket) => {
           io.to(roomId).emit('chatMessage', { senderName: 'Sistema', text: message });
           io.to(roomId).emit('roomUpdate', {
             roomId: room.id,
-            currentPlayers: room.currentPlayers,
-            maxPlayers: room.maxPlayers,
+            currentPlayers: room.opponentType === 'users' ? room.currentPlayers : room.currentHumanPlayers,
+            maxPlayers: room.opponentType === 'users' ? room.maxPlayers : room.humanPlayersNeeded,
             status: room.status,
             players: room.players,
             message: message,
@@ -374,9 +407,11 @@ io.on('connection', (socket) => {
             gameMode: room.gameMode,
             opponentType: room.opponentType,
             privateKey: room.privateKey,
+            playWithFlor: room.playWithFlor,
           });
-          if (room.status === 'playing' && room.currentPlayers < room.maxPlayers) {
-            room.status = 'waiting';
+          // Si la partida estaba en juego y ahora faltan jugadores, pausarla
+          if (room.status === 'playing' && remainingPlayersCount < (room.opponentType === 'users' ? room.maxPlayers : room.humanPlayersNeeded)) {
+            room.status = 'waiting'; // Volver a estado de espera
             io.to(roomId).emit('gamePaused', { message: 'La partida se pausó por desconexión.' });
           }
         }
@@ -421,7 +456,7 @@ io.on('connection', (socket) => {
 
 
   function getAvailableRooms() {
-    db.read();
+    db.read(); // Asegurarse de leer la última data
     return Object.values(db.data.rooms).filter(room =>
       room.status === 'waiting' && room.opponentType === 'users' // Solo PvP listadas y en espera
     ).map(room => ({
