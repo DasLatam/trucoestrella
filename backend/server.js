@@ -27,7 +27,7 @@ const io = socketIo(server, {
 const PORT = process.env.PORT || 4000;
 
 const file = new JSONFile('db.json');
-const db = new Low(file, { rooms: {} });
+const db = new Low(file, { rooms: {} }); // Inicializa con estructura por defecto
 
 async function initializeDb() {
   await db.read();
@@ -46,6 +46,14 @@ async function cleanupOldRooms() {
     const room = db.data.rooms[roomId];
     if (room.status === 'waiting' && (now - room.createdAt > MAX_WAITING_TIME_MS)) {
       console.log(`[Sala ${roomId}] Eliminada por inactividad al iniciar servidor.`);
+      // Enviar un mensaje de roomAbandoned a todos los sockets de la sala si es posible
+      io.to(roomId).emit('roomAbandoned', { message: 'La sala ha sido eliminada por inactividad.' });
+      // Desconectar a los jugadores de la sala si están conectados
+      const socketsInRoom = await io.in(roomId).allSockets();
+      socketsInRoom.forEach(sId => {
+          const s = io.sockets.sockets.get(sId);
+          if (s) delete s.currentRoomId; // Limpiar referencia de sala
+      });
       delete db.data.rooms[roomId];
     }
   }
@@ -61,20 +69,36 @@ function generateRoomId() {
   return id;
 }
 
+// Función auxiliar para calcular jugadores necesarios para el equipo humano
+function getHumanPlayersNeeded(gameMode) {
+  switch (gameMode) {
+    case '1v1': return 1; // 1 jugador humano
+    case '2v2': return 2; // 2 jugadores humanos por equipo
+    case '3v3': return 3; // 3 jugadores humanos por equipo
+    default: return 1;
+  }
+}
+
 io.on('connection', (socket) => {
   console.log(`Nuevo jugador conectado: ${socket.id}`);
 
-  // CAMBIO CLAVE: Manejar si el jugador ya está en una sala
+  // Reconexión: Si el socket se reconecta y ya estaba en una sala
   if (socket.currentRoomId) {
-    // Si se reconecta y ya estaba en una sala, re-unirlo o informarle
     const existingRoom = db.data.rooms[socket.currentRoomId];
     if (existingRoom && existingRoom.players.some(p => p.id === socket.id)) {
       socket.join(socket.currentRoomId);
       console.log(`Jugador ${socket.id} reconectado a sala ${socket.currentRoomId}.`);
       io.to(socket.id).emit('roomUpdate', existingRoom); // Envía el estado actual de la sala
+      io.emit('availableRooms', getAvailableRooms()); // Actualiza lista por si cambió su estado
     } else {
-      delete socket.currentRoomId; // Si la sala ya no existe, limpiar la referencia
+      delete socket.currentRoomId; // Limpiar si la sala no existe
+      io.to(socket.id).emit('roomAbandoned', { message: 'Tu sala anterior ya no existe o fue eliminada.' });
     }
+  } else {
+    // Si es una conexión nueva sin sala previa, enviar las salas disponibles
+    db.read().then(() => {
+      socket.emit('availableRooms', getAvailableRooms());
+    });
   }
 
 
@@ -82,7 +106,7 @@ io.on('connection', (socket) => {
     await db.read();
     const { playerName, pointsToWin, gameMode, opponentType, privateKey } = data;
 
-    // AHORA: Verificar si el socket ya está en una sala
+    // VALIDACIÓN CRÍTICA: Impedir que un jugador se una a múltiples salas
     if (socket.currentRoomId && db.data.rooms[socket.currentRoomId]) {
         io.to(socket.id).emit('joinError', { message: 'Ya estás en una partida. ¡Abandona la actual para unirte a otra!' });
         console.log(`Jugador ${playerName} (${socket.id}) intentó unirse/crear, pero ya está en ${socket.currentRoomId}`);
@@ -92,14 +116,10 @@ io.on('connection', (socket) => {
     let roomId = privateKey;
     let room;
 
-    let maxPlayers = 0;
-    switch (gameMode) {
-      case '1v1': maxPlayers = 2; break;
-      case '2v2': maxPlayers = 4; break;
-      case '3v3': maxPlayers = 6; break;
-      default: maxPlayers = 2;
-    }
+    const humanTeamSize = getHumanPlayersNeeded(gameMode); // Jugadores humanos necesarios por equipo
+    const totalPlayers = (opponentType === 'ai' && gameMode === '1v1') ? 2 : (humanTeamSize * 2); // Total slots
 
+    // Lógica para partidas contra IA
     if (opponentType === 'ai') {
       roomId = generateRoomId();
       while (db.data.rooms[roomId]) { roomId = generateRoomId(); }
@@ -107,33 +127,59 @@ io.on('connection', (socket) => {
         id: roomId,
         creatorId: socket.id,
         players: [{ id: socket.id, name: playerName }],
-        maxPlayers: maxPlayers,
-        currentPlayers: 1,
+        // maxPlayers: totalPlayers, // Estos son los slots totales de la partida
+        humanPlayersNeeded: humanTeamSize, // Cuántos jugadores humanos hacen falta para el equipo humano
+        currentHumanPlayers: 1, // El jugador que creó la sala
         pointsToWin,
         gameMode,
         opponentType,
         privateKey: null,
-        status: 'playing',
+        status: (gameMode === '1v1') ? 'playing' : 'waiting', // 1v1 IA inicia, otros esperan
         createdAt: Date.now(),
       };
       db.data.rooms[roomId] = room;
       await db.write();
       socket.join(roomId);
-      socket.currentRoomId = roomId; // Asignar la sala al socket
-      console.log(`[Sala IA] ${playerName} creó y se unió a la sala ${roomId} contra IA.`);
-      io.to(socket.id).emit('gameStarted', {
-        roomId: room.id,
-        players: room.players,
-        message: '¡Partida contra la IA iniciada!',
-        pointsToWin: room.pointsToWin,
-        gameMode: room.gameMode,
-        opponentType: room.opponentType,
-      });
+      socket.currentRoomId = roomId;
+      console.log(`[Sala IA] ${playerName} creó la sala ${roomId} contra IA. Esperando humanos: ${room.humanPlayersNeeded - room.currentHumanPlayers}`);
+      
+      // Emitir roomUpdate o gameStarted según el modo
+      if (room.status === 'playing') {
+        io.to(socket.id).emit('gameStarted', {
+          roomId: room.id,
+          players: room.players, // Aquí 'players' solo incluye humanos
+          message: '¡Partida contra la IA iniciada!',
+          pointsToWin: room.pointsToWin,
+          gameMode: room.gameMode,
+          opponentType: room.opponentType,
+          totalSlots: totalPlayers, // Para mostrar X de Y slots totales
+        });
+      } else {
+        io.to(socket.id).emit('roomUpdate', {
+            roomId: room.id,
+            currentPlayers: room.currentHumanPlayers, // Mostrar solo jugadores humanos
+            maxPlayers: room.humanPlayersNeeded, // Mostrar slots humanos necesarios
+            status: room.status,
+            players: room.players,
+            message: `Has creado la sala ${roomId} contra la IA. Esperando ${room.humanPlayersNeeded - room.currentHumanPlayers} compañeros...`,
+            pointsToWin: room.pointsToWin,
+            gameMode: room.gameMode,
+            opponentType: room.opponentType,
+            totalSlots: totalPlayers,
+        });
+      }
       return;
     }
 
+    // Lógica para unirse a una sala existente (PvP)
     if (roomId && db.data.rooms[roomId]) {
       room = db.data.rooms[roomId];
+      // Si la sala está en estado de juego, no permitir unirse (solo si no es reconexión)
+      if (room.status === 'playing') {
+          io.to(socket.id).emit('joinError', { message: 'La partida ya está en curso.' });
+          console.log(`[Sala ${roomId}] Intento de unión fallido: partida en curso.`);
+          return;
+      }
       if (room.currentPlayers >= room.maxPlayers) {
         io.to(socket.id).emit('joinError', { message: 'La sala está llena.' });
         console.log(`[Sala ${roomId}] Intento de unión fallido: sala llena.`);
@@ -180,7 +226,7 @@ io.on('connection', (socket) => {
         });
       }
 
-    } else {
+    } else { // Lógica para crear una nueva sala (PvP)
       roomId = generateRoomId();
       while (db.data.rooms[roomId]) {
         roomId = generateRoomId();
@@ -189,7 +235,7 @@ io.on('connection', (socket) => {
         id: roomId,
         creatorId: socket.id,
         players: [{ id: socket.id, name: playerName }],
-        maxPlayers: maxPlayers,
+        maxPlayers: totalPlayers, // Total de slots para PvP
         currentPlayers: 1,
         pointsToWin,
         gameMode,
@@ -222,6 +268,12 @@ io.on('connection', (socket) => {
         if (db.data.rooms[roomId] && db.data.rooms[roomId].status === 'waiting' && db.data.rooms[roomId].currentPlayers < db.data.rooms[roomId].maxPlayers) {
           console.log(`[Sala ${roomId}] Eliminada por inactividad. No se completó.`);
           io.to(roomId).emit('roomAbandoned', { message: 'La sala ha sido eliminada por inactividad.' });
+          // Eliminar la referencia a la sala de los sockets afectados
+          const socketsInRoom = await io.in(roomId).allSockets();
+          socketsInRoom.forEach(sId => {
+              const s = io.sockets.sockets.get(sId);
+              if (s) delete s.currentRoomId;
+          });
           delete db.data.rooms[roomId];
           await db.write();
         }
@@ -247,13 +299,16 @@ io.on('connection', (socket) => {
         clearTimeout(room.timeout);
         delete db.data.rooms[roomId];
       } else {
+        // Enviar roomUpdate y chat message a la sala
+        const message = `${room.players.find(p => p.id === socket.id)?.name || 'Un jugador'} ha abandonado.`;
+        io.to(roomId).emit('chatMessage', { senderName: 'Sistema', text: message }); // Mensaje de sistema
         io.to(roomId).emit('roomUpdate', {
           roomId: room.id,
           currentPlayers: room.currentPlayers,
           maxPlayers: room.maxPlayers,
           status: room.status,
           players: room.players,
-          message: `${room.players.find(p => p.id === socket.id)?.name || 'Un jugador'} ha abandonado.`,
+          message: message,
           pointsToWin: room.pointsToWin,
           gameMode: room.gameMode,
           opponentType: room.opponentType,
@@ -287,13 +342,16 @@ io.on('connection', (socket) => {
         clearTimeout(room.timeout);
         delete db.data.rooms[roomId];
       } else {
+        // Enviar roomUpdate y chat message a la sala
+        const message = `${room.players.find(p => p.id === socket.id)?.name || 'Un jugador'} se ha desconectado.`;
+        io.to(roomId).emit('chatMessage', { senderName: 'Sistema', text: message }); // Mensaje de sistema
         io.to(roomId).emit('roomUpdate', {
           roomId: room.id,
           currentPlayers: room.currentPlayers,
           maxPlayers: room.maxPlayers,
           status: room.status,
           players: room.players,
-          message: `${room.players.find(p => p.id === socket.id)?.name || 'Un jugador'} se ha desconectado.`,
+          message: message,
           pointsToWin: room.pointsToWin,
           gameMode: room.gameMode,
           opponentType: room.opponentType,
@@ -314,9 +372,8 @@ io.on('connection', (socket) => {
   });
 
   // --- Implementación de chat ---
-  // Evento para enviar un mensaje de chat
   socket.on('sendMessage', async (message) => {
-    const roomId = socket.currentRoomId;
+    const roomId = socket.currentRoomId; // Obtenemos la sala del jugador
     const senderName = message.senderName;
     const text = message.text;
 
@@ -333,7 +390,7 @@ io.on('connection', (socket) => {
       console.log(`[Chat Sala ${roomId}] ${senderName}: ${text}`);
     } else {
       // Chat público del lobby
-      io.emit('chatMessage', chatMessage);
+      io.emit('publicChatMessage', chatMessage); // Nuevo evento para chat público
       console.log(`[Chat Público] ${senderName}: ${text}`);
     }
   });
@@ -342,7 +399,7 @@ io.on('connection', (socket) => {
   function getAvailableRooms() {
     db.read();
     return Object.values(db.data.rooms).filter(room =>
-      room.status === 'waiting' && room.currentPlayers < room.maxPlayers && room.opponentType === 'users'
+      room.status === 'waiting' && room.opponentType === 'users' // Solo PvP listadas
     ).map(room => ({
       id: room.id,
       creatorName: room.players[0] ? room.players[0].name : 'N/A',
@@ -354,10 +411,6 @@ io.on('connection', (socket) => {
       timeRemaining: Math.max(0, MAX_WAITING_TIME_MS - (Date.now() - room.createdAt)),
     }));
   }
-
-  db.read().then(() => {
-    socket.emit('availableRooms', getAvailableRooms());
-  });
 });
 
 app.get('/', (req, res) => {

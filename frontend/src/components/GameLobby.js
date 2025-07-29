@@ -1,80 +1,82 @@
-import React, { useState, useEffect, useRef } from 'react'; // Importa useRef
-import './GameLobby.css';
+import React, { useState, useEffect, useRef } from 'react';
+import './GameLobby.css'; // Asegúrate de que este CSS esté actualizado también
 
 function GameLobby({ socket }) {
-  // Estado para los campos del formulario de creación/unión
   const [playerName, setPlayerName] = useState('Jugador 1');
   const [pointsToWin, setPointsToWin] = useState('30');
   const [gameMode, setGameMode] = useState('1v1');
   const [opponentType, setOpponentType] = useState('users');
   const [privateKey, setPrivateKey] = useState('');
 
-  // Estados para la lógica de la sala
   const [availableRooms, setAvailableRooms] = useState([]);
-  const [currentRoom, setCurrentRoom] = useState(null); // La sala a la que el jugador está unido/creó
-  const [isLoading, setIsLoading] = useState(false); // Estado general de carga para operaciones
+  const [currentRoom, setCurrentRoom] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Estado y ref para el chat/log
-  const [chatLog, setChatLog] = useState([]);
-  const chatMessagesEndRef = useRef(null); // Ref para hacer scroll automático
+  const [chatLog, setChatLog] = useState([]); // Log para el chat de la sala
+  const [publicChatLog, setPublicChatLog] = useState([]); // Log para el chat público
+  const chatMessagesEndRef = useRef(null);
+  const publicChatMessagesEndRef = useRef(null);
 
   // useEffect para manejar eventos del socket
   useEffect(() => {
     if (!socket) return;
 
-    // Pedir la lista de salas disponibles al conectar, para evitar pantalla vacía
+    // Pedir la lista de salas disponibles al conectar
     socket.emit('requestAvailableRooms');
 
     socket.on('availableRooms', (rooms) => {
       console.log('Salas disponibles recibidas:', rooms);
-      // Filtra la propia sala si el currentRoom está definido y la sala no es pública y no está llena
       setAvailableRooms(rooms.filter(room => !(currentRoom && room.id === currentRoom.id)));
     });
 
     socket.on('roomUpdate', (roomData) => {
       console.log('Actualización de mi sala recibida en GameLobby:', roomData);
       setCurrentRoom(roomData);
-      setIsLoading(false); // Terminar la carga
-      // Filtra la propia sala si el currentRoom está definido y la sala no es pública y no está llena
+      setIsLoading(false);
       setAvailableRooms(prevRooms => prevRooms.filter(room => !(roomData && room.id === roomData.id)));
-      addLogMessage(`[Sala ${roomData.roomId}] ${roomData.message}`); // Agregar a log
+      addRoomLogMessage(`[Sala ${roomData.roomId}] ${roomData.message}`);
     });
 
     socket.on('gameStarted', (gameData) => {
       console.log('¡Partida iniciada!', gameData);
-      alert(gameData.message); // Por ahora un alert
-      setCurrentRoom(gameData); // Asegurarnos de que el currentRoom refleja la partida iniciada
-      setIsLoading(false); // Terminar la carga
-      addLogMessage(`[Sala ${gameData.roomId}] ${gameData.message}`); // Agregar a log
-      // Aquí se navegaría a la interfaz de juego real
+      alert(gameData.message);
+      setCurrentRoom(gameData);
+      setIsLoading(false);
+      addRoomLogMessage(`[Sala ${gameData.roomId}] ${gameData.message}`);
     });
 
     socket.on('joinError', (error) => {
       alert(`Error al unirse: ${error.message}`);
       setCurrentRoom(null); // Si hubo un error, no estamos en ninguna sala
-      setIsLoading(false); // Terminar la carga
-      addLogMessage(`[Error] ${error.message}`); // Agregar a log
+      setIsLoading(false);
+      addPublicLogMessage(`[Error] ${error.message}`); // Agrega el error al chat público
     });
 
     socket.on('roomAbandoned', (data) => {
       alert(`Mensaje del sistema: ${data.message}`);
-      setCurrentRoom(null); // Si la sala se abandona/elimina, no estamos en ninguna sala
-      setIsLoading(false); // Terminar la carga
-      addLogMessage(`[Sistema] ${data.message}`); // Agregar a log
-      socket.emit('requestAvailableRooms'); // Solicitar la lista actualizada
+      setCurrentRoom(null);
+      setIsLoading(false);
+      addPublicLogMessage(`[Sistema] ${data.message}`); // Agrega a log público
+      socket.emit('requestAvailableRooms');
     });
 
-    // Nuevo: recibir mensajes de chat
+    // Recibir mensajes de chat de la SALA (privado)
     socket.on('chatMessage', (message) => {
-      addLogMessage(`${message.senderName}: ${message.text}`);
+      addRoomLogMessage(`${message.senderName}: ${message.text}`);
     });
+
+    // Recibir mensajes de chat del LOBBY (público)
+    socket.on('publicChatMessage', (message) => {
+      addPublicLogMessage(`${message.senderName}: ${message.text}`);
+    });
+
 
     // Polling para la lista de salas disponibles si no estás en una sala específica
     let intervalId;
-    if (!currentRoom) { // Solo si no estamos en una sala activa
+    if (!currentRoom) {
       intervalId = setInterval(() => {
         socket.emit('requestAvailableRooms');
-      }, 3000); // Poll cada 3 segundos
+      }, 3000);
     }
 
     return () => {
@@ -83,23 +85,40 @@ function GameLobby({ socket }) {
       socket.off('gameStarted');
       socket.off('joinError');
       socket.off('roomAbandoned');
-      socket.off('chatMessage'); // Limpiar listener de chat
+      socket.off('chatMessage');
+      socket.off('publicChatMessage');
       if (intervalId) clearInterval(intervalId);
     };
   }, [socket, currentRoom]); // currentRoom como dependencia para activar/desactivar el polling
 
-  // useEffect para hacer scroll automático en el chat
+  // useEffect para hacer scroll automático en el chat de sala
   useEffect(() => {
     if (chatMessagesEndRef.current) {
       chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [chatLog]);
 
-  // Función para añadir mensajes al log
-  const addLogMessage = (message) => {
+  // useEffect para hacer scroll automático en el chat público
+  useEffect(() => {
+    if (publicChatMessagesEndRef.current) {
+      publicChatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [publicChatLog]);
+
+
+  // Función para añadir mensajes al log de la sala
+  const addRoomLogMessage = (message) => {
     setChatLog(prevLog => {
-      const newLog = [...prevLog, `${new Date().toLocaleTimeString('es-AR')} - ${message}`]; // Formato horario arg
-      return newLog.slice(-50); // Mantiene los últimos 50 mensajes
+      const newLog = [...prevLog, `${new Date().toLocaleTimeString('es-AR')} - ${message}`];
+      return newLog.slice(-50);
+    });
+  };
+
+  // Función para añadir mensajes al log público
+  const addPublicLogMessage = (message) => {
+    setPublicChatLog(prevLog => {
+      const newLog = [...prevLog, `${new Date().toLocaleTimeString('es-AR')} - ${message}`];
+      return newLog.slice(-50);
     });
   };
 
@@ -111,7 +130,7 @@ function GameLobby({ socket }) {
     e.preventDefault();
     if (socket && chatInput.trim()) {
       socket.emit('sendMessage', {
-        senderName: playerName,
+        senderName: playerName, // Se obtiene del estado local de GameLobby
         text: chatInput.trim()
       });
       setChatInput(''); // Limpiar el input
@@ -122,7 +141,7 @@ function GameLobby({ socket }) {
   const handleCreateOrJoinFromForm = (e) => {
     e.preventDefault();
     if (socket) {
-      setIsLoading(true); // Iniciar el efecto de carga
+      setIsLoading(true);
       setCurrentRoom(null); // Limpiar cualquier sala anterior para una transición limpia
       socket.emit('joinGame', {
         playerName,
@@ -131,38 +150,38 @@ function GameLobby({ socket }) {
         opponentType,
         privateKey: opponentType === 'users' ? privateKey : null,
       });
-      addLogMessage(`Intentando crear/unirse como ${playerName}...`);
+      addPublicLogMessage(`Intentando crear/unirse como ${playerName}...`);
     }
   };
 
-  const handleJoinRoomFromList = (roomData, keyRequired) => { // Recibe roomData completa
+  const handleJoinRoomFromList = (roomData, keyRequired) => {
     if (socket) {
       let key = null;
       if (keyRequired) {
         key = prompt('Esta sala es privada. Ingresa la clave:');
         if (!key) {
-            setIsLoading(false); // Si cancela, detener carga
-            return; // Si el usuario cancela, no hacemos nada
+            setIsLoading(false);
+            return;
         }
       }
-      setIsLoading(true); // Iniciar el efecto de carga
-      setCurrentRoom(null); // Limpiar cualquier sala anterior
+      setIsLoading(true);
+      setCurrentRoom(null);
       socket.emit('joinGame', {
-        playerName, // Usamos el nombre actual del jugador
-        pointsToWin: roomData.pointsToWin, // Usar los puntos de la sala
-        gameMode: roomData.gameMode,    // Usar el modo de la sala
+        playerName,
+        pointsToWin: roomData.pointsToWin,
+        gameMode: roomData.gameMode,
         opponentType: 'users',
-        privateKey: key || roomData.id, // Usamos el ID o la clave ingresada
+        privateKey: key || roomData.id,
       });
-      addLogMessage(`Intentando unirse a sala ${roomData.id} como ${playerName}...`);
+      addPublicLogMessage(`Intentando unirse a sala ${roomData.id} como ${playerName}...`);
     }
   };
 
   const handleLeaveRoom = () => {
     if (socket && currentRoom) {
-      setIsLoading(true); // Muestra cargando al abandonar
+      setIsLoading(true);
       socket.emit('leaveRoom');
-      addLogMessage(`Abandonando sala ${currentRoom.id}...`);
+      addRoomLogMessage(`Abandonando sala ${currentRoom.id}...`); // Agrega al log de sala
       // currentRoom se seteará a null cuando el servidor emita roomAbandoned o disconnect
     }
   };
@@ -180,15 +199,18 @@ function GameLobby({ socket }) {
     );
   }
 
-  // Vista de "Mi Sala" (cuando el jugador está dentro de una sala)
+  // Vista de "Mi Sala" (cuando el jugador está dentro de una sala específica)
   if (currentRoom && (currentRoom.status === 'waiting' || currentRoom.opponentType === 'ai' || currentRoom.status === 'playing')) {
-    // CAMBIO CRÍTICO PARA EL LINK: Asegurarse de que currentRoom y currentRoom.id existan
-    // Aseguramos que currentRoom.id no sea undefined/null antes de usarlo
+    // CAMBIO CRÍTICO PARA EL LINK: Asegurarse de que currentRoom.id no sea undefined/null antes de usarlo
     const linkCompartir = currentRoom.id ? `https://trucoestrella.vercel.app/?room=${currentRoom.id}${currentRoom.privateKey ? `&key=${currentRoom.privateKey}` : ''}` : '';
+
+    // Determinar participantes mostrados para IA
+    const displayCurrentPlayers = currentRoom.opponentType === 'ai' ? currentRoom.currentHumanPlayers : currentRoom.currentPlayers;
+    const displayMaxPlayers = currentRoom.opponentType === 'ai' ? currentRoom.humanPlayersNeeded : currentRoom.maxPlayers;
 
 
     return (
-      <div className="game-lobby-container my-room-view"> {/* Nueva clase para esta vista */}
+      <div className="game-lobby-container my-room-view">
         <div className="header-row grid-full-width">
             <h1>Truco Estrella</h1>
         </div>
@@ -203,11 +225,19 @@ function GameLobby({ socket }) {
                 <p>Hola **{playerName}**!</p>
 
                 {currentRoom.opponentType === 'ai' ? (
-                    <p>Iniciando partida **{currentRoom.gameMode}** a **{currentRoom.pointsToWin}** puntos contra la IA Truco Estrella...</p>
-                ) : (
+                    currentRoom.status === 'playing' ? (
+                        <p>Partida **{currentRoom.gameMode}** a **{currentRoom.pointsToWin}** puntos contra la IA Truco Estrella ha comenzado!</p>
+                    ) : (
+                        <>
+                            <p>Has creado una partida **{currentRoom.gameMode}** a **{currentRoom.pointsToWin}** puntos contra la IA Truco Estrella.</p>
+                            <p>Participantes en tu equipo: **{displayCurrentPlayers}** de **{displayMaxPlayers}**</p>
+                            <p>Esperando compañeros para tu equipo...</p>
+                        </>
+                    )
+                ) : ( // Lógica para partidas PvP (users)
                     <>
                         <p>Has creado esta partida **{currentRoom.gameMode}** a **{currentRoom.pointsToWin}** puntos.</p>
-                        <p>Participantes: **{currentRoom.currentPlayers}** de **{currentRoom.maxPlayers}**</p>
+                        <p>Participantes: **{displayCurrentPlayers}** de **{displayMaxPlayers}**</p>
                         
                         {currentRoom.players.length > 0 && (
                           <div className="player-list">
@@ -239,12 +269,12 @@ function GameLobby({ socket }) {
                 {currentRoom.status === 'playing' && <p className="game-started-message">¡La partida ha comenzado!</p>}
             </div>
             <div className="chat-log-box"> {/* Caja del chat/log */}
-                <h2>Registro de Eventos / Chat</h2>
+                <h2>Chat de Sala</h2> {/* Cambiado a "Chat de Sala" */}
                 <div className="chat-messages">
                     {chatLog.map((msg, index) => (
                         <p key={index}>{msg}</p>
                     ))}
-                    <div ref={chatMessagesEndRef} /> {/* Elemento para scroll */}
+                    <div ref={chatMessagesEndRef} />
                 </div>
                 <form onSubmit={handleSendMessage} className="chat-input-form">
                     <input
@@ -263,12 +293,12 @@ function GameLobby({ socket }) {
   } else {
     // Vista del Lobby Principal (Crear Partida y Salas Disponibles + Chat Público)
     return (
-      <div className="game-lobby-container main-lobby-grid-layout"> {/* Nuevo grid para el lobby principal */}
+      <div className="game-lobby-container main-lobby-grid-layout">
         <div className="header-row grid-full-width">
             <h1>Truco Estrella</h1>
         </div>
 
-        <div className="available-rooms-section grid-col-left"> {/* Columna izquierda */}
+        <div className="available-rooms-section grid-col-left">
           <h2>Salas Disponibles</h2>
           {availableRooms.length === 0 ? (
             <p>No hay partidas creadas en este momento.</p>
@@ -285,7 +315,7 @@ function GameLobby({ socket }) {
                   {room.timeRemaining > 0 && (
                     <p className="time-remaining">Tiempo restante: {Math.ceil(room.timeRemaining / 60000)} min</p>
                   )}
-                  <button onClick={() => handleJoinRoomFromList(room, room.privateKey)}> {/* Pasa room completa */}
+                  <button onClick={() => handleJoinRoomFromList(room, room.privateKey)}>
                     Unirme
                   </button>
                 </div>
@@ -294,7 +324,7 @@ function GameLobby({ socket }) {
           )}
         </div>
 
-        <div className="create-game-section grid-col-middle"> {/* Columna central */}
+        <div className="create-game-section grid-col-middle">
           <h2>Crear Partida</h2>
           <form onSubmit={handleCreateOrJoinFromForm} className="entry-form">
             <label>
@@ -342,13 +372,13 @@ function GameLobby({ socket }) {
           </form>
         </div>
 
-        <div className="chat-log-box grid-col-right"> {/* Columna derecha */}
-            <h2>Registro de Eventos / Chat Público</h2>
+        <div className="chat-log-box grid-col-right">
+            <h2>Chat Público</h2> {/* Cambiado a "Chat Público" */}
             <div className="chat-messages">
-                {chatLog.map((msg, index) => (
+                {publicChatLog.map((msg, index) => (
                     <p key={index}>{msg}</p>
                 ))}
-                <div ref={chatMessagesEndRef} /> {/* Elemento para scroll */}
+                <div ref={publicChatMessagesEndRef} />
             </div>
             <form onSubmit={handleSendMessage} className="chat-input-form">
                 <input

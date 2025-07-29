@@ -1,5 +1,5 @@
 /* trucoestrella/frontend/src/components/GameLobby.css */
-body, html, #root { /* Asegúrate de que el body y html ocupen toda la pantalla */
+body, html, #root {
   margin: 0;
   padding: 0;
   height: 100%;
@@ -11,7 +11,6 @@ body, html, #root { /* Asegúrate de que el body y html ocupen toda la pantalla 
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* justify-content: flex-start;  Quitamos para que el grid lo maneje */
   min-height: 100vh;
   background-color: #f0f2f5;
   font-family: Arial, sans-serif;
@@ -19,7 +18,7 @@ body, html, #root { /* Asegúrate de que el body y html ocupen toda la pantalla 
   color: #333;
   width: 100%;
   box-sizing: border-box;
-  padding: 0; /* Quitamos padding aquí para que el grid lo defina */
+  padding: 0;
 }
 
 .game-lobby-container h1 {
@@ -29,7 +28,7 @@ body, html, #root { /* Asegúrate de que el body y html ocupen toda la pantalla 
 
 .game-lobby-container h2 {
   color: #555;
-  margin-bottom: 20px; /* Reducido para ahorrar espacio */
+  margin-bottom: 20px;
 }
 
 .game-lobby-container p {
@@ -63,10 +62,10 @@ body, html, #root { /* Asegúrate de que el body y html ocupen toda la pantalla 
   display: grid;
   grid-template-columns: 1fr; /* Una columna para móviles */
   grid-template-rows: auto 1fr; /* Fila del título, luego el contenido */
-  gap: 20px; /* Espacio entre filas y columnas */
+  gap: 20px;
   width: 100%;
   height: 100vh; /* Ocupa todo el alto de la ventana */
-  padding: 10px; /* Padding general */
+  padding: 10px;
   box-sizing: border-box;
 }
 
@@ -74,21 +73,21 @@ body, html, #root { /* Asegúrate de que el body y html ocupen toda la pantalla 
   grid-column: 1 / -1; /* Ocupa todas las columnas */
   text-align: center;
   padding: 10px;
-  background-color: #e2e6ea; /* Fondo para la fila del título */
+  background-color: #e2e6ea;
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  height: 10%; /* Fila uno: 10% de alto */
+  /* height: 10%; ya no es fija, se adapta al contenido y a grid-template-rows */
   display: flex;
   justify-content: center;
   align-items: center;
 }
 .header-row h1 {
-    margin: 0; /* Quitar margen para centrar */
+    margin: 0;
 }
 
 .grid-col-left, .grid-col-middle, .grid-col-right {
   background-color: #ffffff;
-  padding: 20px; /* Reducido para ahorrar espacio */
+  padding: 20px;
   border-radius: 8px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
@@ -100,32 +99,31 @@ body, html, #root { /* Asegúrate de que el body y html ocupen toda la pantalla 
   overflow-y: auto; /* Permitir scroll solo si el contenido excede la altura */
 }
 
-/* Para pantallas medianas (tablets) */
+/* Media queries para responsividad */
 @media (min-width: 768px) {
   .main-lobby-grid-layout {
-    grid-template-columns: 1fr 1fr; /* Dos columnas: Izq y Centro */
+    grid-template-columns: 1fr 1fr; /* Dos columnas para tablets */
     grid-template-rows: auto 1fr;
   }
   .grid-col-left { grid-column: 1; }
   .grid-col-middle { grid-column: 2; }
-  .grid-col-right { /* La tercera columna se moverá a la siguiente fila */
-    grid-column: 1 / -1; /* Ocupa todo el ancho en la segunda fila */
+  .grid-col-right {
+    grid-column: 1 / -1; /* La tercera columna (chat) debajo en tablets */
   }
 }
 
-/* Para pantallas grandes (escritorio) */
 @media (min-width: 1024px) {
   .main-lobby-grid-layout {
-    grid-template-columns: 1fr 1fr 1fr; /* Tres columnas */
-    grid-template-rows: 10% 90%; /* Fila de título, fila de 3 columnas */
+    grid-template-columns: 1fr 1fr 1fr; /* Tres columnas para desktop */
+    grid-template-rows: 10% 90%; /* Fila del título (10%), contenido (90%) */
   }
-  .header-row { grid-row: 1; height: auto;} /* Título en la primera fila */
-  .grid-col-left { grid-column: 1; grid-row: 2; } /* Izquierda en segunda fila */
-  .grid-col-middle { grid-column: 2; grid-row: 2; } /* Centro en segunda fila */
-  .grid-col-right { grid-column: 3; grid-row: 2; } /* Derecha en segunda fila (Chat) */
+  .header-row { grid-row: 1; height: auto;}
+  .grid-col-left { grid-column: 1; grid-row: 2; }
+  .grid-col-middle { grid-column: 2; grid-row: 2; }
+  .grid-col-right { grid-column: 3; grid-row: 2; }
 }
 
-/* Ajustes para los contenidos internos de las cajas */
+/* Ajustes para contenidos internos de las cajas */
 .create-game-section .entry-form {
     width: 100%;
     max-width: 380px;
@@ -143,7 +141,12 @@ body, html, #root { /* Asegúrate de que el body y html ocupen toda la pantalla 
 
 .entry-form input[type="text"],
 .entry-form select {
-  width: calc(100% - 20px); /* Ajuste por padding */
+  padding: 10px;
+  margin-top: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  width: calc(100% - 20px);
 }
 
 .entry-form button {
@@ -152,17 +155,17 @@ body, html, #root { /* Asegúrate de que el body y html ocupen toda la pantalla 
 
 .rooms-list {
   width: 100%;
-  flex-grow: 1; /* Para que la lista ocupe el espacio restante */
-  overflow-y: auto; /* Scroll si la lista es larga */
-  padding-right: 5px; /* Pequeño padding para el scrollbar */
+  flex-grow: 1;
+  overflow-y: auto;
+  padding-right: 5px;
 }
 .room-item {
-  margin-bottom: 10px; /* Reducido */
-  padding: 10px; /* Reducido */
+  margin-bottom: 10px;
+  padding: 10px;
 }
 
-/* Estilos para la vista de "Mi Sala" */
-.my-room-view {
+/* --- LAYOUT PARA LA VISTA DE "MI SALA" (2 COLUMNAS) --- */
+.game-lobby-container.my-room-view {
     display: grid;
     grid-template-columns: 1fr; /* Una columna para móviles */
     grid-template-rows: auto 1fr;
@@ -173,27 +176,23 @@ body, html, #root { /* Asegúrate de que el body y html ocupen toda la pantalla 
     box-sizing: border-box;
 }
 
-.my-room-view .header-row { /* Título de la vista "Mi Sala" */
+.my-room-view .header-row {
     grid-column: 1 / -1;
     text-align: center;
+    height: auto; /* Se adapta al contenido */
 }
 
-.main-content-row { /* Contenido principal de "Mi Sala" (detalles y chat) */
+.main-content-row {
     display: grid;
     grid-template-columns: 1fr; /* Una columna para móviles */
     gap: 20px;
     width: 100%;
-    height: 100%;
+    height: 100%; /* Ocupa el resto del alto */
 }
 
 @media (min-width: 768px) {
-    .my-room-view {
-        grid-template-columns: 1fr 1fr; /* Dos columnas para pantallas más grandes */
-    }
-    .my-room-view .header-row { grid-column: 1 / -1; }
-    .main-content-row {
-        grid-column: 1 / -1; /* Ocupa ambas columnas para el contenido principal */
-        grid-template-columns: 1fr 1fr; /* Detalles a la izq, chat a la der */
+    .my-room-view .main-content-row {
+        grid-template-columns: 1fr 1fr; /* Dos columnas para tablets/desktop */
     }
 }
 
@@ -205,19 +204,19 @@ body, html, #root { /* Asegúrate de que el body y html ocupen toda la pantalla 
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    height: 100%; /* Ocupa el alto completo */
-    overflow-y: auto; /* Scroll para el contenido si es necesario */
+    height: 100%;
+    overflow-y: auto;
 }
 
 .chat-log-box {
     text-align: left;
-    position: relative; /* Para posicionar el input de chat al final */
-    padding-bottom: 60px; /* Espacio para el input */
+    position: relative;
+    padding-bottom: 60px; /* Espacio para el input de chat */
 }
 .chat-messages {
-    flex-grow: 1; /* Ocupa todo el espacio disponible */
-    overflow-y: auto; /* Scroll si el chat es largo */
-    padding-right: 5px; /* Para el scrollbar */
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 5px;
     border-top: 1px solid #eee;
     margin-top: 10px;
     padding-top: 10px;
@@ -225,17 +224,17 @@ body, html, #root { /* Asegúrate de que el body y html ocupen toda la pantalla 
 .chat-messages p {
     margin: 5px 0;
     font-size: 0.9em;
-    word-wrap: break-word; /* Rompe palabras largas */
+    word-wrap: break-word;
 }
 .chat-input-form {
     display: flex;
     gap: 10px;
     width: 100%;
-    position: absolute; /* Para que se quede fijo abajo */
+    position: absolute;
     bottom: 0;
     left: 0;
     padding: 10px;
-    background-color: #fff; /* Asegura que no se vea el scroll debajo */
+    background-color: #fff;
     border-top: 1px solid #eee;
     box-sizing: border-box;
 }
@@ -255,7 +254,7 @@ body, html, #root { /* Asegúrate de que el body y html ocupen toda la pantalla 
 }
 
 
-/* Estilos existentes */
+/* Estilos adicionales */
 .share-link-container {
   display: flex;
   gap: 10px;
