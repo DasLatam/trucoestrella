@@ -117,7 +117,7 @@ body, html, #root { /* Asegúrate de que el body y html ocupen toda la pantalla 
 @media (min-width: 1024px) {
   .main-lobby-grid-layout {
     grid-template-columns: 1fr 1fr 1fr; /* Tres columnas */
-    grid-template-rows: 10% 70% 20%; /* Fila de título, fila de 3 columnas, fila de chat (si es necesario) */
+    grid-template-rows: 10% 90%; /* Fila de título, fila de 3 columnas */
   }
   .header-row { grid-row: 1; height: auto;} /* Título en la primera fila */
   .grid-col-left { grid-column: 1; grid-row: 2; } /* Izquierda en segunda fila */
@@ -211,6 +211,8 @@ body, html, #root { /* Asegúrate de que el body y html ocupen toda la pantalla 
 
 .chat-log-box {
     text-align: left;
+    position: relative; /* Para posicionar el input de chat al final */
+    padding-bottom: 60px; /* Espacio para el input */
 }
 .chat-messages {
     flex-grow: 1; /* Ocupa todo el espacio disponible */
@@ -225,6 +227,33 @@ body, html, #root { /* Asegúrate de que el body y html ocupen toda la pantalla 
     font-size: 0.9em;
     word-wrap: break-word; /* Rompe palabras largas */
 }
+.chat-input-form {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    position: absolute; /* Para que se quede fijo abajo */
+    bottom: 0;
+    left: 0;
+    padding: 10px;
+    background-color: #fff; /* Asegura que no se vea el scroll debajo */
+    border-top: 1px solid #eee;
+    box-sizing: border-box;
+}
+.chat-input-form input {
+    flex-grow: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+.chat-input-form button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
 
 /* Estilos existentes */
 .share-link-container {
