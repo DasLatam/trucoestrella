@@ -1,6 +1,5 @@
-// trucoestrella/frontend/src/components/GameLobby.js
 import React, { useState, useEffect } from 'react';
-import './GameLobby.css'; // Usaremos los mismos estilos
+import './GameLobby.css';
 
 function GameLobby({ socket }) { // Ahora solo recibe el socket
   // Estado para los campos del formulario de creación/unión
@@ -85,10 +84,10 @@ function GameLobby({ socket }) { // Ahora solo recibe el socket
       let key = null;
       if (keyRequired) {
         key = prompt('Esta sala es privada. Ingresa la clave:');
-        if (!key) return; // Si el usuario cancela
+        if (!key) return; // Si el usuario cancela, no hacemos nada
       }
       socket.emit('joinGame', {
-        playerName, // Usamos el nombre actual del jugador
+        playerName, // Usamos el nombre actual del jugador del estado
         pointsToWin: null, // No se necesita, la sala ya tiene estos datos
         gameMode: null,    // No se necesita
         opponentType: 'users', // Siempre 'users' al unirse a una lista
@@ -108,8 +107,8 @@ function GameLobby({ socket }) { // Ahora solo recibe el socket
   // --- Renderizado Condicional del Lobby ---
   // Si el jugador está en una sala esperando o la partida de IA se inició
   if (currentRoom && (currentRoom.status === 'waiting' || currentRoom.opponentType === 'ai' || currentRoom.status === 'playing')) {
-    const creatorName = currentRoom.players[0]?.name || 'Creador';
-    const linkCompartir = `https://trucoestrella.vercel.app/?room=${currentRoom.id}${currentRoom.privateKey ? `&key=${currentRoom.privateKey}` : ''}`;
+    // Generación del link compartir solo si currentRoom.id existe
+    const linkCompartir = currentRoom.id ? `https://trucoestrella.vercel.app/?room=${currentRoom.id}${currentRoom.privateKey ? `&key=${currentRoom.privateKey}` : ''}` : '';
 
     return (
       <div className="game-lobby-container my-room">
@@ -123,11 +122,12 @@ function GameLobby({ socket }) { // Ahora solo recibe el socket
         <p>Hola **{playerName}**!</p>
 
         {currentRoom.opponentType === 'ai' ? (
-            <p>Iniciando partida **{currentRoom.gameMode}** a **{currentRoom.pointsToWin}** puntos contra la IA Truco Estrella...</p>
+            <p>Iniciando partida **{gameMode}** a **{pointsToWin}** puntos contra la IA Truco Estrella...</p>
         ) : (
             <>
                 <p>Has creado esta partida **{currentRoom.gameMode}** a **{currentRoom.pointsToWin}** puntos.</p>
                 <p>Participantes: **{currentRoom.currentPlayers}** de **{currentRoom.maxPlayers}**</p>
+                
                 {currentRoom.players.length > 0 && (
                   <div className="player-list">
                     <h3>Jugadores en sala:</h3>
@@ -138,6 +138,7 @@ function GameLobby({ socket }) { // Ahora solo recibe el socket
                     </ul>
                   </div>
                 )}
+
                 {currentRoom.status === 'waiting' && (
                     <>
                         <p>Esperando más jugadores... ¡Por favor, comparte el enlace!</p>
