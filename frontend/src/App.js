@@ -1,14 +1,14 @@
 // trucoestrella/frontend/src/App.js
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
-import './App.css'; // Mantenemos el CSS principal
-import GameLobby from './components/GameLobby'; // Importamos GameLobby
+import './App.css';
+import GameLobby from './components/GameLobby';
 
 const SOCKET_SERVER_URL = 'https://trucoestrella-backend.onrender.com'; // ¡Confirma tu URL de Render!
 
 function App() {
   const [socket, setSocket] = useState(null);
-  const [playerConnected, setPlayerConnected] = useState(false); // Para saber si ya estamos conectados
+  const [playerConnected, setPlayerConnected] = useState(false);
 
   useEffect(() => {
     const newSocket = io(SOCKET_SERVER_URL);
@@ -16,18 +16,16 @@ function App() {
 
     newSocket.on('connect', () => {
       console.log('Conectado al servidor de Socket.IO');
-      setPlayerConnected(true); // Marcamos que la conexión fue exitosa
+      setPlayerConnected(true);
     });
 
     newSocket.on('disconnect', () => {
       console.log('Desconectado del servidor de Socket.IO');
-      setPlayerConnected(false); // Marcamos que no estamos conectados
-      // Podrías mostrar un mensaje al usuario aquí si quieres
+      setPlayerConnected(false);
     });
 
-    // Limpiar la conexión cuando el componente se desmonte
     return () => newSocket.disconnect();
-  }, []); // Se ejecuta solo una vez al montar
+  }, []);
 
   if (!playerConnected) {
     return (
@@ -39,7 +37,6 @@ function App() {
     );
   }
 
-  // Una vez conectado, renderizamos el GameLobby
   return (
     <GameLobby socket={socket} />
   );

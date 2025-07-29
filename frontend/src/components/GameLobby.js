@@ -2,65 +2,63 @@ import React, { useState, useEffect } from 'react';
 import './GameLobby.css';
 
 function GameLobby({ socket }) {
-  // Estado para los campos del formulario de creación/unión
   const [playerName, setPlayerName] = useState('Jugador 1');
   const [pointsToWin, setPointsToWin] = useState('30');
   const [gameMode, setGameMode] = useState('1v1');
   const [opponentType, setOpponentType] = useState('users');
   const [privateKey, setPrivateKey] = useState('');
 
-  // Estados para la lógica de la sala
   const [availableRooms, setAvailableRooms] = useState([]);
-  const [currentRoom, setCurrentRoom] = useState(null); // La sala a la que el jugador está unido/creó
-  const [isLoadingRoom, setIsLoadingRoom] = useState(false); // Nuevo estado para el efecto de carga
+  const [currentRoom, setCurrentRoom] = useState(null);
+  const [isLoadingRoom, setIsLoadingRoom] = useState(false);
 
   useEffect(() => {
     if (!socket) return;
 
-    // Escuchar la lista de salas disponibles
+    // Pedir la lista de salas disponibles apenas se conecta el socket
+    // Esto es para que la lista no aparezca vacía al cargar la página
+    socket.emit('requestAvailableRooms');
+
+
     socket.on('availableRooms', (rooms) => {
       console.log('Salas disponibles recibidas:', rooms);
       setAvailableRooms(rooms.filter(room => !(currentRoom && room.id === currentRoom.id)));
     });
 
-    // Escuchar actualizaciones de mi sala (si ya estoy en una)
     socket.on('roomUpdate', (roomData) => {
       console.log('Actualización de mi sala recibida en GameLobby:', roomData);
       setCurrentRoom(roomData);
-      setIsLoadingRoom(false); // Terminar la carga
-      setAvailableRooms(prevRooms => prevRooms.filter(room => room.id !== roomData.id)); // Filtra la propia sala
+      setIsLoadingRoom(false);
+      setAvailableRooms(prevRooms => prevRooms.filter(room => room.id !== roomData.id));
     });
 
-    // Escuchar cuando una partida inicia
     socket.on('gameStarted', (gameData) => {
       console.log('¡Partida iniciada!', gameData);
-      alert(gameData.message); // Por ahora un alert, luego pasaremos a la pantalla de juego
-      setCurrentRoom(gameData); // Asegurarnos de que el currentRoom refleja la partida iniciada
-      setIsLoadingRoom(false); // Terminar la carga
-      // Aquí se navegaría a la interfaz de juego real
+      alert(gameData.message);
+      setCurrentRoom(gameData);
+      setIsLoadingRoom(false);
     });
 
-    // Escuchar errores al unirse
     socket.on('joinError', (error) => {
       alert(`Error al unirse: ${error.message}`);
-      setCurrentRoom(null); // Si hubo un error, no estamos en ninguna sala
-      setIsLoadingRoom(false); // Terminar la carga
+      setCurrentRoom(null);
+      setIsLoadingRoom(false);
     });
 
-    // Escuchar si la sala fue abandonada o eliminada
     socket.on('roomAbandoned', (data) => {
       alert(`Mensaje del sistema: ${data.message}`);
-      setCurrentRoom(null); // Si la sala se abandona/elimina, no estamos en ninguna sala
-      setIsLoadingRoom(false); // Terminar la carga
-      socket.emit('requestAvailableRooms'); // Solicitar la lista actualizada
+      setCurrentRoom(null);
+      setIsLoadingRoom(false);
+      socket.emit('requestAvailableRooms');
     });
 
     // Polling para la lista de salas disponibles si no estás en una sala específica
     let intervalId;
-    if (!currentRoom) { // Solo si no estamos en una sala activa
+    // Solo si currentRoom es null (estamos en la vista principal del lobby)
+    if (!currentRoom) {
       intervalId = setInterval(() => {
         socket.emit('requestAvailableRooms');
-      }, 5000); // Solicita la lista cada 5 segundos
+      }, 3000); // Poll cada 3 segundos para una actualización más rápida
     }
 
     return () => {
@@ -69,15 +67,16 @@ function GameLobby({ socket }) {
       socket.off('gameStarted');
       socket.off('joinError');
       socket.off('roomAbandoned');
-      if (intervalId) clearInterval(intervalId); // Limpiar el intervalo al desmontar o si entras a una sala
+      if (intervalId) clearInterval(intervalId);
     };
   }, [socket, currentRoom]); // currentRoom como dependencia para activar/desactivar el polling
+
 
   const handleCreateOrJoinFromForm = (e) => {
     e.preventDefault();
     if (socket) {
-      setIsLoadingRoom(true); // Iniciar el efecto de carga
-      setCurrentRoom(null); // Limpiar cualquier sala anterior
+      setIsLoadingRoom(true);
+      setCurrentRoom(null);
       socket.emit('joinGame', {
         playerName,
         pointsToWin: parseInt(pointsToWin),
@@ -96,16 +95,16 @@ function GameLobby({ socket }) {
       let key = null;
       if (keyRequired) {
         key = prompt('Esta sala es privada. Ingresa la clave:');
-        if (!key) return; // Si el usuario cancela, no hacemos nada
+        if (!key) return;
       }
-      setIsLoadingRoom(true); // Iniciar el efecto de carga
-      setCurrentRoom(null); // Limpiar cualquier sala anterior
+      setIsLoadingRoom(true);
+      setCurrentRoom(null);
       socket.emit('joinGame', {
-        playerName, // Usamos el nombre actual del jugador del estado
-        pointsToWin: null, // No se necesita, la sala ya tiene estos datos
-        gameMode: null,    // No se necesita
-        opponentType: 'users', // Siempre 'users' al unirse a una lista
-        privateKey: key || roomIdToJoin, // Usamos el ID o la clave ingresada
+        playerName,
+        pointsToWin: null,
+        gameMode: null,
+        opponentType: 'users',
+        privateKey: key || roomIdToJoin,
       });
       console.log(`Intentando unirse a sala ${roomIdToJoin} con clave: ${key}`);
     }
@@ -113,18 +112,15 @@ function GameLobby({ socket }) {
 
   const handleLeaveRoom = () => {
     if (socket && currentRoom) {
-      setIsLoadingRoom(true); // Muestra cargando al abandonar
+      setIsLoadingRoom(true);
       socket.emit('leaveRoom');
       // currentRoom se seteará a null cuando el servidor emita roomAbandoned o disconnect
-      // o se resetea aquí para un feedback visual más rápido
-      setCurrentRoom(null);
-      setIsLoadingRoom(false); // Quitar cargando
+      // setIsLoadingRoom(false); // Quitar cargando (puede quitarse si el server envía roomAbandoned)
     }
   };
 
   // --- Renderizado Condicional del Lobby ---
 
-  // Si estamos en proceso de carga para entrar a una sala
   if (isLoadingRoom) {
     return (
       <div className="game-lobby-container loading-screen">
@@ -135,8 +131,8 @@ function GameLobby({ socket }) {
     );
   }
 
-  // Si el jugador está en una sala específica (esperando, IA o jugando)
   if (currentRoom && (currentRoom.status === 'waiting' || currentRoom.opponentType === 'ai' || currentRoom.status === 'playing')) {
+    // CAMBIO CRÍTICO PARA EL LINK: Asegurarse de que currentRoom y currentRoom.id existen
     const linkCompartir = currentRoom.id ? `https://trucoestrella.vercel.app/?room=${currentRoom.id}${currentRoom.privateKey ? `&key=${currentRoom.privateKey}` : ''}` : '';
 
     return (
@@ -168,7 +164,8 @@ function GameLobby({ socket }) {
                   </div>
                 )}
 
-                {currentRoom.status === 'waiting' && currentRoom.id && ( // Muestra el link solo si el ID existe y está esperando
+                {/* Mostrar el link solo si el ID de la sala existe y está en estado de espera */}
+                {currentRoom.status === 'waiting' && currentRoom.id && (
                     <>
                         <p>Esperando más jugadores... ¡Por favor, comparte el enlace!</p>
                         <div className="share-link-container">
@@ -187,63 +184,11 @@ function GameLobby({ socket }) {
       </div>
     );
   } else {
-    // Vista del Lobby Principal (Crear y Unirse)
     return (
-      <div className="game-lobby-container main-lobby-grid"> {/* Clase para grid layout */}
+      <div className="game-lobby-container main-lobby-grid">
         <h1>Truco Estrella</h1>
 
-        {/* Sección para Crear Partida (a la derecha en desktop) */}
-        <div className="create-game-section">
-          <h2>Crear Partida</h2>
-          <form onSubmit={handleCreateOrJoinFromForm} className="entry-form">
-            <label>
-              Tu Nombre:
-              <input
-                type="text"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-              />
-            </label>
-            <label>
-              Puntos para ganar:
-              <select value={pointsToWin} onChange={(e) => setPointsToWin(e.target.value)}>
-                <option value="15">15 Puntos</option>
-                <option value="30">30 Puntos</option>
-              </select>
-            </label>
-            <label>
-              Modo de juego:
-              <select value={gameMode} onChange={(e) => setGameMode(e.target.value)}>
-                <option value="1v1">Uno contra uno</option>
-                <option value="2v2">Dos contra dos</option>
-                {/* <option value="3v3">Tres contra tres</option> */}
-              </select>
-            </label>
-            <label>
-              Jugar contra:
-              <select value={opponentType} onChange={(e) => setOpponentType(e.target.value)}>
-                <option value="ai">IA Truco Estrella</option>
-                <option value="users">Todos Usuarios</option>
-              </select>
-            </label>
-            {opponentType === 'users' && (
-              <label>
-                Clave de Sala (opcional):
-                <input
-                  type="text"
-                  value={privateKey}
-                  onChange={(e) => setPrivateKey(e.target.value.toUpperCase())}
-                  maxLength="6"
-                  placeholder="Ej: ABC123"
-                />
-              </label>
-            )}
-            <button type="submit">¡Crear Partida!</button>
-          </form>
-        </div>
-
-        {/* Sección de Salas Disponibles (a la izquierda en desktop) */}
-        <div className="available-rooms-section">
+        <div className="available-rooms-section"> {/* Mover la lista de salas a la izquierda por defecto */}
           <h2>Salas Disponibles</h2>
           {availableRooms.length === 0 ? (
             <p>No hay partidas creadas en este momento.</p>
@@ -267,6 +212,54 @@ function GameLobby({ socket }) {
               ))}
             </div>
           )}
+        </div>
+
+        <div className="create-game-section"> {/* Mover el formulario a la derecha por defecto */}
+          <h2>Crear Partida</h2>
+          <form onSubmit={handleCreateOrJoinFromForm} className="entry-form">
+            <label>
+              Tu Nombre:
+              <input
+                type="text"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+              />
+            </label>
+            <label>
+              Puntos para ganar:
+              <select value={pointsToWin} onChange={(e) => setPointsToWin(e.target.value)}>
+                <option value="15">15 Puntos</option>
+                <option value="30">30 Puntos</option>
+              </select>
+            </label>
+            <label>
+              Modo de juego:
+              <select value={gameMode} onChange={(e) => setGameMode(e.target.value)}>
+                <option value="1v1">Uno contra uno</option>
+                <option value="2v2">Dos contra dos</option>
+              </select>
+            </label>
+            <label>
+              Jugar contra:
+              <select value={opponentType} onChange={(e) => setOpponentType(e.target.value)}>
+                <option value="ai">IA Truco Estrella</option>
+                <option value="users">Todos Usuarios</option>
+              </select>
+            </label>
+            {opponentType === 'users' && (
+              <label>
+                Clave de Sala (opcional):
+                <input
+                  type="text"
+                  value={privateKey}
+                  onChange={(e) => setPrivateKey(e.target.value.toUpperCase())}
+                  maxLength="6"
+                  placeholder="Ej: ABC123"
+                />
+              </label>
+            )}
+            <button type="submit">¡Crear Partida!</button>
+          </form>
         </div>
       </div>
     );

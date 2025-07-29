@@ -3,15 +3,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start; /* Alinea arriba para el scroll */
   min-height: 100vh;
   background-color: #f0f2f5;
   font-family: Arial, sans-serif;
   padding: 20px;
   text-align: center;
   color: #333;
-  width: 100%; /* Asegúrate de que ocupe todo el ancho */
-  box-sizing: border-box; /* Incluir padding en el ancho */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .game-lobby-container h1 {
@@ -31,9 +31,9 @@
 
 /* Estilos para la pantalla de carga dentro de GameLobby */
 .game-lobby-container.loading-screen {
-  justify-content: center;
+  justify-content: center; /* Centra el contenido verticalmente en la pantalla de carga */
 }
-.loading-spinner { /* Mantenemos este aquí ya que GameLobby lo usa ahora también */
+.loading-spinner {
   border: 4px solid rgba(0, 0, 0, 0.1);
   border-left-color: #007bff;
   border-radius: 50%;
@@ -52,23 +52,18 @@
 /* --- Layout para el Lobby Principal (Crear Partida y Salas Disponibles) --- */
 .main-lobby-grid {
   display: grid;
-  grid-template-columns: 1fr; /* Por defecto, una columna para móviles */
-  gap: 40px; /* Espacio entre las secciones */
+  grid-template-columns: 1fr; /* Una columna por defecto (móviles) */
+  gap: 30px; /* Espacio entre las secciones */
   width: 100%;
   max-width: 960px; /* Ancho máximo para el lobby */
-  margin: 0 auto; /* Centrar el contenedor */
+  margin: 0 auto;
+  padding: 20px 0; /* Un poco de padding arriba y abajo */
 }
 
-@media (min-width: 768px) { /* A partir de tablets/escritorio */
+@media (min-width: 768px) {
   .main-lobby-grid {
-    grid-template-columns: 1fr 1fr; /* Dos columnas */
-    text-align: left; /* Alinea el texto dentro de las columnas a la izquierda */
-  }
-
-  /* Asegurarse de que los h2 sigan centrados o alineados a la izquierda */
-  .create-game-section h2, .available-rooms-section h2 {
-    text-align: center; /* O left, según prefieras */
-    margin-bottom: 20px;
+    grid-template-columns: 1fr 1fr; /* Dos columnas para pantallas más grandes */
+    gap: 40px;
   }
 }
 
@@ -78,15 +73,24 @@
     border-radius: 8px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     box-sizing: border-box;
-    display: flex; /* Para centrar contenido si es necesario */
+    display: flex;
     flex-direction: column;
-    align-items: center; /* Centrar horizontalmente el contenido de la sección */
+    align-items: center;
+    text-align: center;
+}
+
+.create-game-section h2, .available-rooms-section h2 {
+    margin-bottom: 20px;
 }
 
 .create-game-section .entry-form {
-    width: 100%; /* El formulario ocupa todo el ancho de su sección */
-    max-width: 380px; /* Limita el ancho del formulario para mejor legibilidad */
+    width: 100%;
+    max-width: 380px;
     margin-top: 20px;
+    display: flex; /* Asegura que el formulario interno también sea flex */
+    flex-direction: column;
+    gap: 15px;
+    align-items: center; /* Centra el contenido del formulario */
 }
 
 .entry-form label {
@@ -95,6 +99,7 @@
   font-weight: bold;
   color: #555;
   text-align: left;
+  width: 100%; /* Asegura que el label ocupe todo el ancho disponible */
 }
 
 .entry-form input[type="text"],
@@ -104,7 +109,7 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 16px;
-  width: calc(100% - 22px); /* Ajuste por padding y borde */
+  width: calc(100% - 22px);
 }
 
 .entry-form button {
@@ -117,7 +122,7 @@
   cursor: pointer;
   transition: background-color 0.3s ease;
   margin-top: 20px;
-  width: 100%; /* Ocupa todo el ancho */
+  width: 100%;
 }
 
 .entry-form button:hover {
@@ -126,7 +131,7 @@
 
 .rooms-list {
   margin-top: 20px;
-  width: 100%; /* Ocupa todo el ancho de su sección */
+  width: 100%;
 }
 
 .room-item {
@@ -165,7 +170,7 @@
   gap: 10px;
   margin-top: 20px;
   width: 100%;
-  max-width: 500px;
+  max-width: 500px; /* Asegura que no se estire demasiado */
   margin-left: auto;
   margin-right: auto;
 }
