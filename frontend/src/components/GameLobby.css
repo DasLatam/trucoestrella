@@ -76,7 +76,6 @@ body, html, #root {
   background-color: #e2e6ea;
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  /* height: 10%; ya no es fija, se adapta al contenido y a grid-template-rows */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -179,17 +178,15 @@ body, html, #root {
 .my-room-view .header-row {
     grid-column: 1 / -1;
     text-align: center;
-    height: auto; /* Se adapta al contenido */
+    height: auto;
 }
 
 .main-content-row {
-    display: flex;
-    flex-wrap: wrap; /* Permite que las columnas se apilen en pantallas pequeñas */
-    gap: 20px; /* Espacio entre las columnas */
-    justify-content: center; /* Centra las columnas */
+    display: grid;
+    grid-template-columns: 1fr; /* Una columna para móviles */
+    gap: 20px;
     width: 100%;
-    max-width: 1200px; /* Limita el ancho total del contenido principal */
-    margin: 20px auto;
+    height: 100%;
 }
 
 @media (min-width: 768px) {
@@ -199,13 +196,15 @@ body, html, #root {
 }
 
 .my-room-details, .chat-log-box {
-    background-color: #fff;
+    background-color: #ffffff;
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    flex: 1; /* Permite que estos elementos crezcan */
-    min-width: 300px; /* Ancho mínimo para cada columna */
-    max-width: 500px; /* Ancho máximo para cada columna */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow-y: auto;
 }
 
 .chat-log-box {
@@ -254,15 +253,18 @@ body, html, #root {
 }
 
 
-/* Estilos adicionales */
+/* Estilos adicionales para el link de compartir - AJUSTES CRÍTICOS */
 .share-link-container {
-  display: flex;
+  display: flex; /* Asegura que sea un flex container */
+  flex-direction: row; /* Elementos en fila */
   gap: 10px;
   margin-top: 20px;
   width: 100%;
   max-width: 500px;
-  margin-left: auto;
-  margin-right: auto;
+  justify-content: center; /* Centrar contenido dentro del contenedor */
+  align-items: center; /* Centrar verticalmente */
+  box-sizing: border-box;
+  padding: 0 10px; /* Pequeño padding horizontal */
 }
 
 .share-link-container input {
@@ -270,21 +272,30 @@ body, html, #root {
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
+  background-color: #f0f0f0;
+  font-size: 0.9em;
+  min-width: 100px; /* Asegura un ancho mínimo para que no se colapse */
+  box-sizing: border-box; /* Incluye padding/border en el width */
 }
 
 .share-link-container button {
+  flex-shrink: 0; /* No permite que el botón se encoja */
+  padding: 10px 15px;
   background-color: #28a745;
   color: white;
-  padding: 10px 15px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 0.9em;
+  white-space: nowrap;
+  box-sizing: border-box; /* Incluye padding/border en el width */
 }
 
 .share-link-container button:hover {
   background-color: #218838;
 }
 
+/* Estilos existentes */
 .leave-button {
   background-color: #dc3545;
   color: white;

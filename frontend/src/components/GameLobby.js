@@ -211,9 +211,9 @@ function GameLobby({ socket }) {
 
   // Vista de "Mi Sala" (cuando el jugador está dentro de una sala específica)
   if (currentRoom && (currentRoom.status === 'waiting' || currentRoom.opponentType === 'ai' || currentRoom.status === 'playing')) {
-    // Generar link solo si la sala es de usuarios y está esperando, O si es IA esperando compañeros
+    // Generar link para PvP esperando o IA esperando compañeros
     const showShareLink = (currentRoom.status === 'waiting' && currentRoom.opponentType === 'users' && currentRoom.id) ||
-                         (currentRoom.status === 'waiting' && currentRoom.opponentType === 'ai' && currentRoom.humanPlayersNeeded > 1);
+                         (currentRoom.status === 'waiting' && currentRoom.opponentType === 'ai' && currentRoom.humanPlayersNeeded > 1 && currentRoom.id);
     const linkCompartir = showShareLink ? `https://trucoestrella.vercel.app/?room=${currentRoom.id}${currentRoom.privateKey ? `&key=${currentRoom.privateKey}` : ''}` : '';
 
     // Determinar participantes mostrados para IA vs PvP
@@ -276,7 +276,7 @@ function GameLobby({ socket }) {
                     </>
                 )}
                 
-                {/* Botón de Abandonar Sala: visible si está en estado 'waiting' (PvP o IA esperando) */}
+                {/* Botón de Abandonar Sala: visible si la sala está esperando (PvP o IA esperando) */}
                 {currentRoom.status === 'waiting' && (
                      <button onClick={handleLeaveRoom} className="leave-button">Abandonar Sala</button>
                 )}

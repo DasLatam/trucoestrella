@@ -9,14 +9,14 @@ const app = express();
 const server = http.createServer(app);
 
 app.use(cors({
-  origin: 'https://trucoestrella.vercel.app', // Asegúrate de que esta URL sea la de tu frontend
+  origin: 'https://trucoestrella.vercel.app',
   methods: ['GET', 'POST'],
   credentials: true
 }));
 
 const io = socketIo(server, {
   cors: {
-    origin: 'https://trucoestrella.vercel.app', // Asegúrate de que esta URL sea la de tu frontend
+    origin: 'https://trucoestrella.vercel.app',
     methods: ["GET", "POST"],
     credentials: true
   },
@@ -106,9 +106,21 @@ io.on('connection', (socket) => {
 
   socket.on('joinGame', async (data) => {
     await db.read();
-    const { playerName, pointsToWin, gameMode, opponentType, privateKey, playWithFlor } = data; // Agregado playWithFlor
+    const { playerName, pointsToWin, gameMode, opponentType, privateKey, playWithFlor } = data;
 
-    // VALIDACIÓN CRÍTICA: Impedir que un jugador se una a múltiples salas
+    // --- NUEVA VALIDACIÓN GLOBAL POR NOMBRE DE JUGADOR ---
+    const isPlayerNameTaken = Object.values(db.data.rooms).some(room => 
+      room.players.some(player => player.name === playerName)
+    );
+    if (isPlayerNameTaken) {
+      io.to(socket.id).emit('joinError', { message: `El nombre "${playerName}" ya está en uso en otra partida. Por favor, elige otro nombre o abandona tu otra partida.` });
+      console.log(`Intento de unión/creación fallido: Nombre "${playerName}" ya en uso.`);
+      return;
+    }
+    // FIN NUEVA VALIDACIÓN
+
+
+    // VALIDACIÓN CRÍTICA: Impedir que un jugador (socket) se una a múltiples salas
     if (socket.currentRoomId && db.data.rooms[socket.currentRoomId]) {
         io.to(socket.id).emit('joinError', { message: 'Ya estás en una partida. ¡Abandona la actual para unirte a otra!' });
         console.log(`Jugador ${playerName} (${socket.id}) intentó unirse/crear, pero ya está en ${socket.currentRoomId}.`);
@@ -137,7 +149,7 @@ io.on('connection', (socket) => {
         opponentType,
         privateKey: null, // Las salas de IA no tienen clave privada para unirse
         status: (gameMode === '1v1') ? 'playing' : 'waiting', // 1v1 IA inicia inmediatamente, otros modos esperan compañeros
-        createdAt: Date.now(),
+        createdAt: Date.2024-07-29T11:04:45.394Z(),
         playWithFlor: playWithFlor, // Guardar opción de Flor
       };
       db.data.rooms[roomId] = room;
@@ -157,7 +169,6 @@ io.on('connection', (socket) => {
           gameMode: room.gameMode,
           opponentType: room.opponentType,
           playWithFlor: room.playWithFlor,
-          // No se necesita totalSlots aquí, ya que el juego inició
         });
       } else { // Si la IA 2v2 o 3v3 espera compañeros
         io.to(socket.id).emit('roomUpdate', {
@@ -467,7 +478,8 @@ io.on('connection', (socket) => {
       currentPlayers: room.currentPlayers,
       maxPlayers: room.maxPlayers, // maxPlayers para PvP
       privateKey: room.privateKey ? true : false,
-      timeRemaining: Math.max(0, MAX_WAITING_TIME_MS - (Date.now() - room.createdAt)),
+      timeRemaining: Math.max(0, MAX_WAITING_TIME_MS - (Date.Now() - room.createdAt)),
+      playWithFlor: room.playWithFlor, // Incluir opción de flor
     }));
   }
 });
