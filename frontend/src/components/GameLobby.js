@@ -1,27 +1,30 @@
 // trucoestrella/frontend/src/components/GameLobby.js
 import React, { useState, useEffect } from 'react';
-import './GameLobby.css';
+import './GameLobby.css'; // Usaremos los mismos estilos
 
-function GameLobby({ socket, playerName, gameMode, pointsToWin, opponentType, initialPrivateKey, initialRoomId }) { // Agrega initialRoomId
+function GameLobby({ socket }) { // Ahora solo recibe el socket
+  // Estado para los campos del formulario de creación/unión
+  const [playerName, setPlayerName] = useState('Jugador 1');
+  const [pointsToWin, setPointsToWin] = useState('30');
+  const [gameMode, setGameMode] = useState('1v1');
+  const [opponentType, setOpponentType] = useState('users');
+  const [privateKey, setPrivateKey] = useState('');
+
+  // Estados para la lógica de la sala
   const [availableRooms, setAvailableRooms] = useState([]);
   const [currentRoom, setCurrentRoom] = useState(null); // La sala a la que el jugador está unido/creó
 
   useEffect(() => {
     if (!socket) return;
 
-    // Si venimos de crear/unirnos a una sala, establecerla como la currentRoom
-    if (initialRoomId && !currentRoom) {
-        // Pedimos los detalles de nuestra sala al servidor si es necesario, o la construimos
-        // Por ahora, asumimos que el backend enviará un roomUpdate para nuestra sala al conectar
-        console.log("Intentando inicializar currentRoom con:", initialRoomId);
-    }
-
+    // Escuchar la lista de salas disponibles
     socket.on('availableRooms', (rooms) => {
       console.log('Salas disponibles recibidas:', rooms);
-      // Filtrar para no mostrar la propia sala si ya estoy unido y es privada
-      setAvailableRooms(rooms.filter(room => !(currentRoom && room.id === currentRoom.id && room.privateKey)));
+      // Filtrar para no mostrar la propia sala si ya estoy unido
+      setAvailableRooms(rooms.filter(room => !(currentRoom && room.id === currentRoom.id)));
     });
 
+    // Escuchar actualizaciones de mi sala (si ya estoy en una)
     socket.on('roomUpdate', (roomData) => {
       console.log('Actualización de mi sala recibida en GameLobby:', roomData);
       setCurrentRoom(roomData);
@@ -29,28 +32,28 @@ function GameLobby({ socket, playerName, gameMode, pointsToWin, opponentType, in
       setAvailableRooms(prevRooms => prevRooms.filter(room => room.id !== roomData.id));
     });
 
-    // Evento que se dispara si la partida inicia desde el backend
+    // Escuchar cuando una partida inicia
     socket.on('gameStarted', (gameData) => {
       console.log('¡Partida iniciada!', gameData);
-      alert(gameData.message); // Por ahora un alert
-      // Aquí iría la lógica para pasar a la pantalla de juego
-      // setCurrentPage('game'); // Por ejemplo
+      alert(gameData.message); // Por ahora un alert, luego pasaremos a la pantalla de juego
+      setCurrentRoom(gameData); // Asegurarnos de que el currentRoom refleja la partida iniciada
     });
 
+    // Escuchar errores al unirse
     socket.on('joinError', (error) => {
       alert(`Error al unirse: ${error.message}`);
-      setCurrentRoom(null); // Asegurarse de que no estamos en una sala si hubo error
+      setCurrentRoom(null); // Si hubo un error, no estamos en ninguna sala
     });
 
+    // Escuchar si la sala fue abandonada o eliminada
     socket.on('roomAbandoned', (data) => {
       alert(`Mensaje del sistema: ${data.message}`);
-      setCurrentRoom(null); // Volver a la pantalla de lista de salas
+      setCurrentRoom(null); // Si la sala se abandona/elimina, no estamos en ninguna sala
       socket.emit('requestAvailableRooms'); // Solicitar la lista actualizada
     });
 
-    // Cuando el componente GameLobby se monta, pedimos la lista de salas disponibles
-    // y el estado de nuestra sala si es que ya estamos en una.
-    socket.emit('requestAvailableRooms'); // Asegurarse de tener la lista inicial
+    // Al montar el componente, solicitar la lista de salas disponibles
+    socket.emit('requestAvailableRooms');
 
     return () => {
       socket.off('availableRooms');
@@ -59,19 +62,39 @@ function GameLobby({ socket, playerName, gameMode, pointsToWin, opponentType, in
       socket.off('joinError');
       socket.off('roomAbandoned');
     };
-  }, [socket, initialRoomId, currentRoom]); // Agregar currentRoom a las dependencias
+  }, [socket, currentRoom]); // currentRoom se añade para que el filtro de rooms funcione al actualizar
 
-  // Resto del componente (handleJoinRoom, handleLeaveRoom, renderizado condicional)
-  // ... (Mantén el resto del código como está)
-  const handleJoinRoom = (roomIdToJoin, key = null) => {
+  const handleCreateOrJoinFromForm = (e) => {
+    e.preventDefault();
     if (socket) {
       socket.emit('joinGame', {
-        playerName, // Usamos el playerName actual del estado
-        pointsToWin: pointsToWin, // Usamos los puntos actuales del estado (mejor tomar de la sala real)
-        gameMode: gameMode, // Usamos el modo actual del estado (mejor tomar de la sala real)
-        opponentType: 'users',
-        privateKey: key || null, // Asegurarse de que sea null si no hay clave
+        playerName,
+        pointsToWin: parseInt(pointsToWin),
+        gameMode,
+        opponentType,
+        privateKey: opponentType === 'users' ? privateKey : null,
       });
+      console.log('Enviando datos al servidor para crear/unirse desde formulario:', {
+        playerName, pointsToWin, gameMode, opponentType, privateKey
+      });
+    }
+  };
+
+  const handleJoinRoomFromList = (roomIdToJoin, keyRequired) => {
+    if (socket) {
+      let key = null;
+      if (keyRequired) {
+        key = prompt('Esta sala es privada. Ingresa la clave:');
+        if (!key) return; // Si el usuario cancela
+      }
+      socket.emit('joinGame', {
+        playerName, // Usamos el nombre actual del jugador
+        pointsToWin: null, // No se necesita, la sala ya tiene estos datos
+        gameMode: null,    // No se necesita
+        opponentType: 'users', // Siempre 'users' al unirse a una lista
+        privateKey: key || roomIdToJoin, // Usamos el ID o la clave ingresada
+      });
+      console.log(`Intentando unirse a sala ${roomIdToJoin} con clave: ${key}`);
     }
   };
 
@@ -82,74 +105,139 @@ function GameLobby({ socket, playerName, gameMode, pointsToWin, opponentType, in
     }
   };
 
-  if (currentRoom && currentRoom.status === 'waiting' && currentRoom.opponentType === 'users') {
+  // --- Renderizado Condicional del Lobby ---
+  // Si el jugador está en una sala esperando o la partida de IA se inició
+  if (currentRoom && (currentRoom.status === 'waiting' || currentRoom.opponentType === 'ai' || currentRoom.status === 'playing')) {
     const creatorName = currentRoom.players[0]?.name || 'Creador';
     const linkCompartir = `https://trucoestrella.vercel.app/?room=${currentRoom.id}${currentRoom.privateKey ? `&key=${currentRoom.privateKey}` : ''}`;
 
     return (
       <div className="game-lobby-container my-room">
         <h1>Truco Estrella</h1>
-        <h2>Mi Sala: {currentRoom.id} {currentRoom.privateKey ? '(Privada)' : '(Pública)'}</h2>
-        <p>Hola **{playerName}**!</p>
-        <p>Has creado esta partida **{currentRoom.gameMode}** a **{currentRoom.pointsToWin}** puntos.</p>
-        <p>Participantes: **{currentRoom.currentPlayers}** de **{currentRoom.maxPlayers}**</p>
-
-        {currentRoom.players.length > 0 && (
-          <div className="player-list">
-            <h3>Jugadores en sala:</h3>
-            <ul>
-              {currentRoom.players.map(player => (
-                <li key={player.id}>{player.name}</li>
-              ))}
-            </ul>
-          </div>
+        {currentRoom.opponentType === 'ai' ? (
+          <h2>Partida contra IA: {currentRoom.id}</h2>
+        ) : (
+          <h2>Mi Sala: {currentRoom.id} {currentRoom.privateKey ? '(Privada)' : '(Pública)'}</h2>
         )}
+        
+        <p>Hola **{playerName}**!</p>
 
-        <p>Esperando más jugadores... ¡Por favor, comparte el enlace!</p>
-        <div className="share-link-container">
-          <input type="text" value={linkCompartir} readOnly />
-          <button onClick={() => navigator.clipboard.writeText(linkCompartir)}>Copiar Link</button>
-        </div>
-        <button onClick={handleLeaveRoom} className="leave-button">Abandonar Sala</button>
+        {currentRoom.opponentType === 'ai' ? (
+            <p>Iniciando partida **{currentRoom.gameMode}** a **{currentRoom.pointsToWin}** puntos contra la IA Truco Estrella...</p>
+        ) : (
+            <>
+                <p>Has creado esta partida **{currentRoom.gameMode}** a **{currentRoom.pointsToWin}** puntos.</p>
+                <p>Participantes: **{currentRoom.currentPlayers}** de **{currentRoom.maxPlayers}**</p>
+                {currentRoom.players.length > 0 && (
+                  <div className="player-list">
+                    <h3>Jugadores en sala:</h3>
+                    <ul>
+                      {currentRoom.players.map(player => (
+                        <li key={player.id}>{player.name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {currentRoom.status === 'waiting' && (
+                    <>
+                        <p>Esperando más jugadores... ¡Por favor, comparte el enlace!</p>
+                        <div className="share-link-container">
+                        <input type="text" value={linkCompartir} readOnly />
+                        <button onClick={() => navigator.clipboard.writeText(linkCompartir)}>Copiar Link</button>
+                        </div>
+                    </>
+                )}
+            </>
+        )}
+        
+        {currentRoom.status === 'waiting' && currentRoom.opponentType !== 'ai' && (
+             <button onClick={handleLeaveRoom} className="leave-button">Abandonar Sala</button>
+        )}
+        {currentRoom.status === 'playing' && <p>¡La partida ha comenzado!</p>}
       </div>
     );
-  } else if (opponentType === 'ai') {
-      return (
-          <div className="game-lobby-container ai-game">
-              <h1>Truco Estrella</h1>
-              <h2>Partida contra IA</h2>
-              <p>Iniciando partida **{gameMode}** a **{pointsToWin}** puntos contra la IA Truco Estrella...</p>
-              <div className="loading-spinner"></div>
-          </div>
-      );
   } else {
+    // Vista de "Crear Partida" y "Salas Disponibles"
     return (
-      <div className="game-lobby-container available-rooms">
+      <div className="game-lobby-container main-lobby">
         <h1>Truco Estrella</h1>
-        <h2>Salas Disponibles</h2>
-        {availableRooms.length === 0 ? (
-          <p>No hay partidas disponibles en este momento. ¡Crea una nueva!</p>
-        ) : (
-          <div className="rooms-list">
-            {availableRooms.map((room) => (
-              <div key={room.id} className="room-item">
-                <p>
-                  Creador: **{room.creatorName}** - Modo: **{room.gameMode}** - Puntos: **{room.pointsToWin}**
-                </p>
-                <p>
-                  Participantes: **{room.currentPlayers}** de **{room.maxPlayers}** {room.privateKey && '(Privada)'}
-                </p>
-                {room.timeRemaining > 0 && (
-                  <p className="time-remaining">Tiempo restante: {Math.ceil(room.timeRemaining / 60000)} min</p>
-                )}
-                <button onClick={() => handleJoinRoom(room.id, room.privateKey ? prompt('Ingresa la clave de la sala:') : null)}>
-                  Unirme
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-        <button onClick={() => window.location.reload()} className="back-to-login">Crear Nueva Partida</button>
+
+        {/* Sección para Crear Partida */}
+        <div className="create-game-section">
+          <h2>Crear Partida</h2>
+          <form onSubmit={handleCreateOrJoinFromForm} className="entry-form">
+            <label>
+              Tu Nombre:
+              <input
+                type="text"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+              />
+            </label>
+            <label>
+              Puntos para ganar:
+              <select value={pointsToWin} onChange={(e) => setPointsToWin(e.target.value)}>
+                <option value="15">15 Puntos</option>
+                <option value="30">30 Puntos</option>
+              </select>
+            </label>
+            <label>
+              Modo de juego:
+              <select value={gameMode} onChange={(e) => setGameMode(e.target.value)}>
+                <option value="1v1">Uno contra uno</option>
+                <option value="2v2">Dos contra dos</option>
+                {/* <option value="3v3">Tres contra tres</option> */}
+              </select>
+            </label>
+            <label>
+              Jugar contra:
+              <select value={opponentType} onChange={(e) => setOpponentType(e.target.value)}>
+                <option value="ai">IA Truco Estrella</option>
+                <option value="users">Todos Usuarios</option>
+              </select>
+            </label>
+            {opponentType === 'users' && (
+              <label>
+                Clave de Sala (opcional):
+                <input
+                  type="text"
+                  value={privateKey}
+                  onChange={(e) => setPrivateKey(e.target.value.toUpperCase())}
+                  maxLength="6"
+                  placeholder="Ej: ABC123"
+                />
+              </label>
+            )}
+            <button type="submit">¡Crear Partida!</button>
+          </form>
+        </div>
+
+        {/* Sección de Salas Disponibles */}
+        <div className="available-rooms-section">
+          <h2>Salas Disponibles</h2>
+          {availableRooms.length === 0 ? (
+            <p>No hay partidas creadas en este momento.</p>
+          ) : (
+            <div className="rooms-list">
+              {availableRooms.map((room) => (
+                <div key={room.id} className="room-item">
+                  <p>
+                    Creador: **{room.creatorName}** - Modo: **{room.gameMode}** - Puntos: **{room.pointsToWin}**
+                  </p>
+                  <p>
+                    Participantes: **{room.currentPlayers}** de **{room.maxPlayers}** {room.privateKey && '(Privada)'}
+                  </p>
+                  {room.timeRemaining > 0 && (
+                    <p className="time-remaining">Tiempo restante: {Math.ceil(room.timeRemaining / 60000)} min</p>
+                  )}
+                  <button onClick={() => handleJoinRoomFromList(room.id, room.privateKey)}>
+                    Unirme
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     );
   }

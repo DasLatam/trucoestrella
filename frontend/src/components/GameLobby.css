@@ -1,4 +1,6 @@
 /* trucoestrella/frontend/src/components/GameLobby.css */
+/* Mantén todos los estilos anteriores y añade o ajusta los siguientes si es necesario */
+
 .game-lobby-container {
   display: flex;
   flex-direction: column;
@@ -12,47 +14,79 @@
   color: #333;
 }
 
-.game-lobby-container h1 {
-  color: #333;
-  margin-bottom: 20px;
+/* ... (mantener estilos de h1, h2, p, loading-spinner si no los moviste a App.css) ... */
+/* Asegúrate de que loading-spinner SOLO esté en App.css */
+
+
+.game-lobby-container.main-lobby {
+    display: flex;
+    flex-direction: column;
+    gap: 40px; /* Espacio entre secciones de crear y unirse */
+    width: 100%;
+    max-width: 800px; /* Para que no se estire demasiado */
+    margin: auto; /* Centrar */
 }
 
-.game-lobby-container h2 {
-  color: #555;
-  margin-bottom: 30px;
+.create-game-section, .available-rooms-section {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    box-sizing: border-box; /* Incluir padding en el width */
 }
 
-.game-lobby-container p {
-  font-size: 1.1em;
-  margin-bottom: 10px;
+.entry-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
 }
 
-.loading-spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-left-color: #007bff;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  animation: spin 1s linear infinite;
-  margin-top: 30px;
+.entry-form label {
+    display: flex;
+    flex-direction: column;
+    font-weight: bold;
+    color: #555;
+    text-align: left; /* Alinea las etiquetas a la izquierda */
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+.entry-form input[type="text"],
+.entry-form select {
+  padding: 10px;
+  margin-top: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.entry-form button {
+  background-color: #28a745;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-top: 20px;
+}
+
+.entry-form button:hover {
+  background-color: #218838;
 }
 
 .rooms-list {
   margin-top: 20px;
-  width: 100%;
-  max-width: 600px;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  padding: 20px;
+  /* width: 100%; remueve esto, ya el contenedor padre lo define */
+  /* max-width: 600px; remueve esto, ya el contenedor padre lo define */
+  /* background-color: #fff; remueve esto, ya el contenedor padre lo define */
+  /* border-radius: 8px; remueve esto, ya el contenedor padre lo define */
+  /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); remueve esto, ya el contenedor padre lo define */
+  /* padding: 20px; remueve esto, ya el contenedor padre lo define */
 }
 
+/* Mantener el resto de estilos de room-item, share-link-container, leave-button, etc. */
 .room-item {
   border: 1px solid #ddd;
   border-radius: 5px;
@@ -77,26 +111,11 @@
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  align-self: flex-end; /* Alinea el botón a la derecha */
+  align-self: flex-end;
 }
 
 .room-item button:hover {
   background-color: #0056b3;
-}
-
-.back-to-login {
-  background-color: #6c757d;
-  color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: 30px;
-  font-size: 1em;
-}
-
-.back-to-login:hover {
-  background-color: #5a6268;
 }
 
 .share-link-container {
@@ -105,6 +124,8 @@
   margin-top: 20px;
   width: 100%;
   max-width: 500px;
+  margin-left: auto; /* Centrar con margen automático */
+  margin-right: auto;
 }
 
 .share-link-container input {
@@ -168,6 +189,6 @@
 
 .time-remaining {
   font-size: 0.9em;
-  color: #dc3545; /* Color para indicar urgencia */
+  color: #dc3545;
   font-weight: bold;
 }
