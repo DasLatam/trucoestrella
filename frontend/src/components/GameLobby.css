@@ -1,0 +1,173 @@
+/* trucoestrella/frontend/src/components/GameLobby.css */
+.game-lobby-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  text-align: center;
+  color: #333;
+}
+
+.game-lobby-container h1 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.game-lobby-container h2 {
+  color: #555;
+  margin-bottom: 30px;
+}
+
+.game-lobby-container p {
+  font-size: 1.1em;
+  margin-bottom: 10px;
+}
+
+.loading-spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #007bff;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin-top: 30px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rooms-list {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 600px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.room-item {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 15px;
+  margin-bottom: 15px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.room-item p {
+  margin: 0;
+  font-size: 1em;
+}
+
+.room-item button {
+  background-color: #007bff;
+  color: white;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  align-self: flex-end; /* Alinea el botón a la derecha */
+}
+
+.room-item button:hover {
+  background-color: #0056b3;
+}
+
+.back-to-login {
+  background-color: #6c757d;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 30px;
+  font-size: 1em;
+}
+
+.back-to-login:hover {
+  background-color: #5a6268;
+}
+
+.share-link-container {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  width: 100%;
+  max-width: 500px;
+}
+
+.share-link-container input {
+  flex-grow: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.share-link-container button {
+  background-color: #28a745;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.share-link-container button:hover {
+  background-color: #218838;
+}
+
+.leave-button {
+  background-color: #dc3545;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 20px;
+}
+
+.leave-button:hover {
+  background-color: #c82333;
+}
+
+.player-list {
+  margin-top: 15px;
+  text-align: left;
+  align-self: center;
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 5px;
+  width: 80%;
+}
+
+.player-list h3 {
+  margin-top: 0;
+  color: #007bff;
+}
+
+.player-list ul {
+  list-style: none;
+  padding: 0;
+}
+
+.player-list li {
+  margin-bottom: 5px;
+  font-size: 1.1em;
+}
+
+.time-remaining {
+  font-size: 0.9em;
+  color: #dc3545; /* Color para indicar urgencia */
+  font-weight: bold;
+}
