@@ -1,10 +1,9 @@
-// trucoestrella/frontend/src/App.js
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import './App.css';
-import GameLobby from './components/GameLobby'; // ¡Ahora importamos GameLobby!
+import GameLobby from './components/GameLobby';
 
-const SOCKET_SERVER_URL = 'https://trucoestrella-backend.onrender.com'; // ¡Confirma tu URL de Render!
+const SOCKET_SERVER_URL = 'https://trucoestrella-backend.onrender.com';
 
 function App() {
   const [playerName, setPlayerName] = useState('Jugador 1');
@@ -13,10 +12,8 @@ function App() {
   const [opponentType, setOpponentType] = useState('users');
   const [privateKey, setPrivateKey] = useState('');
   const [socket, setSocket] = useState(null);
-  const [currentPage, setCurrentPage] = useState('login'); // 'login' o 'gameLobby'
-
-  // Para pasar los datos de la partida al GameLobby si se creó/unió desde el login
-  const [initialGameData, setInitialGameData] = useState(null);
+  const [currentPage, setCurrentPage] = useState('login');
+  const [initialGameData, setInitialGameData] = useState(null); // Guarda los datos de la partida
 
   useEffect(() => {
     const newSocket = io(SOCKET_SERVER_URL);
@@ -26,38 +23,46 @@ function App() {
       console.log('Conectado al servidor de Socket.IO');
     });
 
-    // Cuando el servidor confirma que el jugador se unió a una sala (o la creó)
-    newSocket.on('gameJoined', (data) => {
-      console.log('Mensaje del servidor (gameJoined):', data);
-      setInitialGameData({ // Guardar los datos para pasarlos al GameLobby
-        playerName: playerName,
-        pointsToWin: parseInt(pointsToWin),
-        gameMode: gameMode,
-        opponentType: opponentType,
-        privateKey: privateKey,
-        roomId: data.roomId // El ID de la sala que el backend nos da
+    // *** CAMBIO CLAVE AQUÍ: Escuchar 'roomUpdate' para la transición ***
+    newSocket.on('roomUpdate', (roomData) => {
+      console.log('Actualización de sala recibida en App.js:', roomData);
+      setInitialGameData({ // Guarda los datos de la sala actual
+        playerName: playerName, // Usamos el nombre del estado local aquí
+        pointsToWin: roomData.pointsToWin, // Datos de la sala
+        gameMode: roomData.gameMode,     // Datos de la sala
+        opponentType: roomData.opponentType, // Datos de la sala
+        privateKey: roomData.privateKey,  // Datos de la sala
+        roomId: roomData.id // El ID de la sala
       });
-      setCurrentPage('gameLobby'); // ¡Cambiamos a la pantalla de lobby!
+      setCurrentPage('gameLobby'); // Cambia a la pantalla de lobby
+    });
+
+    newSocket.on('gameStarted', (gameData) => {
+      console.log('¡Partida iniciada!', gameData);
+      // Opcional: podrías navegar a una página de juego aquí, si no usas GameLobby para eso.
+      // Por ahora, el GameLobby lo manejará internamente.
     });
 
     newSocket.on('joinError', (error) => {
       alert(`Error al unirse: ${error.message}`);
-      // Quedarse en la pantalla de login si hubo error
+      // Si hay error, nos quedamos en la pantalla de login
+      setCurrentPage('login');
+      setInitialGameData(null);
     });
 
     newSocket.on('disconnect', () => {
       console.log('Desconectado del servidor de Socket.IO');
-      setCurrentPage('login'); // Si se desconecta, volvemos a la pantalla de login
-      setInitialGameData(null); // Limpiar datos de partida
+      setCurrentPage('login');
+      setInitialGameData(null);
     });
 
+    // Limpiar la conexión cuando el componente se desmonte
     return () => newSocket.disconnect();
-  }, [playerName, pointsToWin, gameMode, opponentType, privateKey]); // Incluir dependencias necesarias
+  }, [playerName, pointsToWin, gameMode, opponentType, privateKey]); // Dependencias
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (socket) {
-      // Envía al backend para que maneje la lógica de crear/unir a sala
       socket.emit('joinGame', {
         playerName,
         pointsToWin: parseInt(pointsToWin),
@@ -80,9 +85,9 @@ function App() {
 
   return (
     <>
-      {/* Renderizado condicional basado en el estado 'currentPage' */}
       {currentPage === 'login' && (
         <div className="app-container">
+          {/* Contenido de la pantalla de login */}
           <h1>Truco Estrella</h1>
           <form onSubmit={handleSubmit} className="entry-form">
             <label>
@@ -93,7 +98,6 @@ function App() {
                 onChange={(e) => setPlayerName(e.target.value)}
               />
             </label>
-
             <label>
               Puntos para ganar:
               <select value={pointsToWin} onChange={(e) => setPointsToWin(e.target.value)}>
@@ -101,17 +105,13 @@ function App() {
                 <option value="30">30 Puntos</option>
               </select>
             </label>
-
             <label>
               Modo de juego:
               <select value={gameMode} onChange={(e) => setGameMode(e.target.value)}>
                 <option value="1v1">Uno contra uno</option>
                 <option value="2v2">Dos contra dos</option>
-                {/* Agrega 3v3 cuando estemos listos */}
-                {/* <option value="3v3">Tres contra tres</option> */}
               </select>
             </label>
-
             <label>
               Jugar contra:
               <select value={opponentType} onChange={(e) => setOpponentType(e.target.value)}>
@@ -119,7 +119,6 @@ function App() {
                 <option value="users">Todos Usuarios</option>
               </select>
             </label>
-
             {opponentType === 'users' && (
               <label>
                 Clave de Sala (opcional):
@@ -132,7 +131,6 @@ function App() {
                 />
               </label>
             )}
-
             <button type="submit">¡Jugar!</button>
           </form>
         </div>
@@ -145,7 +143,8 @@ function App() {
           pointsToWin={initialGameData.pointsToWin}
           gameMode={initialGameData.gameMode}
           opponentType={initialGameData.opponentType}
-          initialPrivateKey={initialGameData.privateKey} // Pasa la clave inicial si la hubo
+          initialPrivateKey={initialGameData.privateKey}
+          initialRoomId={initialGameData.roomId} // Pasamos el roomId inicial
         />
       )}
     </>

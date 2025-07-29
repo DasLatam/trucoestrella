@@ -1,60 +1,56 @@
 // trucoestrella/frontend/src/components/GameLobby.js
 import React, { useState, useEffect } from 'react';
-import './GameLobby.css'; // Crearemos este archivo CSS
+import './GameLobby.css';
 
-function GameLobby({ socket, playerName, gameMode, pointsToWin, opponentType, initialPrivateKey }) {
+function GameLobby({ socket, playerName, gameMode, pointsToWin, opponentType, initialPrivateKey, initialRoomId }) { // Agrega initialRoomId
   const [availableRooms, setAvailableRooms] = useState([]);
   const [currentRoom, setCurrentRoom] = useState(null); // La sala a la que el jugador está unido/creó
 
   useEffect(() => {
     if (!socket) return;
 
-    // Escuchar la lista de salas disponibles
+    // Si venimos de crear/unirnos a una sala, establecerla como la currentRoom
+    if (initialRoomId && !currentRoom) {
+        // Pedimos los detalles de nuestra sala al servidor si es necesario, o la construimos
+        // Por ahora, asumimos que el backend enviará un roomUpdate para nuestra sala al conectar
+        console.log("Intentando inicializar currentRoom con:", initialRoomId);
+    }
+
     socket.on('availableRooms', (rooms) => {
       console.log('Salas disponibles recibidas:', rooms);
-      setAvailableRooms(rooms);
+      // Filtrar para no mostrar la propia sala si ya estoy unido y es privada
+      setAvailableRooms(rooms.filter(room => !(currentRoom && room.id === currentRoom.id && room.privateKey)));
     });
 
-    // Escuchar actualizaciones de mi sala (si ya estoy en una)
     socket.on('roomUpdate', (roomData) => {
-      console.log('Actualización de mi sala:', roomData);
+      console.log('Actualización de mi sala recibida en GameLobby:', roomData);
       setCurrentRoom(roomData);
+      // Actualizar también la lista de disponibles, para que la sala actual no aparezca
+      setAvailableRooms(prevRooms => prevRooms.filter(room => room.id !== roomData.id));
     });
 
-    // Escuchar cuando una partida inicia
+    // Evento que se dispara si la partida inicia desde el backend
     socket.on('gameStarted', (gameData) => {
       console.log('¡Partida iniciada!', gameData);
-      alert(gameData.message); // Por ahora un alert, luego pasaremos a la pantalla de juego
-      // Aquí se navegaría a la interfaz de juego
+      alert(gameData.message); // Por ahora un alert
+      // Aquí iría la lógica para pasar a la pantalla de juego
+      // setCurrentPage('game'); // Por ejemplo
     });
 
-    // Escuchar errores al unirse
     socket.on('joinError', (error) => {
       alert(`Error al unirse: ${error.message}`);
-      setCurrentRoom(null); // Asegurarse de que no estamos en una sala
+      setCurrentRoom(null); // Asegurarse de que no estamos en una sala si hubo error
     });
 
-    // Escuchar si la sala fue abandonada o eliminada
     socket.on('roomAbandoned', (data) => {
       alert(`Mensaje del sistema: ${data.message}`);
-      setCurrentRoom(null); // Volver a la pantalla de lista de salas/login
+      setCurrentRoom(null); // Volver a la pantalla de lista de salas
+      socket.emit('requestAvailableRooms'); // Solicitar la lista actualizada
     });
 
-    // Cuando el componente se carga, pedimos la lista de salas (aunque el backend ya la envía al conectar)
-    socket.emit('requestAvailableRooms'); // Podríamos tener un evento para esto si el backend no lo envia al conectar
-
-    // Si el jugador ya creó una partida al entrar, enviamos la información al backend
-    // Esto es para que el backend lo maneje como una creación de sala
-    // Nota: La lógica de `joinGame` ya maneja la creación si `privateKey` está vacío o no existe
-    if (!initialPrivateKey && opponentType === 'users') {
-        socket.emit('joinGame', {
-            playerName,
-            pointsToWin: parseInt(pointsToWin),
-            gameMode,
-            opponentType,
-            privateKey: initialPrivateKey,
-        });
-    }
+    // Cuando el componente GameLobby se monta, pedimos la lista de salas disponibles
+    // y el estado de nuestra sala si es que ya estamos en una.
+    socket.emit('requestAvailableRooms'); // Asegurarse de tener la lista inicial
 
     return () => {
       socket.off('availableRooms');
@@ -63,16 +59,18 @@ function GameLobby({ socket, playerName, gameMode, pointsToWin, opponentType, in
       socket.off('joinError');
       socket.off('roomAbandoned');
     };
-  }, [socket, playerName, pointsToWin, gameMode, opponentType, initialPrivateKey]); // Dependencias para el useEffect
+  }, [socket, initialRoomId, currentRoom]); // Agregar currentRoom a las dependencias
 
+  // Resto del componente (handleJoinRoom, handleLeaveRoom, renderizado condicional)
+  // ... (Mantén el resto del código como está)
   const handleJoinRoom = (roomIdToJoin, key = null) => {
     if (socket) {
       socket.emit('joinGame', {
-        playerName,
-        pointsToWin: parseInt(pointsToWin), // Esto se podría tomar de la sala, pero por ahora se re-envía
-        gameMode, // Esto también
-        opponentType: 'users', // Siempre 'users' al unirse a una sala listada
-        privateKey: key || roomIdToJoin, // Usamos el ID de la sala como clave si no hay clave privada explícita
+        playerName, // Usamos el playerName actual del estado
+        pointsToWin: pointsToWin, // Usamos los puntos actuales del estado (mejor tomar de la sala real)
+        gameMode: gameMode, // Usamos el modo actual del estado (mejor tomar de la sala real)
+        opponentType: 'users',
+        privateKey: key || null, // Asegurarse de que sea null si no hay clave
       });
     }
   };
@@ -80,15 +78,13 @@ function GameLobby({ socket, playerName, gameMode, pointsToWin, opponentType, in
   const handleLeaveRoom = () => {
     if (socket && currentRoom) {
       socket.emit('leaveRoom');
-      setCurrentRoom(null); // Resetea el estado local
+      setCurrentRoom(null); // Resetea el estado local para volver a la lista
     }
   };
 
-  // Renderizado condicional: si estoy en una sala o viendo la lista
   if (currentRoom && currentRoom.status === 'waiting' && currentRoom.opponentType === 'users') {
-    // Vista de "Mi Sala de Espera"
     const creatorName = currentRoom.players[0]?.name || 'Creador';
-    const linkCompartir = `https://trucoestrella.vercel.app/?room=${currentRoom.id}${currentRoom.privateKey ? `&key=${currentRoom.privateKey}` : ''}`; // Genera el link
+    const linkCompartir = `https://trucoestrella.vercel.app/?room=${currentRoom.id}${currentRoom.privateKey ? `&key=${currentRoom.privateKey}` : ''}`;
 
     return (
       <div className="game-lobby-container my-room">
@@ -97,7 +93,7 @@ function GameLobby({ socket, playerName, gameMode, pointsToWin, opponentType, in
         <p>Hola **{playerName}**!</p>
         <p>Has creado esta partida **{currentRoom.gameMode}** a **{currentRoom.pointsToWin}** puntos.</p>
         <p>Participantes: **{currentRoom.currentPlayers}** de **{currentRoom.maxPlayers}**</p>
-        
+
         {currentRoom.players.length > 0 && (
           <div className="player-list">
             <h3>Jugadores en sala:</h3>
@@ -118,18 +114,15 @@ function GameLobby({ socket, playerName, gameMode, pointsToWin, opponentType, in
       </div>
     );
   } else if (opponentType === 'ai') {
-      // Vista para partida contra IA (directo a juego, por ahora un mensaje)
       return (
           <div className="game-lobby-container ai-game">
               <h1>Truco Estrella</h1>
               <h2>Partida contra IA</h2>
               <p>Iniciando partida **{gameMode}** a **{pointsToWin}** puntos contra la IA Truco Estrella...</p>
               <div className="loading-spinner"></div>
-              {/* Aquí luego se renderizará el componente de juego */}
           </div>
       );
   } else {
-    // Vista de "Lista de Salas Disponibles"
     return (
       <div className="game-lobby-container available-rooms">
         <h1>Truco Estrella</h1>
@@ -156,7 +149,6 @@ function GameLobby({ socket, playerName, gameMode, pointsToWin, opponentType, in
             ))}
           </div>
         )}
-        {/* Aquí podríamos añadir un botón para volver al login y crear una nueva */}
         <button onClick={() => window.location.reload()} className="back-to-login">Crear Nueva Partida</button>
       </div>
     );
