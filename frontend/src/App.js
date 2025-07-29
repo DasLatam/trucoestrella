@@ -3,7 +3,7 @@ import io from 'socket.io-client';
 import './App.css';
 import GameLobby from './components/GameLobby';
 
-const SOCKET_SERVER_URL = 'https://trucoestrella-backend.onrender.com';
+const SOCKET_SERVER_URL = 'https://trucoestrella-backend.onrender.com'; // ¡Confirma tu URL de Render!
 
 function App() {
   const [playerName, setPlayerName] = useState('Jugador 1');
@@ -13,7 +13,7 @@ function App() {
   const [privateKey, setPrivateKey] = useState('');
   const [socket, setSocket] = useState(null);
   const [currentPage, setCurrentPage] = useState('login');
-  const [initialGameData, setInitialGameData] = useState(null); // Guarda los datos de la partida
+  const [initialGameData, setInitialGameData] = useState(null);
 
   useEffect(() => {
     const newSocket = io(SOCKET_SERVER_URL);
@@ -23,29 +23,36 @@ function App() {
       console.log('Conectado al servidor de Socket.IO');
     });
 
-    // *** CAMBIO CLAVE AQUÍ: Escuchar 'roomUpdate' para la transición ***
+    // Este evento se dispara cuando el backend confirma que te uniste/creaste una sala (PvP)
     newSocket.on('roomUpdate', (roomData) => {
-      console.log('Actualización de sala recibida en App.js:', roomData);
-      setInitialGameData({ // Guarda los datos de la sala actual
-        playerName: playerName, // Usamos el nombre del estado local aquí
-        pointsToWin: roomData.pointsToWin, // Datos de la sala
-        gameMode: roomData.gameMode,     // Datos de la sala
-        opponentType: roomData.opponentType, // Datos de la sala
-        privateKey: roomData.privateKey,  // Datos de la sala
-        roomId: roomData.id // El ID de la sala
+      console.log('Actualización de sala recibida en App.js (roomUpdate):', roomData);
+      setInitialGameData({
+        playerName: playerName,
+        pointsToWin: roomData.pointsToWin,
+        gameMode: roomData.gameMode,
+        opponentType: roomData.opponentType,
+        privateKey: roomData.privateKey,
+        roomId: roomData.id
       });
       setCurrentPage('gameLobby'); // Cambia a la pantalla de lobby
     });
 
+    // Este evento se dispara cuando una partida se inicia (ej. AI o PvP llena)
     newSocket.on('gameStarted', (gameData) => {
       console.log('¡Partida iniciada!', gameData);
-      // Opcional: podrías navegar a una página de juego aquí, si no usas GameLobby para eso.
-      // Por ahora, el GameLobby lo manejará internamente.
+      setInitialGameData({ // También guardamos los datos para GameLobby
+        playerName: playerName,
+        pointsToWin: gameData.pointsToWin || pointsToWin, // Puede venir o no del gameData
+        gameMode: gameData.gameMode || gameMode,
+        opponentType: gameData.opponentType || 'ai', // Si viene de gameStarted, es IA o PvP iniciado
+        privateKey: gameData.privateKey || privateKey,
+        roomId: gameData.roomId
+      });
+      setCurrentPage('gameLobby'); // ¡Cambiamos a la pantalla de lobby para ambos casos!
     });
 
     newSocket.on('joinError', (error) => {
       alert(`Error al unirse: ${error.message}`);
-      // Si hay error, nos quedamos en la pantalla de login
       setCurrentPage('login');
       setInitialGameData(null);
     });
@@ -56,9 +63,8 @@ function App() {
       setInitialGameData(null);
     });
 
-    // Limpiar la conexión cuando el componente se desmonte
     return () => newSocket.disconnect();
-  }, [playerName, pointsToWin, gameMode, opponentType, privateKey]); // Dependencias
+  }, [playerName, pointsToWin, gameMode, opponentType, privateKey]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -144,7 +150,7 @@ function App() {
           gameMode={initialGameData.gameMode}
           opponentType={initialGameData.opponentType}
           initialPrivateKey={initialGameData.privateKey}
-          initialRoomId={initialGameData.roomId} // Pasamos el roomId inicial
+          initialRoomId={initialGameData.roomId}
         />
       )}
     </>
