@@ -1,25 +1,23 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const cors = require('cors'); // <--- ¡Importa el paquete CORS para Express!
+const cors = require('cors'); // ¡Asegúrate de que esto esté instalado! (npm install cors)
 
 const app = express();
 const server = http.createServer(app);
 
-// Configuración de CORS para Express (Middleware)
-// Esto es útil para cualquier petición HTTP que no sea de Socket.IO directamente,
-// pero puede complementar la configuración de Socket.IO.
-// Solo permitimos el origen de tu frontend
+// Configuración de CORS para Express (middleware)
 app.use(cors({
-  origin: 'https://trucoestrella.vercel.app', // <--- ¡Cambia esto por la URL EXACTA de tu frontend en Vercel!
-  methods: ['GET', 'POST']
+  origin: 'https://trucoestrella.vercel.app', // Tu frontend en Vercel
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Añadimos más métodos por si acaso
+  credentials: true
 }));
 
 const io = socketIo(server, {
   cors: {
-    origin: 'https://trucoestrella.vercel.app', // <--- ¡Cambia esto también por la URL EXACTA de tu frontend!
+    origin: 'https://trucoestrella.vercel.app', // Tu frontend en Vercel
     methods: ["GET", "POST"],
-    credentials: true // Necesario si manejas cookies o headers de autorización
+    credentials: true
   }
 });
 
@@ -39,18 +37,14 @@ io.on('connection', (socket) => {
   });
 });
 
-// Vercel necesita que exportes la instancia del servidor para que pueda iniciarla.
-// La ruta raíz para Vercel Serverless Functions
+// Esta ruta simple es para que Render sepa que el servidor está respondiendo
 app.get('/', (req, res) => {
-  res.send('Servidor de Truco Estrella funcionando!');
+  res.send('Servidor de Truco Estrella funcionando en Render!');
 });
 
-// Exporta la instancia de la aplicación Express para Vercel
-module.exports = app; // <--- Sigue siendo CLAVE
+// ¡Aquí volvemos a usar server.listen para que Render lo inicie!
+server.listen(PORT, () => {
+  console.log(`Servidor de Truco Estrella escuchando en el puerto ${PORT}`);
+});
 
-// Si estás ejecutando localmente, aún puedes usar listen:
-if (process.env.NODE_ENV !== 'production') {
-  server.listen(PORT, () => {
-    console.log(`Servidor de Truco Estrella escuchando en el puerto ${PORT}`);
-  });
-}
+// Eliminamos 'module.exports = app;' ya que no es necesario para Render en este caso.
