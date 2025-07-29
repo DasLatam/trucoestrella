@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './GameLobby.css';
 
-function GameLobby({ socket }) { // Ahora solo recibe el socket
+function GameLobby({ socket }) {
   // Estado para los campos del formulario de creación/unión
   const [playerName, setPlayerName] = useState('Jugador 1');
   const [pointsToWin, setPointsToWin] = useState('30');
@@ -12,6 +12,7 @@ function GameLobby({ socket }) { // Ahora solo recibe el socket
   // Estados para la lógica de la sala
   const [availableRooms, setAvailableRooms] = useState([]);
   const [currentRoom, setCurrentRoom] = useState(null); // La sala a la que el jugador está unido/creó
+  const [isLoadingRoom, setIsLoadingRoom] = useState(false); // Nuevo estado para el efecto de carga
 
   useEffect(() => {
     if (!socket) return;
@@ -19,7 +20,6 @@ function GameLobby({ socket }) { // Ahora solo recibe el socket
     // Escuchar la lista de salas disponibles
     socket.on('availableRooms', (rooms) => {
       console.log('Salas disponibles recibidas:', rooms);
-      // Filtrar para no mostrar la propia sala si ya estoy unido
       setAvailableRooms(rooms.filter(room => !(currentRoom && room.id === currentRoom.id)));
     });
 
@@ -27,8 +27,8 @@ function GameLobby({ socket }) { // Ahora solo recibe el socket
     socket.on('roomUpdate', (roomData) => {
       console.log('Actualización de mi sala recibida en GameLobby:', roomData);
       setCurrentRoom(roomData);
-      // Actualizar también la lista de disponibles, para que la sala actual no aparezca
-      setAvailableRooms(prevRooms => prevRooms.filter(room => room.id !== roomData.id));
+      setIsLoadingRoom(false); // Terminar la carga
+      setAvailableRooms(prevRooms => prevRooms.filter(room => room.id !== roomData.id)); // Filtra la propia sala
     });
 
     // Escuchar cuando una partida inicia
@@ -36,23 +36,32 @@ function GameLobby({ socket }) { // Ahora solo recibe el socket
       console.log('¡Partida iniciada!', gameData);
       alert(gameData.message); // Por ahora un alert, luego pasaremos a la pantalla de juego
       setCurrentRoom(gameData); // Asegurarnos de que el currentRoom refleja la partida iniciada
+      setIsLoadingRoom(false); // Terminar la carga
+      // Aquí se navegaría a la interfaz de juego real
     });
 
     // Escuchar errores al unirse
     socket.on('joinError', (error) => {
       alert(`Error al unirse: ${error.message}`);
       setCurrentRoom(null); // Si hubo un error, no estamos en ninguna sala
+      setIsLoadingRoom(false); // Terminar la carga
     });
 
     // Escuchar si la sala fue abandonada o eliminada
     socket.on('roomAbandoned', (data) => {
       alert(`Mensaje del sistema: ${data.message}`);
       setCurrentRoom(null); // Si la sala se abandona/elimina, no estamos en ninguna sala
+      setIsLoadingRoom(false); // Terminar la carga
       socket.emit('requestAvailableRooms'); // Solicitar la lista actualizada
     });
 
-    // Al montar el componente, solicitar la lista de salas disponibles
-    socket.emit('requestAvailableRooms');
+    // Polling para la lista de salas disponibles si no estás en una sala específica
+    let intervalId;
+    if (!currentRoom) { // Solo si no estamos en una sala activa
+      intervalId = setInterval(() => {
+        socket.emit('requestAvailableRooms');
+      }, 5000); // Solicita la lista cada 5 segundos
+    }
 
     return () => {
       socket.off('availableRooms');
@@ -60,12 +69,15 @@ function GameLobby({ socket }) { // Ahora solo recibe el socket
       socket.off('gameStarted');
       socket.off('joinError');
       socket.off('roomAbandoned');
+      if (intervalId) clearInterval(intervalId); // Limpiar el intervalo al desmontar o si entras a una sala
     };
-  }, [socket, currentRoom]); // currentRoom se añade para que el filtro de rooms funcione al actualizar
+  }, [socket, currentRoom]); // currentRoom como dependencia para activar/desactivar el polling
 
   const handleCreateOrJoinFromForm = (e) => {
     e.preventDefault();
     if (socket) {
+      setIsLoadingRoom(true); // Iniciar el efecto de carga
+      setCurrentRoom(null); // Limpiar cualquier sala anterior
       socket.emit('joinGame', {
         playerName,
         pointsToWin: parseInt(pointsToWin),
@@ -86,6 +98,8 @@ function GameLobby({ socket }) { // Ahora solo recibe el socket
         key = prompt('Esta sala es privada. Ingresa la clave:');
         if (!key) return; // Si el usuario cancela, no hacemos nada
       }
+      setIsLoadingRoom(true); // Iniciar el efecto de carga
+      setCurrentRoom(null); // Limpiar cualquier sala anterior
       socket.emit('joinGame', {
         playerName, // Usamos el nombre actual del jugador del estado
         pointsToWin: null, // No se necesita, la sala ya tiene estos datos
@@ -99,15 +113,30 @@ function GameLobby({ socket }) { // Ahora solo recibe el socket
 
   const handleLeaveRoom = () => {
     if (socket && currentRoom) {
+      setIsLoadingRoom(true); // Muestra cargando al abandonar
       socket.emit('leaveRoom');
-      setCurrentRoom(null); // Resetea el estado local para volver a la lista
+      // currentRoom se seteará a null cuando el servidor emita roomAbandoned o disconnect
+      // o se resetea aquí para un feedback visual más rápido
+      setCurrentRoom(null);
+      setIsLoadingRoom(false); // Quitar cargando
     }
   };
 
   // --- Renderizado Condicional del Lobby ---
-  // Si el jugador está en una sala esperando o la partida de IA se inició
+
+  // Si estamos en proceso de carga para entrar a una sala
+  if (isLoadingRoom) {
+    return (
+      <div className="game-lobby-container loading-screen">
+        <h1>Truco Estrella</h1>
+        <p>Cargando partida... ¡Por favor, espera!</p>
+        <div className="loading-spinner"></div>
+      </div>
+    );
+  }
+
+  // Si el jugador está en una sala específica (esperando, IA o jugando)
   if (currentRoom && (currentRoom.status === 'waiting' || currentRoom.opponentType === 'ai' || currentRoom.status === 'playing')) {
-    // Generación del link compartir solo si currentRoom.id existe
     const linkCompartir = currentRoom.id ? `https://trucoestrella.vercel.app/?room=${currentRoom.id}${currentRoom.privateKey ? `&key=${currentRoom.privateKey}` : ''}` : '';
 
     return (
@@ -122,7 +151,7 @@ function GameLobby({ socket }) { // Ahora solo recibe el socket
         <p>Hola **{playerName}**!</p>
 
         {currentRoom.opponentType === 'ai' ? (
-            <p>Iniciando partida **{gameMode}** a **{pointsToWin}** puntos contra la IA Truco Estrella...</p>
+            <p>Iniciando partida **{currentRoom.gameMode}** a **{currentRoom.pointsToWin}** puntos contra la IA Truco Estrella...</p>
         ) : (
             <>
                 <p>Has creado esta partida **{currentRoom.gameMode}** a **{currentRoom.pointsToWin}** puntos.</p>
@@ -139,7 +168,7 @@ function GameLobby({ socket }) { // Ahora solo recibe el socket
                   </div>
                 )}
 
-                {currentRoom.status === 'waiting' && (
+                {currentRoom.status === 'waiting' && currentRoom.id && ( // Muestra el link solo si el ID existe y está esperando
                     <>
                         <p>Esperando más jugadores... ¡Por favor, comparte el enlace!</p>
                         <div className="share-link-container">
@@ -158,12 +187,12 @@ function GameLobby({ socket }) { // Ahora solo recibe el socket
       </div>
     );
   } else {
-    // Vista de "Crear Partida" y "Salas Disponibles"
+    // Vista del Lobby Principal (Crear y Unirse)
     return (
-      <div className="game-lobby-container main-lobby">
+      <div className="game-lobby-container main-lobby-grid"> {/* Clase para grid layout */}
         <h1>Truco Estrella</h1>
 
-        {/* Sección para Crear Partida */}
+        {/* Sección para Crear Partida (a la derecha en desktop) */}
         <div className="create-game-section">
           <h2>Crear Partida</h2>
           <form onSubmit={handleCreateOrJoinFromForm} className="entry-form">
@@ -213,7 +242,7 @@ function GameLobby({ socket }) { // Ahora solo recibe el socket
           </form>
         </div>
 
-        {/* Sección de Salas Disponibles */}
+        {/* Sección de Salas Disponibles (a la izquierda en desktop) */}
         <div className="available-rooms-section">
           <h2>Salas Disponibles</h2>
           {availableRooms.length === 0 ? (

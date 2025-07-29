@@ -2,10 +2,13 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
+const { Low } = require('lowdb'); // Importa Low
+const { JSONFile } = require('lowdb/node'); // Para adaptar a Node.js
 
 const app = express();
 const server = http.createServer(app);
 
+// Configuración de CORS para Express (middleware)
 app.use(cors({
   origin: 'https://trucoestrella.vercel.app',
   methods: ['GET', 'POST'],
@@ -24,11 +27,40 @@ const io = socketIo(server, {
 
 const PORT = process.env.PORT || 4000;
 
-// --- Nueva Estructura para almacenar Salas ---
-// Utilizaremos un objeto para almacenar las salas por su ID.
-// Cada sala tendrá sus propiedades y una lista de sockets conectados.
-const gameRooms = {}; // Ejemplo: { 'roomId123': { id: 'roomId123', creatorId: 'socketIdABC', ...players: [], maxPlayers: 2, ... } }
-const MAX_WAITING_TIME_MS = 30 * 60 * 1000; // 30 minutos en milisegundos
+// --- Configuración de LowDB ---
+// Usaremos un archivo JSON llamado 'db.json' en el mismo directorio del servidor.
+// LowDB creará este archivo si no existe.
+const file = new JSONFile('db.json');
+const db = new Low(file);
+
+// Función para inicializar la base de datos
+async function initializeDb() {
+  await db.read();
+  db.data = db.data || { rooms: {} }; // Si el archivo está vacío o no existe, inicializa con un objeto de salas vacío
+  await db.write();
+  console.log('LowDB inicializado.');
+  // Limpiar salas antiguas al iniciar el servidor (opcional, para desarrollo)
+  cleanupOldRooms();
+}
+
+// Llama a la inicialización al inicio
+initializeDb();
+
+// Función para limpiar salas que excedieron el tiempo de espera
+function cleanupOldRooms() {
+  const now = Date.now();
+  for (const roomId in db.data.rooms) {
+    const room = db.data.rooms[roomId];
+    if (room.status === 'waiting' && (now - room.createdAt > MAX_WAITING_TIME_MS)) {
+      console.log(`[Sala ${roomId}] Eliminada por inactividad al iniciar servidor.`);
+      delete db.data.rooms[roomId];
+    }
+  }
+  db.write(); // Persistir los cambios
+}
+
+
+const MAX_WAITING_TIME_MS = 30 * 60 * 1000; // 30 minutos
 
 // Función para generar un ID de sala único y legible (3 letras, 3 números)
 function generateRoomId() {
@@ -45,7 +77,8 @@ io.on('connection', (socket) => {
   console.log(`Nuevo jugador conectado: ${socket.id}`);
 
   // Cuando un jugador intenta unirse o crear una partida
-  socket.on('joinGame', (data) => {
+  socket.on('joinGame', async (data) => { // Agrega 'async' aquí
+    await db.read(); // Leer los datos más recientes antes de modificar
     const { playerName, pointsToWin, gameMode, opponentType, privateKey } = data;
     let roomId = privateKey; // Si se proporciona una clave, la usamos como ID de sala
     let room;
@@ -62,6 +95,7 @@ io.on('connection', (socket) => {
     // Si es contra la IA, la sala se "llena" inmediatamente
     if (opponentType === 'ai') {
       roomId = generateRoomId(); // La IA siempre crea una nueva sala privada
+      while (db.data.rooms[roomId]) { roomId = generateRoomId(); } // Asegurarse de que el ID sea único
       room = {
         id: roomId,
         creatorId: socket.id,
@@ -74,18 +108,27 @@ io.on('connection', (socket) => {
         privateKey: null, // No hay clave para la IA
         status: 'playing', // Inicia directamente
         createdAt: Date.now(),
-        // Más adelante: aquí agregaríamos la lógica de la IA
       };
-      gameRooms[roomId] = room;
+      db.data.rooms[roomId] = room; // Guardar en LowDB
+      await db.write(); // Persistir
       socket.join(roomId); // Unir al socket a la sala
+      socket.currentRoomId = roomId; // Guardar el ID de la sala en el socket
       console.log(`[Sala IA] ${playerName} creó y se unió a la sala ${roomId} contra IA.`);
-      io.to(socket.id).emit('gameStarted', { roomId: roomId, players: room.players, message: '¡Partida contra la IA iniciada!' });
-      return; // No necesita esperar
+      io.to(socket.id).emit('gameStarted', {
+        roomId: room.id,
+        players: room.players,
+        message: '¡Partida contra la IA iniciada!',
+        pointsToWin: room.pointsToWin, // Pasa estos datos también
+        gameMode: room.gameMode,
+        opponentType: room.opponentType,
+      });
+      // No necesitamos emitir availableRooms aquí, ya que no es una sala "listable" para unirse
+      return;
     }
 
     // Lógica para partidas multijugador (contra usuarios)
-    if (roomId && gameRooms[roomId]) { // Intentar unirse a una sala existente por ID/clave
-      room = gameRooms[roomId];
+    if (roomId && db.data.rooms[roomId]) { // Intentar unirse a una sala existente por ID/clave
+      room = db.data.rooms[roomId];
       // Validar si la sala está llena o si la clave es incorrecta
       if (room.currentPlayers >= room.maxPlayers) {
         io.to(socket.id).emit('joinError', { message: 'La sala está llena.' });
@@ -104,6 +147,7 @@ io.on('connection', (socket) => {
       socket.join(roomId);
       socket.currentRoomId = roomId; // Guardar el ID de la sala en el socket
       console.log(`[Sala ${roomId}] ${playerName} se unió. Participantes: ${room.currentPlayers}/${room.maxPlayers}`);
+      await db.write(); // Persistir cambios en la sala
 
       // Notificar a todos en la sala sobre el cambio de jugadores
       io.to(roomId).emit('roomUpdate', {
@@ -113,18 +157,31 @@ io.on('connection', (socket) => {
         status: room.status,
         players: room.players,
         message: `${playerName} se ha unido.`,
+        pointsToWin: room.pointsToWin,
+        gameMode: room.gameMode,
+        opponentType: room.opponentType,
+        privateKey: room.privateKey,
       });
 
       // Si la sala está llena, iniciar la partida
       if (room.currentPlayers === room.maxPlayers) {
         room.status = 'playing';
+        clearTimeout(room.timeout); // Limpiar el temporizador de inactividad
         console.log(`[Sala ${roomId}] Partida iniciada.`);
-        io.to(roomId).emit('gameStarted', { roomId: room.id, players: room.players, message: '¡Todos los jugadores están listos!' });
+        await db.write(); // Persistir el cambio de estado
+        io.to(roomId).emit('gameStarted', {
+          roomId: room.id,
+          players: room.players,
+          message: '¡Todos los jugadores están listos!',
+          pointsToWin: room.pointsToWin,
+          gameMode: room.gameMode,
+          opponentType: room.opponentType,
+        });
       }
 
     } else { // Crear una nueva sala
       roomId = generateRoomId();
-      while (gameRooms[roomId]) { // Asegurarse de que el ID sea único
+      while (db.data.rooms[roomId]) { // Asegurarse de que el ID sea único
         roomId = generateRoomId();
       }
       room = {
@@ -140,7 +197,8 @@ io.on('connection', (socket) => {
         status: 'waiting',
         createdAt: Date.now(),
       };
-      gameRooms[roomId] = room;
+      db.data.rooms[roomId] = room; // Guardar en LowDB
+      await db.write(); // Persistir
       socket.join(roomId); // Unir al socket a la sala
       socket.currentRoomId = roomId; // Guardar el ID de la sala en el socket
       console.log(`[Sala ${roomId}] ${playerName} creó la sala. Participantes: ${room.currentPlayers}/${room.maxPlayers}`);
@@ -153,14 +211,20 @@ io.on('connection', (socket) => {
         status: room.status,
         players: room.players,
         message: `Has creado la sala ${roomId}. Esperando jugadores...`,
+        pointsToWin: room.pointsToWin,
+        gameMode: room.gameMode,
+        opponentType: room.opponentType,
+        privateKey: room.privateKey,
       });
 
       // Iniciar el temporizador de eliminación de sala
-      room.timeout = setTimeout(() => {
-        if (room.status === 'waiting' && room.currentPlayers < room.maxPlayers) {
+      room.timeout = setTimeout(async () => { // Agrega 'async' para await db.write()
+        await db.read(); // Leer la última versión antes de decidir
+        if (db.data.rooms[roomId] && db.data.rooms[roomId].status === 'waiting' && db.data.rooms[roomId].currentPlayers < db.data.rooms[roomId].maxPlayers) {
           console.log(`[Sala ${roomId}] Eliminada por inactividad. No se completó.`);
           io.to(roomId).emit('roomAbandoned', { message: 'La sala ha sido eliminada por inactividad.' });
-          delete gameRooms[roomId];
+          delete db.data.rooms[roomId];
+          await db.write(); // Persistir
         }
       }, MAX_WAITING_TIME_MS);
     }
@@ -169,10 +233,11 @@ io.on('connection', (socket) => {
   });
 
   // Evento para abandonar una sala
-  socket.on('leaveRoom', () => {
+  socket.on('leaveRoom', async () => { // Agrega 'async'
+    await db.read(); // Leer antes de modificar
     const roomId = socket.currentRoomId;
-    if (roomId && gameRooms[roomId]) {
-      const room = gameRooms[roomId];
+    if (roomId && db.data.rooms[roomId]) {
+      const room = db.data.rooms[roomId];
       // Eliminar al jugador de la sala
       room.players = room.players.filter(p => p.id !== socket.id);
       room.currentPlayers--;
@@ -184,7 +249,7 @@ io.on('connection', (socket) => {
       if (room.currentPlayers === 0) {
         console.log(`[Sala ${roomId}] Sala vacía. Eliminando.`);
         clearTimeout(room.timeout); // Limpiar el temporizador si la sala se vacía
-        delete gameRooms[roomId];
+        delete db.data.rooms[roomId];
       } else {
         // Notificar a los restantes en la sala
         io.to(roomId).emit('roomUpdate', {
@@ -194,23 +259,29 @@ io.on('connection', (socket) => {
           status: room.status,
           players: room.players,
           message: `${room.players.find(p => p.id === socket.id)?.name || 'Un jugador'} ha abandonado.`,
+          pointsToWin: room.pointsToWin,
+          gameMode: room.gameMode,
+          opponentType: room.opponentType,
+          privateKey: room.privateKey,
         });
         if (room.status === 'playing' && room.currentPlayers < room.maxPlayers) {
           room.status = 'waiting'; // Si la partida se interrumpe, vuelve a 'waiting'
           io.to(roomId).emit('gamePaused', { message: 'La partida se pausó, esperando más jugadores.' });
         }
       }
+      await db.write(); // Persistir cambios en la sala
     }
     // Siempre enviar la lista actualizada de salas
     io.emit('availableRooms', getAvailableRooms());
   });
 
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => { // Agrega 'async'
+    await db.read(); // Leer antes de modificar
     console.log(`Jugador desconectado: ${socket.id}`);
     const roomId = socket.currentRoomId; // Obtener la sala antes de que el socket se pierda
-    if (roomId && gameRooms[roomId]) {
-      const room = gameRooms[roomId];
+    if (roomId && db.data.rooms[roomId]) {
+      const room = db.data.rooms[roomId];
       // Eliminar al jugador de la sala
       room.players = room.players.filter(p => p.id !== socket.id);
       room.currentPlayers--;
@@ -221,7 +292,7 @@ io.on('connection', (socket) => {
       if (room.currentPlayers === 0) {
         console.log(`[Sala ${roomId}] Sala vacía por desconexión. Eliminando.`);
         clearTimeout(room.timeout);
-        delete gameRooms[roomId];
+        delete db.data.rooms[roomId];
       } else {
         // Notificar a los restantes en la sala
         io.to(roomId).emit('roomUpdate', {
@@ -231,20 +302,34 @@ io.on('connection', (socket) => {
           status: room.status,
           players: room.players,
           message: `${room.players.find(p => p.id === socket.id)?.name || 'Un jugador'} se ha desconectado.`,
+          pointsToWin: room.pointsToWin,
+          gameMode: room.gameMode,
+          opponentType: room.opponentType,
+          privateKey: room.privateKey,
         });
         if (room.status === 'playing' && room.currentPlayers < room.maxPlayers) {
           room.status = 'waiting'; // Si la partida se interrumpe, vuelve a 'waiting'
           io.to(roomId).emit('gamePaused', { message: 'La partida se pausó por desconexión.' });
         }
       }
+      await db.write(); // Persistir cambios en la sala
     }
     // Después de cada desconexión, enviar la lista actualizada de salas a *todos* los clientes
     io.emit('availableRooms', getAvailableRooms());
   });
 
+  // Evento para solicitar la lista de salas disponibles
+  socket.on('requestAvailableRooms', () => {
+    socket.emit('availableRooms', getAvailableRooms());
+  });
+
   // Función para obtener salas disponibles (no llenas y no en juego)
   function getAvailableRooms() {
-    return Object.values(gameRooms).filter(room =>
+    // Asegurarse de leer la última versión de la DB antes de obtener las salas
+    // Esto es crucial para que la lista esté siempre actualizada.
+    // Aunque db.read() es async, aquí se ejecutará de forma síncrona dentro del flujo del socket.
+    db.read();
+    return Object.values(db.data.rooms).filter(room =>
       room.status === 'waiting' && room.currentPlayers < room.maxPlayers && room.opponentType === 'users'
     ).map(room => ({
       id: room.id,
@@ -259,7 +344,10 @@ io.on('connection', (socket) => {
   }
 
   // Enviar la lista de salas disponibles al nuevo jugador al conectarse
-  socket.emit('availableRooms', getAvailableRooms());
+  // Esto asegura que LowDB se haya cargado antes de enviar las salas.
+  db.read().then(() => {
+    socket.emit('availableRooms', getAvailableRooms());
+  });
 });
 
 // Ruta simple para verificar que el servidor Express funciona

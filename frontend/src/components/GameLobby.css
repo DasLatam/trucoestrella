@@ -1,6 +1,4 @@
 /* trucoestrella/frontend/src/components/GameLobby.css */
-/* Mantén todos los estilos anteriores y añade o ajusta los siguientes si es necesario */
-
 .game-lobby-container {
   display: flex;
   flex-direction: column;
@@ -12,19 +10,66 @@
   padding: 20px;
   text-align: center;
   color: #333;
+  width: 100%; /* Asegúrate de que ocupe todo el ancho */
+  box-sizing: border-box; /* Incluir padding en el ancho */
 }
 
-/* ... (mantener estilos de h1, h2, p, loading-spinner si no los moviste a App.css) ... */
-/* Asegúrate de que loading-spinner SOLO esté en App.css */
+.game-lobby-container h1 {
+  color: #333;
+  margin-bottom: 20px;
+}
 
+.game-lobby-container h2 {
+  color: #555;
+  margin-bottom: 30px;
+}
 
-.game-lobby-container.main-lobby {
-    display: flex;
-    flex-direction: column;
-    gap: 40px; /* Espacio entre secciones de crear y unirse */
-    width: 100%;
-    max-width: 800px; /* Para que no se estire demasiado */
-    margin: auto; /* Centrar */
+.game-lobby-container p {
+  font-size: 1.1em;
+  margin-bottom: 10px;
+}
+
+/* Estilos para la pantalla de carga dentro de GameLobby */
+.game-lobby-container.loading-screen {
+  justify-content: center;
+}
+.loading-spinner { /* Mantenemos este aquí ya que GameLobby lo usa ahora también */
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #007bff;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin-top: 30px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Layout para el Lobby Principal (Crear Partida y Salas Disponibles) --- */
+.main-lobby-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* Por defecto, una columna para móviles */
+  gap: 40px; /* Espacio entre las secciones */
+  width: 100%;
+  max-width: 960px; /* Ancho máximo para el lobby */
+  margin: 0 auto; /* Centrar el contenedor */
+}
+
+@media (min-width: 768px) { /* A partir de tablets/escritorio */
+  .main-lobby-grid {
+    grid-template-columns: 1fr 1fr; /* Dos columnas */
+    text-align: left; /* Alinea el texto dentro de las columnas a la izquierda */
+  }
+
+  /* Asegurarse de que los h2 sigan centrados o alineados a la izquierda */
+  .create-game-section h2, .available-rooms-section h2 {
+    text-align: center; /* O left, según prefieras */
+    margin-bottom: 20px;
+  }
 }
 
 .create-game-section, .available-rooms-section {
@@ -32,23 +77,24 @@
     padding: 30px;
     border-radius: 8px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    box-sizing: border-box; /* Incluir padding en el width */
+    box-sizing: border-box;
+    display: flex; /* Para centrar contenido si es necesario */
+    flex-direction: column;
+    align-items: center; /* Centrar horizontalmente el contenido de la sección */
 }
 
-.entry-form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+.create-game-section .entry-form {
+    width: 100%; /* El formulario ocupa todo el ancho de su sección */
+    max-width: 380px; /* Limita el ancho del formulario para mejor legibilidad */
     margin-top: 20px;
 }
 
 .entry-form label {
-    display: flex;
-    flex-direction: column;
-    font-weight: bold;
-    color: #555;
-    text-align: left; /* Alinea las etiquetas a la izquierda */
+  display: flex;
+  flex-direction: column;
+  font-weight: bold;
+  color: #555;
+  text-align: left;
 }
 
 .entry-form input[type="text"],
@@ -58,6 +104,7 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 16px;
+  width: calc(100% - 22px); /* Ajuste por padding y borde */
 }
 
 .entry-form button {
@@ -70,6 +117,7 @@
   cursor: pointer;
   transition: background-color 0.3s ease;
   margin-top: 20px;
+  width: 100%; /* Ocupa todo el ancho */
 }
 
 .entry-form button:hover {
@@ -78,15 +126,9 @@
 
 .rooms-list {
   margin-top: 20px;
-  /* width: 100%; remueve esto, ya el contenedor padre lo define */
-  /* max-width: 600px; remueve esto, ya el contenedor padre lo define */
-  /* background-color: #fff; remueve esto, ya el contenedor padre lo define */
-  /* border-radius: 8px; remueve esto, ya el contenedor padre lo define */
-  /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); remueve esto, ya el contenedor padre lo define */
-  /* padding: 20px; remueve esto, ya el contenedor padre lo define */
+  width: 100%; /* Ocupa todo el ancho de su sección */
 }
 
-/* Mantener el resto de estilos de room-item, share-link-container, leave-button, etc. */
 .room-item {
   border: 1px solid #ddd;
   border-radius: 5px;
@@ -124,7 +166,7 @@
   margin-top: 20px;
   width: 100%;
   max-width: 500px;
-  margin-left: auto; /* Centrar con margen automático */
+  margin-left: auto;
   margin-right: auto;
 }
 
