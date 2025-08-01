@@ -71,13 +71,14 @@ function WaitingRoom({ socket, playerName }) {
     }
   };
 
-  if (!currentRoom || currentRoom.roomId !== roomId) {
+  // Lógica para mostrar la pantalla de espera
+  if (!currentRoom || currentRoom.id !== roomId) {
     return (
       <div className="game-lobby-container my-room-view">
         <div className="header-row grid-full-width"><h1>Truco Estrella</h1></div>
         <div className="main-content-row">
           <div className="my-room-details">
-            <h2>Esperando sala...</h2>
+            <h2>Cargando sala...</h2>
             <p>Por favor, espera...</p>
           </div>
         </div>
@@ -86,10 +87,10 @@ function WaitingRoom({ socket, playerName }) {
   }
 
   const showShareLink = currentRoom.status === 'waiting' && currentRoom.id;
-  const linkCompartir = showShareLink ? `${window.location.origin}/sala/${currentRoom.id}${currentRoom.privateKey ? `&key=${currentRoom.privateKey}` : ''}` : '';
-
+  const linkCompartir = showShareLink ? `${window.location.origin}/sala/${currentRoom.id}${currentRoom.privateKey ? `?key=${currentRoom.privateKey}` : ''}` : '';
   const displayCurrentPlayers = currentRoom.opponentType === 'ai' ? currentRoom.currentHumanPlayers : currentRoom.currentPlayers;
   const displayMaxPlayers = currentRoom.opponentType === 'ai' ? currentRoom.humanPlayersNeeded : currentRoom.maxPlayers;
+  const roomCreatedByMe = currentRoom.players.some(player => player.name === playerName);
 
   return (
     <div className="game-lobby-container my-room-view">
@@ -133,7 +134,7 @@ function WaitingRoom({ socket, playerName }) {
                         </div>
                       )}
 
-                      {showShareLink && (
+                      {showShareLink && roomCreatedByMe && (
                           <>
                               <p>Esperando más jugadores... ¡Por favor, comparte el enlace!</p>
                               <div className="share-link-container">

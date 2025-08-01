@@ -1,3 +1,4 @@
+// trucoestrella/frontend/src/components/GameLobby.js
 import React, { useState, useEffect, useRef } from 'react';
 import './GameLobby.css';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +18,7 @@ function GameLobby({ socket, playerName, setPlayerName }) {
 
   useEffect(() => {
     if (!socket) return;
+    
     socket.emit('requestAvailableRooms');
     
     socket.on('availableRooms', (rooms) => {

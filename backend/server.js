@@ -82,7 +82,7 @@ function getHumanPlayersNeeded(gameMode) {
 
 io.on('connection', (socket) => {
   console.log(`Nuevo jugador conectado: ${socket.id}`);
-  
+
   if (socket.currentRoomId) {
     const existingRoom = db.data.rooms[socket.currentRoomId];
     if (existingRoom && existingRoom.players.some(p => p.id === socket.id)) {
