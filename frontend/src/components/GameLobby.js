@@ -1,10 +1,8 @@
-// trucoestrella/frontend/src/components/GameLobby.js
 import React, { useState, useEffect, useRef } from 'react';
 import './GameLobby.css';
 import { useNavigate } from 'react-router-dom';
 
-function GameLobby({ socket }) {
-  const [playerName, setPlayerName] = useState(localStorage.getItem('playerName') || 'Jugador 1');
+function GameLobby({ socket, playerName, setPlayerName }) {
   const [pointsToWin, setPointsToWin] = useState('30');
   const [gameMode, setGameMode] = useState('1v1');
   const [opponentType, setOpponentType] = useState('users');
@@ -16,28 +14,14 @@ function GameLobby({ socket }) {
   const publicChatMessagesEndRef = useRef(null);
   const [chatInput, setChatInput] = useState('');
   const navigate = useNavigate();
-  
-  useEffect(() => {
-    localStorage.setItem('playerName', playerName);
-  }, [playerName]);
 
   useEffect(() => {
     if (!socket) return;
-
     socket.emit('requestAvailableRooms');
-
+    
     socket.on('availableRooms', (rooms) => {
       console.log('Salas disponibles recibidas:', rooms);
       setAvailableRooms(rooms);
-    });
-    
-    socket.on('roomUpdate', (roomData) => {
-        // En lugar de cambiar de vista, ahora navegamos a la página de la sala
-        navigate(`/sala/${roomData.roomId}`);
-    });
-    
-    socket.on('gameStarted', (roomData) => {
-        navigate(`/sala/${roomData.roomId}`);
     });
 
     socket.on('joinError', (error) => {
@@ -55,13 +39,11 @@ function GameLobby({ socket }) {
 
     return () => {
       socket.off('availableRooms');
-      socket.off('roomUpdate');
-      socket.off('gameStarted');
       socket.off('joinError');
       socket.off('publicChatMessage');
       if (intervalId) clearInterval(intervalId);
     };
-  }, [socket, navigate, playerName]);
+  }, [socket, navigate]);
 
   useEffect(() => {
     if (publicChatMessagesEndRef.current) {

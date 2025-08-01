@@ -1,23 +1,17 @@
-// trucoestrella/frontend/src/components/WaitingRoom.js
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import './GameLobby.css'; // Usaremos el mismo CSS
+import './GameLobby.css';
 
-function WaitingRoom({ socket }) {
+function WaitingRoom({ socket, playerName }) {
   const [currentRoom, setCurrentRoom] = useState(null);
   const [chatLog, setChatLog] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const chatMessagesEndRef = useRef(null);
-  const { roomId } = useParams();
   const navigate = useNavigate();
-
-  const [playerName, setPlayerName] = useState(localStorage.getItem('playerName') || 'Jugador Web');
+  const { roomId } = useParams();
 
   useEffect(() => {
     if (!socket) return;
-    
-    // Al entrar a la página, si no tenemos una sala, intentamos reconectar
-    socket.emit('reconnectToRoom', { roomId });
 
     socket.on('roomUpdate', (roomData) => {
       setCurrentRoom(roomData);
@@ -27,7 +21,7 @@ function WaitingRoom({ socket }) {
       setCurrentRoom(gameData);
       alert(gameData.message);
     });
-    
+
     socket.on('chatMessage', (message) => {
       addRoomLogMessage(`${message.senderName}: ${message.text}`);
     });
@@ -43,7 +37,7 @@ function WaitingRoom({ socket }) {
       socket.off('chatMessage');
       socket.off('roomAbandoned');
     };
-  }, [socket, roomId, navigate]);
+  }, [socket, navigate]);
 
   useEffect(() => {
     if (chatMessagesEndRef.current) {
@@ -68,7 +62,7 @@ function WaitingRoom({ socket }) {
       setChatInput('');
     }
   };
-  
+
   const handleLeaveRoom = () => {
     if (socket && currentRoom) {
       socket.emit('leaveRoom');
@@ -76,7 +70,7 @@ function WaitingRoom({ socket }) {
       navigate('/');
     }
   };
-  
+
   if (!currentRoom || currentRoom.roomId !== roomId) {
     return (
       <div className="game-lobby-container my-room-view">
@@ -90,13 +84,13 @@ function WaitingRoom({ socket }) {
       </div>
     );
   }
-  
+
   const showShareLink = currentRoom.status === 'waiting' && currentRoom.id;
-  const linkCompartir = showShareLink ? `https://trucoestrella.vercel.app/sala/${currentRoom.id}${currentRoom.privateKey ? `&key=${currentRoom.privateKey}` : ''}` : '';
-  
+  const linkCompartir = showShareLink ? `${window.location.origin}/sala/${currentRoom.id}${currentRoom.privateKey ? `&key=${currentRoom.privateKey}` : ''}` : '';
+
   const displayCurrentPlayers = currentRoom.opponentType === 'ai' ? currentRoom.currentHumanPlayers : currentRoom.currentPlayers;
   const displayMaxPlayers = currentRoom.opponentType === 'ai' ? currentRoom.humanPlayersNeeded : currentRoom.maxPlayers;
-  
+
   return (
     <div className="game-lobby-container my-room-view">
       <div className="header-row grid-full-width">
@@ -112,7 +106,6 @@ function WaitingRoom({ socket }) {
               
               <p>Hola **{playerName}**!</p>
               <p>Puntos para ganar: **{currentRoom.pointsToWin}** - Se juega con Flor: **{currentRoom.playWithFlor ? 'Sí' : 'No'}**</p>
-
 
               {currentRoom.opponentType === 'ai' ? (
                   currentRoom.status === 'playing' ? (
