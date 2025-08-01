@@ -12,6 +12,8 @@ function WaitingRoom({ socket, playerName }) {
 
   useEffect(() => {
     if (!socket) return;
+    
+    socket.emit('reconnectToRoom', { roomId });
 
     socket.on('roomUpdate', (roomData) => {
       setCurrentRoom(roomData);
@@ -37,7 +39,7 @@ function WaitingRoom({ socket, playerName }) {
       socket.off('chatMessage');
       socket.off('roomAbandoned');
     };
-  }, [socket, navigate]);
+  }, [socket, roomId, navigate]);
 
   useEffect(() => {
     if (chatMessagesEndRef.current) {
@@ -71,7 +73,6 @@ function WaitingRoom({ socket, playerName }) {
     }
   };
 
-  // Lógica para mostrar la pantalla de espera
   if (!currentRoom || currentRoom.id !== roomId) {
     return (
       <div className="game-lobby-container my-room-view">

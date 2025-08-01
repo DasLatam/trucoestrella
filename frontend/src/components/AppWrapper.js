@@ -9,10 +9,8 @@ const AppWrapper = ({ socket, component: Component }) => {
   useEffect(() => {
     if (!socket) return;
     
-    // Guardar el nombre del jugador en el localStorage
     localStorage.setItem('playerName', playerName);
 
-    // Eventos de navegación
     socket.on('roomUpdate', (roomData) => {
       navigate(`/sala/${roomData.roomId}`, { state: roomData });
     });

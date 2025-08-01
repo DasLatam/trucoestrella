@@ -24,7 +24,7 @@ const io = socketIo(server, {
   transports: ['websocket', 'polling']
 });
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.env.PORT || 4000;
 
 const file = new JSONFile('db.json');
 const db = new Low(file, { rooms: {} });

@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import io from 'socket.io-client';
-import './App.css';
+import './App.css'; // Asegúrate de tener este archivo CSS para estilos generales
 import GameLobby from './components/GameLobby';
 import WaitingRoom from './components/WaitingRoom';
 import AppWrapper from './components/AppWrapper'; // Importamos el nuevo componente wrapper
 
 // URL de tu backend desplegado en Render.com
-const SOCKET_SERVER_URL = 'https://trucoestrella-backend.onrender.com';
+const SOCKET_SERVER_URL = 'https://trucoestrella-backend.onrender.com'; // ¡CONFIRMA QUE ESTA ES TU URL REAL!
 
-const App = () => {
+function App() {
   const [socket, setSocket] = useState(null);
   const [playerConnected, setPlayerConnected] = useState(false);
 
@@ -48,6 +48,6 @@ const App = () => {
       </Routes>
     </Router>
   );
-};
+}
 
 export default App;
