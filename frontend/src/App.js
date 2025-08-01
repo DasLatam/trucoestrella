@@ -23,10 +23,11 @@ const AppWrapper = () => {
       console.log('Conectado al servidor de Socket.IO');
       setPlayerConnected(true);
 
-      // Si hay un roomId en la URL, intenta unirse a la sala
+      const playerName = localStorage.getItem('playerName') || 'Jugador Web';
+
       if (roomId) {
         newSocket.emit('joinGame', {
-          playerName: 'Jugador Web', // Nombre por defecto para la unión por URL
+          playerName: playerName,
           privateKey: key || roomId,
           pointsToWin: null,
           gameMode: null,
@@ -41,12 +42,12 @@ const AppWrapper = () => {
       setPlayerConnected(false);
     });
     
-    newSocket.on('roomJoined', (roomData) => {
-      navigate(`/sala/${roomData.roomId}`);
+    newSocket.on('roomUpdate', (roomData) => {
+        navigate(`/sala/${roomData.roomId}`);
     });
     
     newSocket.on('roomAbandoned', () => {
-      navigate('/');
+        navigate('/');
     });
 
     return () => newSocket.disconnect();

@@ -4,7 +4,7 @@ import './GameLobby.css';
 import { useNavigate } from 'react-router-dom';
 
 function GameLobby({ socket }) {
-  const [playerName, setPlayerName] = useState('Jugador 1');
+  const [playerName, setPlayerName] = useState(localStorage.getItem('playerName') || 'Jugador 1');
   const [pointsToWin, setPointsToWin] = useState('30');
   const [gameMode, setGameMode] = useState('1v1');
   const [opponentType, setOpponentType] = useState('users');
@@ -16,6 +16,10 @@ function GameLobby({ socket }) {
   const publicChatMessagesEndRef = useRef(null);
   const [chatInput, setChatInput] = useState('');
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    localStorage.setItem('playerName', playerName);
+  }, [playerName]);
 
   useEffect(() => {
     if (!socket) return;
@@ -57,7 +61,7 @@ function GameLobby({ socket }) {
       socket.off('publicChatMessage');
       if (intervalId) clearInterval(intervalId);
     };
-  }, [socket, navigate]);
+  }, [socket, navigate, playerName]);
 
   useEffect(() => {
     if (publicChatMessagesEndRef.current) {
