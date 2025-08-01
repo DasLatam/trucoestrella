@@ -259,19 +259,22 @@ body, html, #root {
   box-sizing: border-box;
   padding: 0 10px;
 }
-
-.share-link-container input {
-  flex-grow: 1;
-  padding: 10px;
+.share-link-text {
+  /* Nuevo estilo para el texto del link */
+  background-color: #f0f0f0;
   border: 1px solid #ddd;
   border-radius: 4px;
-  background-color: #f0f0f0;
+  padding: 10px;
+  font-family: monospace; /* Fuente monoespacio para que parezca un URL */
   font-size: 0.9em;
-  min-width: 100px;
-  box-sizing: border-box;
+  color: #333;
+  word-break: break-all; /* Rompe la URL si es muy larga */
+  text-align: left;
+  flex-grow: 1;
+  margin: 0; /* Quita el margen por defecto del p */
 }
 
-.share-link-container button {
+.copy-link-button {
   flex-shrink: 0;
   padding: 10px 15px;
   background-color: #28a745;
@@ -284,7 +287,7 @@ body, html, #root {
   box-sizing: border-box;
 }
 
-.share-link-container button:hover {
+.copy-link-button:hover {
   background-color: #218838;
 }
 

@@ -193,10 +193,12 @@ function GameLobby({ socket }) {
   }
 
   if (currentRoom && (currentRoom.status === 'waiting' || currentRoom.opponentType === 'ai' || currentRoom.status === 'playing')) {
+    // Generar link para PvP esperando o IA esperando compañeros
     const showShareLink = (currentRoom.status === 'waiting' && currentRoom.opponentType === 'users' && currentRoom.id) ||
                          (currentRoom.status === 'waiting' && currentRoom.opponentType === 'ai' && currentRoom.humanPlayersNeeded > 1 && currentRoom.id);
     const linkCompartir = showShareLink ? `https://trucoestrella.vercel.app/?room=${currentRoom.id}${currentRoom.privateKey ? `&key=${currentRoom.privateKey}` : ''}` : '';
 
+    // Determinar participantes mostrados para IA vs PvP
     const displayCurrentPlayers = currentRoom.opponentType === 'ai' ? currentRoom.currentHumanPlayers : currentRoom.currentPlayers;
     const displayMaxPlayers = currentRoom.opponentType === 'ai' ? currentRoom.humanPlayersNeeded : currentRoom.maxPlayers;
 
@@ -227,7 +229,7 @@ function GameLobby({ socket }) {
                             {displayCurrentPlayers < displayMaxPlayers && <p>Esperando compañeros para tu equipo...</p>}
                         </>
                     )
-                ) : (
+                ) : ( // Lógica para partidas PvP (users)
                     <>
                         <p>Has creado esta partida **{currentRoom.gameMode}**.</p>
                         <p>Participantes: **{displayCurrentPlayers}** de **{displayMaxPlayers}**</p>
@@ -247,8 +249,8 @@ function GameLobby({ socket }) {
                             <>
                                 <p>Esperando más jugadores... ¡Por favor, comparte el enlace!</p>
                                 <div className="share-link-container">
-                                <input type="text" value={linkCompartir} readOnly />
-                                <button onClick={() => navigator.clipboard.writeText(linkCompartir)}>Copiar Link</button>
+                                    <p className="share-link-text">{linkCompartir}</p>
+                                    <button onClick={() => navigator.clipboard.writeText(linkCompartir)} className="copy-link-button">Copiar Link</button>
                                 </div>
                             </>
                         )}
