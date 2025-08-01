@@ -193,12 +193,9 @@ function GameLobby({ socket }) {
   }
 
   if (currentRoom && (currentRoom.status === 'waiting' || currentRoom.opponentType === 'ai' || currentRoom.status === 'playing')) {
-    // Generar link para PvP esperando o IA esperando compañeros
-    const showShareLink = (currentRoom.status === 'waiting' && currentRoom.opponentType === 'users' && currentRoom.id) ||
-                         (currentRoom.status === 'waiting' && currentRoom.opponentType === 'ai' && currentRoom.humanPlayersNeeded > 1 && currentRoom.id);
-    const linkCompartir = showShareLink ? `https://trucoestrella.vercel.app/?room=${currentRoom.id}${currentRoom.privateKey ? `&key=${currentRoom.privateKey}` : ''}` : '';
+    // Definir la URL de compartir aquí para evitar errores de referencia
+    const linkCompartir = currentRoom.id ? `https://trucoestrella.vercel.app/?room=${currentRoom.id}${currentRoom.privateKey ? `&key=${currentRoom.privateKey}` : ''}` : '';
 
-    // Determinar participantes mostrados para IA vs PvP
     const displayCurrentPlayers = currentRoom.opponentType === 'ai' ? currentRoom.currentHumanPlayers : currentRoom.currentPlayers;
     const displayMaxPlayers = currentRoom.opponentType === 'ai' ? currentRoom.humanPlayersNeeded : currentRoom.maxPlayers;
 
@@ -245,7 +242,7 @@ function GameLobby({ socket }) {
                           </div>
                         )}
 
-                        {showShareLink && (
+                        {currentRoom.status === 'waiting' && currentRoom.id && (
                             <>
                                 <p>Esperando más jugadores... ¡Por favor, comparte el enlace!</p>
                                 <div className="share-link-container">
