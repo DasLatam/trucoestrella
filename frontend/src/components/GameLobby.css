@@ -4,7 +4,7 @@ body, html, #root {
   padding: 0;
   height: 100%;
   width: 100%;
-  overflow: hidden; /* Evitar scroll global */
+  overflow: hidden;
 }
 
 .game-lobby-container {
@@ -36,7 +36,6 @@ body, html, #root {
   margin-bottom: 10px;
 }
 
-/* Estilos para la pantalla de carga */
 .game-lobby-container.loading-screen {
   justify-content: center;
   align-items: center;
@@ -57,20 +56,19 @@ body, html, #root {
   }
 }
 
-/* --- LAYOUT PRINCIPAL DEL LOBBY (3 COLUMNAS) --- */
 .main-lobby-grid-layout {
   display: grid;
-  grid-template-columns: 1fr; /* Una columna para móviles */
-  grid-template-rows: auto 1fr; /* Fila del título, luego el contenido */
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr;
   gap: 20px;
   width: 100%;
-  height: 100vh; /* Ocupa todo el alto de la ventana */
+  height: 100vh;
   padding: 10px;
   box-sizing: border-box;
 }
 
 .header-row {
-  grid-column: 1 / -1; /* Ocupa todas las columnas */
+  grid-column: 1 / -1;
   text-align: center;
   padding: 10px;
   background-color: #e2e6ea;
@@ -94,27 +92,26 @@ body, html, #root {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  height: 100%; /* Ocupar todo el alto disponible en la fila */
-  overflow-y: auto; /* Permitir scroll solo si el contenido excede la altura */
+  height: 100%;
+  overflow-y: auto;
 }
 
-/* Media queries para responsividad */
 @media (min-width: 768px) {
   .main-lobby-grid-layout {
-    grid-template-columns: 1fr 1fr; /* Dos columnas para tablets */
+    grid-template-columns: 1fr 1fr;
     grid-template-rows: auto 1fr;
   }
   .grid-col-left { grid-column: 1; }
   .grid-col-middle { grid-column: 2; }
   .grid-col-right {
-    grid-column: 1 / -1; /* La tercera columna (chat) debajo en tablets */
+    grid-column: 1 / -1;
   }
 }
 
 @media (min-width: 1024px) {
   .main-lobby-grid-layout {
-    grid-template-columns: 1fr 1fr 1fr; /* Tres columnas para desktop */
-    grid-template-rows: 10% 90%; /* Fila del título (10%), contenido (90%) */
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 10% 90%;
   }
   .header-row { grid-row: 1; height: auto;}
   .grid-col-left { grid-column: 1; grid-row: 2; }
@@ -122,7 +119,6 @@ body, html, #root {
   .grid-col-right { grid-column: 3; grid-row: 2; }
 }
 
-/* Ajustes para contenidos internos de las cajas */
 .create-game-section .entry-form {
     width: 100%;
     max-width: 380px;
@@ -163,10 +159,9 @@ body, html, #root {
   padding: 10px;
 }
 
-/* --- LAYOUT PARA LA VISTA DE "MI SALA" (2 COLUMNAS) --- */
 .game-lobby-container.my-room-view {
     display: grid;
-    grid-template-columns: 1fr; /* Una columna para móviles */
+    grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
     gap: 20px;
     width: 100%;
@@ -183,7 +178,7 @@ body, html, #root {
 
 .main-content-row {
     display: grid;
-    grid-template-columns: 1fr; /* Una columna para móviles */
+    grid-template-columns: 1fr;
     gap: 20px;
     width: 100%;
     height: 100%;
@@ -191,7 +186,7 @@ body, html, #root {
 
 @media (min-width: 768px) {
     .my-room-view .main-content-row {
-        grid-template-columns: 1fr 1fr; /* Dos columnas para tablets/desktop */
+        grid-template-columns: 1fr 1fr;
     }
 }
 
@@ -210,7 +205,7 @@ body, html, #root {
 .chat-log-box {
     text-align: left;
     position: relative;
-    padding-bottom: 60px; /* Espacio para el input de chat */
+    padding-bottom: 60px;
 }
 .chat-messages {
     flex-grow: 1;
@@ -252,19 +247,17 @@ body, html, #root {
     cursor: pointer;
 }
 
-
-/* Estilos adicionales para el link de compartir - AJUSTES CRÍTICOS */
 .share-link-container {
-  display: flex; /* Asegura que sea un flex container */
-  flex-direction: row; /* Elementos en fila */
+  display: flex;
+  flex-direction: row;
   gap: 10px;
   margin-top: 20px;
   width: 100%;
   max-width: 500px;
-  justify-content: center; /* Centrar contenido dentro del contenedor */
-  align-items: center; /* Centrar verticalmente */
+  justify-content: center;
+  align-items: center;
   box-sizing: border-box;
-  padding: 0 10px; /* Pequeño padding horizontal */
+  padding: 0 10px;
 }
 
 .share-link-container input {
@@ -274,12 +267,12 @@ body, html, #root {
   border-radius: 4px;
   background-color: #f0f0f0;
   font-size: 0.9em;
-  min-width: 100px; /* Asegura un ancho mínimo para que no se colapse */
-  box-sizing: border-box; /* Incluye padding/border en el width */
+  min-width: 100px;
+  box-sizing: border-box;
 }
 
 .share-link-container button {
-  flex-shrink: 0; /* No permite que el botón se encoja */
+  flex-shrink: 0;
   padding: 10px 15px;
   background-color: #28a745;
   color: white;
@@ -288,14 +281,13 @@ body, html, #root {
   cursor: pointer;
   font-size: 0.9em;
   white-space: nowrap;
-  box-sizing: border-box; /* Incluye padding/border en el width */
+  box-sizing: border-box;
 }
 
 .share-link-container button:hover {
   background-color: #218838;
 }
 
-/* Estilos existentes */
 .leave-button {
   background-color: #dc3545;
   color: white;

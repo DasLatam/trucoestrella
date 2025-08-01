@@ -1,11 +1,10 @@
 // trucoestrella/frontend/src/App.js
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
-import './App.css'; // Asegúrate de tener este archivo CSS para estilos generales
+import './App.css';
 import GameLobby from './components/GameLobby';
 
-// URL de tu backend desplegado en Render.com
-const SOCKET_SERVER_URL = 'https://trucoestrella-backend.onrender.com'; // ¡CONFIRMA QUE ESTA ES TU URL REAL!
+const SOCKET_SERVER_URL = 'https://trucoestrella-backend.onrender.com';
 
 function App() {
   const [socket, setSocket] = useState(null);
