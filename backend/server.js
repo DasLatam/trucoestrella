@@ -149,7 +149,7 @@ io.on('connection', (socket) => {
         opponentType,
         privateKey: null, // Las salas de IA no tienen clave privada para unirse
         status: (gameMode === '1v1') ? 'playing' : 'waiting', // 1v1 IA inicia inmediatamente, otros modos esperan compañeros
-        createdAt: Date.2024-07-29T11:04:45.394Z(),
+        createdAt: Date.now(),
         playWithFlor: playWithFlor, // Guardar opción de Flor
       };
       db.data.rooms[roomId] = room;
