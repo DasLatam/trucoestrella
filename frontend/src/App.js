@@ -4,7 +4,6 @@ import io from 'socket.io-client';
 import './App.css';
 import GameLobby from './components/GameLobby';
 import WaitingRoom from './components/WaitingRoom';
-import AppWrapper from './components/AppWrapper'; // Importamos el nuevo componente wrapper
 
 // URL de tu backend desplegado en Render.com
 const SOCKET_SERVER_URL = 'https://trucoestrella-backend.onrender.com';
@@ -25,13 +24,10 @@ const AppWrapper = () => {
       setPlayerConnected(true);
 
       if (roomId) {
-        newSocket.emit('joinGame', {
+        newSocket.emit('joinRoomWithId', {
+          roomId: roomId,
           playerName: playerName,
           privateKey: key || roomId,
-          pointsToWin: null,
-          gameMode: null,
-          opponentType: null,
-          playWithFlor: null,
         });
       }
     });
@@ -47,6 +43,11 @@ const AppWrapper = () => {
     
     newSocket.on('roomAbandoned', () => {
       navigate('/');
+    });
+    
+    newSocket.on('joinError', (error) => {
+        alert(error.message);
+        navigate('/');
     });
 
     return () => newSocket.disconnect();

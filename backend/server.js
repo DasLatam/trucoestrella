@@ -24,6 +24,7 @@ const io = socketIo(server, {
   transports: ['websocket', 'polling']
 });
 
+// ¡CORRECCIÓN CRÍTICA! process.env.PORT en lugar de process.env.env.PORT
 const PORT = process.env.PORT || 4000;
 
 const file = new JSONFile('db.json');
