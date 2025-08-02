@@ -24,7 +24,7 @@ const io = socketIo(server, {
   transports: ['websocket', 'polling']
 });
 
-const PORT = process.env.env.PORT || 4000;
+const PORT = process.env.PORT || 4000;
 
 const file = new JSONFile('db.json');
 const db = new Low(file, { rooms: {} });
@@ -149,29 +149,9 @@ io.on('connection', (socket) => {
       console.log(`[Sala IA] ${playerName} creó la sala ${roomId} contra IA. Esperando humanos: ${room.humanPlayersNeeded - room.currentHumanPlayers}`);
       
       if (room.status === 'playing') {
-        io.to(socket.id).emit('gameStarted', {
-          roomId: room.id,
-          players: room.players,
-          message: '¡Partida contra la IA iniciada!',
-          pointsToWin: room.pointsToWin,
-          gameMode: room.gameMode,
-          opponentType: room.opponentType,
-          playWithFlor: room.playWithFlor,
-        });
+        io.to(socket.id).emit('roomUpdate', room);
       } else {
-        io.to(socket.id).emit('roomUpdate', {
-            roomId: room.id,
-            currentPlayers: room.currentHumanPlayers,
-            maxPlayers: room.humanPlayersNeeded,
-            status: room.status,
-            players: room.players,
-            message: `Has creado la sala ${roomId} contra la IA. Esperando ${room.humanPlayersNeeded - room.currentHumanPlayers} compañeros...`,
-            pointsToWin: room.pointsToWin,
-            gameMode: room.gameMode,
-            opponentType: room.opponentType,
-            privateKey: room.privateKey,
-            playWithFlor: room.playWithFlor,
-        });
+        io.to(socket.id).emit('roomUpdate', room);
       }
       return;
     }
@@ -206,34 +186,14 @@ io.on('connection', (socket) => {
       console.log(`[Sala ${roomId}] ${playerName} se unió. Participantes: ${room.currentPlayers}/${room.maxPlayers}`);
       await db.write();
 
-      io.to(roomId).emit('roomUpdate', {
-        roomId: room.id,
-        currentPlayers: room.currentPlayers,
-        maxPlayers: room.maxPlayers,
-        status: room.status,
-        players: room.players,
-        message: `${playerName} se ha unido.`,
-        pointsToWin: room.pointsToWin,
-        gameMode: room.gameMode,
-        opponentType: room.opponentType,
-        privateKey: room.privateKey,
-        playWithFlor: room.playWithFlor,
-      });
+      io.to(roomId).emit('roomUpdate', room);
 
       if (room.currentPlayers === room.maxPlayers) {
         room.status = 'playing';
         clearTimeout(room.timeout);
         console.log(`[Sala ${roomId}] Partida iniciada.`);
         await db.write();
-        io.to(roomId).emit('gameStarted', {
-          roomId: room.id,
-          players: room.players,
-          message: '¡Todos los jugadores están listos!',
-          pointsToWin: room.pointsToWin,
-          gameMode: room.gameMode,
-          opponentType: room.opponentType,
-          playWithFlor: room.playWithFlor,
-        });
+        io.to(roomId).emit('gameStarted', room);
       }
 
     } else {
@@ -261,19 +221,7 @@ io.on('connection', (socket) => {
       socket.currentRoomId = roomId;
       console.log(`[Sala ${roomId}] ${playerName} creó la sala. Participantes: ${room.currentPlayers}/${room.maxPlayers}`);
 
-      io.to(socket.id).emit('roomUpdate', {
-        roomId: room.id,
-        currentPlayers: room.currentPlayers,
-        maxPlayers: room.maxPlayers,
-        status: room.status,
-        players: room.players,
-        message: `Has creado la sala ${roomId}. Esperando jugadores...`,
-        pointsToWin: room.pointsToWin,
-        gameMode: room.gameMode,
-        opponentType: room.opponentType,
-        privateKey: room.privateKey,
-        playWithFlor: room.playWithFlor,
-      });
+      io.to(socket.id).emit('roomUpdate', room);
 
       room.timeout = setTimeout(async () => {
         await db.read();
@@ -436,6 +384,35 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('joinRoomWithId', async ({ roomId, playerName }) => {
+    await db.read();
+    const room = db.data.rooms[roomId];
+
+    if (!room) {
+        socket.emit('joinError', { message: 'La sala no existe.' });
+        return;
+    }
+
+    if (room.players.some(player => player.name === playerName)) {
+        socket.emit('joinError', { message: `El nombre "${playerName}" ya está en uso en esta sala.` });
+        return;
+    }
+
+    if (room.currentPlayers >= room.maxPlayers) {
+        socket.emit('joinError', { message: 'La sala está llena.' });
+        return;
+    }
+    
+    room.players.push({ id: socket.id, name: playerName });
+    room.currentPlayers++;
+    socket.join(roomId);
+    socket.currentRoomId = roomId;
+
+    await db.write();
+
+    io.to(roomId).emit('roomUpdate', room);
+    io.emit('availableRooms', getAvailableRooms());
+  });
 
   function getAvailableRooms() {
     db.read();
