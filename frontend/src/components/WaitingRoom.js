@@ -11,9 +11,20 @@ function WaitingRoom({ socket, playerName }) {
   const { roomId } = useParams();
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !roomId) {
+        navigate('/');
+        return;
+    }
     
-    socket.emit('reconnectToRoom', { roomId });
+    socket.emit('requestRoomData', { roomId });
+
+    socket.on('roomData', (roomData) => {
+        if (roomData) {
+            setCurrentRoom(roomData);
+        } else {
+            navigate('/');
+        }
+    });
 
     socket.on('roomUpdate', (roomData) => {
       setCurrentRoom(roomData);
@@ -34,6 +45,7 @@ function WaitingRoom({ socket, playerName }) {
     });
 
     return () => {
+      socket.off('roomData');
       socket.off('roomUpdate');
       socket.off('gameStarted');
       socket.off('chatMessage');

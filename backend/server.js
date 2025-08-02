@@ -384,7 +384,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('joinRoomWithId', async ({ roomId, playerName }) => {
+  socket.on('joinRoomWithId', async ({ roomId, playerName, privateKey }) => {
     await db.read();
     const room = db.data.rooms[roomId];
 
@@ -403,6 +403,11 @@ io.on('connection', (socket) => {
         return;
     }
     
+    if (room.privateKey && room.privateKey !== privateKey) {
+        socket.emit('joinError', { message: 'Clave de sala incorrecta.' });
+        return;
+    }
+
     room.players.push({ id: socket.id, name: playerName });
     room.currentPlayers++;
     socket.join(roomId);

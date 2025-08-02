@@ -4,6 +4,7 @@ import io from 'socket.io-client';
 import './App.css';
 import GameLobby from './components/GameLobby';
 import WaitingRoom from './components/WaitingRoom';
+import AppWrapper from './components/AppWrapper'; // Importamos el nuevo componente wrapper
 
 // URL de tu backend desplegado en Render.com
 const SOCKET_SERVER_URL = 'https://trucoestrella-backend.onrender.com';
