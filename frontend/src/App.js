@@ -1,84 +1,94 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes, useParams, useNavigate } from 'react-router-dom';
+// App.js
+import React, { useState, useEffect, createContext, useContext } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
-import './App.css';
-import GameLobby from './components/GameLobby';
-import WaitingRoom from './components/WaitingRoom';
-import AppWrapper from './components/AppWrapper'; // Importamos el nuevo componente wrapper
+import GameLobby from './GameLobby';
+import WaitingRoom from './WaitingRoom';
 
-// URL de tu backend desplegado en Render.com
-const SOCKET_SERVER_URL = 'https://trucoestrella-backend.onrender.com';
+// --- Contexto para Socket y Estado del Juego ---
+const SocketContext = createContext();
+export const useSocket = () => useContext(SocketContext);
 
-const AppWrapper = () => {
-  const [socket, setSocket] = useState(null);
-  const [playerConnected, setPlayerConnected] = useState(false);
-  const navigate = useNavigate();
-  const { roomId, key } = useParams();
-  const [playerName, setPlayerName] = useState(localStorage.getItem('playerName') || 'Jugador 1');
+// --- Componente Proveedor de Contexto ---
+const AppProvider = ({ children }) => {
+    const [socket, setSocket] = useState(null);
+    const [playerName, setPlayerName] = useState(localStorage.getItem('trucoPlayerName') || '');
+    const [game, setGame] = useState(null);
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
 
-  useEffect(() => {
-    const newSocket = io(SOCKET_SERVER_URL);
-    setSocket(newSocket);
+    useEffect(() => {
+        // Conectar al backend (asegúrate de que la URL sea la de tu backend en Render.com)
+        const newSocket = io('https://trucoestrella-backend.onrender.com'); // <-- CAMBIA ESTA URL
+        setSocket(newSocket);
 
-    newSocket.on('connect', () => {
-      console.log('Conectado al servidor de Socket.IO');
-      setPlayerConnected(true);
+        // Guardar nombre de jugador en localStorage
+        if (playerName) {
+            localStorage.setItem('trucoPlayerName', playerName);
+        }
 
-      if (roomId) {
-        newSocket.emit('joinGame', {
-          playerName: playerName,
-          privateKey: key || roomId,
-          pointsToWin: null,
-          gameMode: null,
-          opponentType: null,
-          playWithFlor: null,
+        // --- Listeners de Socket ---
+        newSocket.on('connect', () => {
+            console.log('Conectado al servidor de sockets con ID:', newSocket.id);
         });
-      }
-    });
 
-    newSocket.on('disconnect', () => {
-      console.log('Desconectado del servidor de Socket.IO');
-      setPlayerConnected(false);
-    });
-    
-    newSocket.on('roomUpdate', (roomData) => {
-      navigate(`/sala/${roomData.roomId}`, { state: roomData });
-    });
-    
-    newSocket.on('roomAbandoned', () => {
-      navigate('/');
-    });
-    
-    newSocket.on('joinError', (error) => {
-        alert(error.message);
-        navigate('/');
-    });
+        newSocket.on('game-created', (gameData) => {
+            setGame(gameData);
+            navigate(`/sala/${gameData.roomId}`);
+        });
 
-    return () => newSocket.disconnect();
-  }, [roomId, key, navigate, playerName]);
+        newSocket.on('update-room', (gameData) => {
+            setGame(gameData);
+            setError(''); // Limpiar errores al recibir una actualización exitosa
+        });
 
-  if (!playerConnected) {
+        newSocket.on('error-message', (message) => {
+            console.error('Error del servidor:', message);
+            setError(message);
+            // Si el error implica que no estamos en una sala, volvemos al lobby
+            if (message.includes('no existe') || message.includes('El host ha abandonado')) {
+                setGame(null);
+                navigate('/');
+            }
+        });
+
+        return () => newSocket.disconnect();
+    }, [playerName, navigate]);
+
+    const value = {
+        socket,
+        playerName,
+        setPlayerName,
+        game,
+        setGame,
+        error,
+        setError
+    };
+
     return (
-      <div className="app-container">
-        <h1>Truco Estrella</h1>
-        <p>Conectando al servidor... ¡Por favor, espera!</p>
-        <div className="loading-spinner"></div>
-      </div>
+        <SocketContext.Provider value={value}>
+            {children}
+        </SocketContext.Provider>
     );
-  }
-
-  return (
-    <Routes>
-      <Route path="/" element={<GameLobby socket={socket} playerName={playerName} setPlayerName={setPlayerName} />} />
-      <Route path="/sala/:roomId" element={<WaitingRoom socket={socket} playerName={playerName} />} />
-    </Routes>
-  );
 };
 
-const App = () => (
-  <Router>
-    <AppWrapper />
-  </Router>
-);
+// --- Componente Principal de la Aplicación ---
+function App() {
+    return (
+        <Router>
+            <AppProvider>
+                <div className="bg-gray-900 text-white min-h-screen font-sans">
+                    <main className="container mx-auto p-4">
+                        <h1 className="text-4xl font-bold text-center text-yellow-400 mb-6">Truco Estrella 🌟</h1>
+                        <Routes>
+                            <Route path="/" element={<GameLobby />} />
+                            <Route path="/sala/:roomId" element={<WaitingRoom />} />
+                        </Routes>
+                    </main>
+                </div>
+            </AppProvider>
+        </Router>
+    );
+}
 
 export default App;
