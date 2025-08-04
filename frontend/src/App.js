@@ -18,8 +18,8 @@ const AppProvider = ({ children }) => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Conectar al backend (asegúrate de que la URL sea la de tu backend en Render.com)
-        const newSocket = io('https://trucoestrella-backend.onrender.com'); // <-- CAMBIA ESTA URL
+        // Conectar al backend (URL corregida)
+        const newSocket = io('https://trucoestrella-backend.onrender.com');
         setSocket(newSocket);
 
         // Guardar nombre de jugador en localStorage
