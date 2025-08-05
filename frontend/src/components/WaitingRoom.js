@@ -4,44 +4,42 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSocket } from './App';
 
 function WaitingRoom() {
-    const { socket, game, playerName, setPlayerName, error, setError } = useSocket();
+    const { socket, game, playerName, setPlayerName, error } = useSocket();
     const { roomId } = useParams();
     const navigate = useNavigate();
-    const [isJoining, setIsJoining] = useState(false);
     const [copied, setCopied] = useState(false);
 
     useEffect(() => {
-        // Si no tenemos datos del juego, significa que entramos por URL directa
-        if (socket && !game) {
-            // Pedir nombre si no lo tenemos
-            if (!playerName) {
-                const name = prompt("Por favor, ingresa tu nombre para unirte a la partida:");
-                if (name) {
-                    setPlayerName(name);
-                    socket.emit('join-room', { roomId, playerName: name });
+        if (socket) {
+            const isPlayerInGame = game?.players.some(p => p.id === socket.id);
+
+            if (!game || !isPlayerInGame) {
+                if (!playerName) {
+                    const name = prompt("Por favor, ingresa tu nombre para unirte a la partida:");
+                    if (name) {
+                        setPlayerName(name);
+                        socket.emit('join-room', { roomId, playerName: name });
+                    } else {
+                        navigate('/');
+                    }
                 } else {
-                    navigate('/'); // Si cancela, lo mandamos al lobby
+                    socket.emit('join-room', { roomId, playerName });
                 }
-            } else {
-                socket.emit('join-room', { roomId, playerName });
             }
-            setIsJoining(true);
         }
-    }, [socket, game, roomId, playerName, setPlayerName, navigate]);
+    }, [socket, roomId, playerName, game, setPlayerName, navigate]);
 
     const copyLinkToClipboard = () => {
-        navigator.clipboard.writeText(window.location.href).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
-        });
+        navigator.clipboard.writeText(window.location.href);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
-    // Renderizado condicional
     if (!game || game.roomId !== roomId) {
         return (
             <div className="text-center p-8">
-                <h2 className="text-2xl font-bold text-yellow-400">Cargando sala...</h2>
-                <p className="text-gray-400 mt-2">Intentando conectar a la sala {roomId}.</p>
+                <h2 className="text-2xl font-bold text-yellow-400 animate-pulse">Cargando sala...</h2>
+                <p className="text-gray-400 mt-2">Sincronizando información de la partida.</p>
                 {error && <div className="bg-red-500 text-white p-3 rounded-md mt-4">{error}</div>}
             </div>
         );
@@ -61,16 +59,8 @@ function WaitingRoom() {
             <div className="mb-6">
                 <label className="block text-gray-300 mb-2">Enlace para compartir:</label>
                 <div className="flex">
-                    <input
-                        type="text"
-                        readOnly
-                        value={window.location.href}
-                        className="w-full p-3 bg-gray-700 rounded-l-md border border-gray-600 text-gray-400"
-                    />
-                    <button
-                        onClick={copyLinkToClipboard}
-                        className="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-4 rounded-r-md transition duration-300"
-                    >
+                    <input type="text" readOnly value={window.location.href} className="w-full p-3 bg-gray-700 rounded-l-md border border-gray-600 text-gray-400" />
+                    <button onClick={copyLinkToClipboard} className="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-4 rounded-r-md transition duration-300">
                         {copied ? '¡Copiado!' : 'Copiar'}
                     </button>
                 </div>
@@ -82,41 +72,15 @@ function WaitingRoom() {
                     {vsAI && ` (+ ${maxPlayers / 2} IA)`}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Equipo A */}
-                    <div className="p-3 bg-gray-800 rounded-md">
-                        <h4 className="font-bold text-red-500 mb-2">Equipo A</h4>
-                        <ul>
-                            {players.filter(p => p.team === 'A').map(p => (
-                                <li key={p.id} className="flex items-center space-x-2 text-lg">
-                                    <span>{p.isAI ? '🤖' : '👤'}</span>
-                                    <span>{p.name}</span>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                    {/* Equipo B */}
-                    <div className="p-3 bg-gray-800 rounded-md">
-                        <h4 className="font-bold text-blue-500 mb-2">Equipo B</h4>
-                        <ul>
-                            {players.filter(p => p.team === 'B').map(p => (
-                                <li key={p.id} className="flex items-center space-x-2 text-lg">
-                                    <span>{p.isAI ? '🤖' : '👤'}</span>
-                                    <span>{p.name}</span>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
+                    <div className="p-3 bg-gray-800 rounded-md"><h4 className="font-bold text-red-500 mb-2">Equipo A</h4><ul>{players.filter(p => p.team === 'A').map(p => (<li key={p.id} className="flex items-center space-x-2 text-lg"><span>{p.isAI ? '🤖' : '👤'}</span><span>{p.name}</span></li>))}</ul></div>
+                    <div className="p-3 bg-gray-800 rounded-md"><h4 className="font-bold text-blue-500 mb-2">Equipo B</h4><ul>{players.filter(p => p.team === 'B').map(p => (<li key={p.id} className="flex items-center space-x-2 text-lg"><span>{p.isAI ? '🤖' : '👤'}</span><span>{p.name}</span></li>))}</ul></div>
                 </div>
             </div>
 
             {game.status === 'ready' ? (
-                 <button className="w-full mt-6 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-md transition duration-300">
-                    ¡Empezar Partida!
-                </button>
+                 <button className="w-full mt-6 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-md transition duration-300">¡Empezar Partida!</button>
             ) : (
-                <p className="text-center mt-6 text-yellow-400 animate-pulse">
-                    Esperando a que se unan más jugadores...
-                </p>
+                <p className="text-center mt-6 text-yellow-400 animate-pulse">Esperando a que se unan más jugadores...</p>
             )}
         </div>
     );

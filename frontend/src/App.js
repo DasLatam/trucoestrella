@@ -1,101 +1,85 @@
 // App.js
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import io from 'socket.io-client';
 import GameLobby from './GameLobby';
 import WaitingRoom from './WaitingRoom';
 
-// --- Contexto para Socket y Estado del Juego ---
 const SocketContext = createContext();
 export const useSocket = () => useContext(SocketContext);
 
-// --- Componente Proveedor de Contexto ---
-const AppProvider = ({ children }) => {
+const AppContent = () => {
     const [socket, setSocket] = useState(null);
-    const [isConnected, setIsConnected] = useState(false); // Estado para la conexión
-    const [playerName, setPlayerName] = useState(localStorage.getItem('trucoPlayerName') || '');
+    const [isConnected, setIsConnected] = useState(false);
+    const [playerName, setPlayerName] = useState(() => localStorage.getItem('trucoPlayerName') || '');
     const [game, setGame] = useState(null);
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const location = useLocation();
 
-    // Efecto para la conexión del Socket (se ejecuta una sola vez)
     useEffect(() => {
         const newSocket = io('https://trucoestrella-backend.onrender.com', {
             transports: ['websocket', 'polling']
         });
         setSocket(newSocket);
 
-        // --- Listeners de Socket ---
         newSocket.on('connect', () => {
-            console.log('Conectado al servidor de sockets con ID:', newSocket.id);
-            setIsConnected(true); // ¡Conexión exitosa!
+            console.log('Conectado al servidor con ID:', newSocket.id);
+            setIsConnected(true);
         });
-
-        newSocket.on('disconnect', (reason) => {
-            console.log(`Desconectado del servidor. Razón: ${reason}`);
-            setIsConnected(false); // Se perdió la conexión
-        });
-
+        newSocket.on('disconnect', () => setIsConnected(false));
         newSocket.on('game-created', (gameData) => {
             setGame(gameData);
             navigate(`/sala/${gameData.roomId}`);
         });
-
-        newSocket.on('update-room', (gameData) => {
-            setGame(gameData);
-            setError('');
-        });
-
+        newSocket.on('update-room', (gameData) => setGame(gameData));
         newSocket.on('error-message', (message) => {
-            console.error('Error del servidor:', message);
             setError(message);
-            if (message.includes('no existe') || message.includes('El host ha abandonado')) {
+            if (message.includes('cerrado')) {
                 setGame(null);
                 navigate('/');
             }
         });
 
         return () => newSocket.disconnect();
-    }, [navigate]); // Dependencia para que `navigate` esté disponible
+    }, [navigate]);
 
-    // Efecto para guardar el nombre del jugador en localStorage
     useEffect(() => {
         localStorage.setItem('trucoPlayerName', playerName);
     }, [playerName]);
 
+    // Limpiar estado del juego al volver al lobby
+    useEffect(() => {
+        if (location.pathname === '/') {
+            setGame(null);
+            setError('');
+        }
+    }, [location.pathname]);
+
     const value = {
-        socket,
-        isConnected, // Pasamos el estado de la conexión al contexto
-        playerName,
-        setPlayerName,
-        game,
-        setGame,
-        error,
-        setError
+        socket, isConnected, playerName, setPlayerName,
+        game, setGame, error, setError
     };
 
     return (
         <SocketContext.Provider value={value}>
-            {children}
+            <main className="container mx-auto p-4">
+                <h1 className="text-4xl font-bold text-center text-yellow-400 mb-6">Truco Estrella 🌟</h1>
+                <Routes>
+                    <Route path="/" element={<GameLobby />} />
+                    <Route path="/sala/:roomId" element={<WaitingRoom />} />
+                </Routes>
+            </main>
         </SocketContext.Provider>
     );
 };
 
-// --- Componente Principal de la Aplicación ---
 function App() {
     return (
         <Router>
-            <AppProvider>
-                <div className="bg-gray-900 text-white min-h-screen font-sans">
-                    <main className="container mx-auto p-4">
-                        <h1 className="text-4xl font-bold text-center text-yellow-400 mb-6">Truco Estrella 🌟</h1>
-                        <Routes>
-                            <Route path="/" element={<GameLobby />} />
-                            <Route path="/sala/:roomId" element={<WaitingRoom />} />
-                        </Routes>
-                    </main>
-                </div>
-            </AppProvider>
+            <div className="bg-gray-900 text-white min-h-screen font-sans">
+                <AppContent />
+            </div>
         </Router>
     );
 }
