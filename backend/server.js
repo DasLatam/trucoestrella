@@ -18,11 +18,15 @@ const defaultData = { games: {} };
 const db = new Low(adapter, defaultData);
 await db.read(); // Carga la base de datos al iniciar
 
+// --- CONFIGURACIÓN DE SOCKET.IO CORREGIDA ---
 const io = new Server(server, {
   cors: {
-    origin: "*", // En producción, deberías restringir esto a la URL de Vercel
-    methods: ["GET", "POST"]
-  }
+    origin: "*", // Para máxima compatibilidad. Idealmente, aquí va la URL de tu frontend de Vercel.
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  // Permitir 'polling' como un método de conexión de respaldo. Esencial para Render/Heroku.
+  transports: ['websocket', 'polling'] 
 });
 
 // --- Lógica de Ayuda ---
@@ -164,8 +168,8 @@ io.on('connection', (socket) => {
 
 
   // **Manejo de desconexión**
-  socket.on('disconnect', async () => {
-    console.log(`Usuario desconectado: ${socket.id}`);
+  socket.on('disconnect', async (reason) => {
+    console.log(`Usuario desconectado: ${socket.id}. Razón: ${reason}`);
     let roomIdToRemove = null;
     let gameToUpdate = null;
 

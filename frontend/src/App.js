@@ -18,8 +18,11 @@ const AppProvider = ({ children }) => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Conectar al backend (URL corregida)
-        const newSocket = io('https://trucoestrella-backend.onrender.com');
+        // --- CONEXIÓN DE SOCKET.IO CORREGIDA ---
+        const newSocket = io('https://trucoestrella-backend.onrender.com', {
+            // Asegurarse de que el cliente también intente usar polling si websocket falla.
+            transports: ['websocket', 'polling']
+        });
         setSocket(newSocket);
 
         // Guardar nombre de jugador en localStorage
@@ -50,6 +53,12 @@ const AppProvider = ({ children }) => {
                 setGame(null);
                 navigate('/');
             }
+        });
+
+        // Escuchar el evento de desconexión para depuración
+        newSocket.on('disconnect', (reason) => {
+            console.log(`Desconectado del servidor. Razón: ${reason}`);
+            // Podrías mostrar un mensaje al usuario aquí si la desconexión no fue intencional
         });
 
         return () => newSocket.disconnect();
