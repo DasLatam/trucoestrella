@@ -24,29 +24,32 @@ export function PublicChat() {
     };
 
     return (
-        <div className="bg-[#000000] bg-opacity-30 p-4 rounded-lg shadow-lg border border-gray-700 h-full flex flex-col">
-            <h2 className="text-xl font-semibold mb-4 text-gray-300 border-b border-gray-700 pb-2">Chat Público</h2>
-            <div className="flex-grow space-y-3 pr-2 overflow-y-auto">
+        <div className="bg-black bg-opacity-30 p-4 rounded-lg shadow-lg border border-gray-700 h-full flex flex-col">
+            <h2 className="text-xl font-semibold mb-4 text-gray-300 border-b border-gray-700 pb-3">Chat Público</h2>
+            <div className="flex-grow space-y-3 p-2 overflow-y-auto custom-scrollbar">
                 {chatMessages.map(msg => (
-                    <div key={msg.id}>
+                    <div key={msg.id} className="text-sm">
                         {msg.type === 'log' ? (
-                            <p className="text-sm text-green-400 italic">» {msg.text}</p>
+                            <p className="text-green-400 italic opacity-80">» {msg.text}</p>
                         ) : (
-                            <p><span style={{color: msg.color}} className="font-bold">{msg.sender}:</span> {msg.text}</p>
+                            <div>
+                                <span style={{color: msg.color}} className="font-bold">{msg.sender}:</span>
+                                <span className="text-gray-200 ml-2 break-words">{msg.text}</span>
+                            </div>
                         )}
                     </div>
                 ))}
                 <div ref={chatEndRef} />
             </div>
-            <form onSubmit={handleSend} className="mt-4 flex">
+            <form onSubmit={handleSend} className="mt-4 flex border-t border-gray-700 pt-4">
                 <input 
                     type="text"
                     value={newMessage}
                     onChange={e => setNewMessage(e.target.value)}
-                    className="flex-grow bg-gray-700 p-2 rounded-l-md focus:outline-none focus:ring-2 focus:ring-[#C87941]"
+                    className="flex-grow bg-gray-700 p-3 rounded-l-md focus:outline-none focus:ring-2 focus:ring-[#C87941] text-white"
                     placeholder="Escribe un mensaje..."
                 />
-                <button type="submit" className="bg-[#C87941] text-gray-900 font-bold px-4 rounded-r-md">Enviar</button>
+                <button type="submit" className="bg-[#C87941] text-gray-900 font-bold px-5 rounded-r-md hover:bg-opacity-90 transition-all">Enviar</button>
             </form>
         </div>
     );
