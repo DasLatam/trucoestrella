@@ -1,103 +1,65 @@
 // App.js
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import io from 'socket.io-client';
-import GameLobby from './GameLobby';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { io } from 'socket.io-client';
+import Lobby from './Lobby';
 import WaitingRoom from './WaitingRoom';
 
-// --- Contexto para Socket y Estado del Juego ---
-const SocketContext = createContext();
-export const useSocket = () => useContext(SocketContext);
+// --- CONTEXTO GLOBAL ---
+const AppContext = createContext();
+export const useAppContext = () => useContext(AppContext);
 
-// --- Componente Proveedor de Contexto ---
-const AppProvider = ({ children }) => {
-    const [socket, setSocket] = useState(null);
-    const [isConnected, setIsConnected] = useState(false);
-    const [playerName, setPlayerName] = useState(localStorage.getItem('trucoPlayerName') || '');
-    const [game, setGame] = useState(null);
-    const [error, setError] = useState('');
-    const navigate = useNavigate();
+// --- SOCKET ---
+const socket = io('https://trucoestrella-backend.onrender.com');
 
-    // Efecto para la conexión del Socket
-    useEffect(() => {
-        const newSocket = io('https://trucoestrella-backend.onrender.com', {
-            transports: ['websocket', 'polling']
-        });
-        setSocket(newSocket);
-
-        // --- Listeners de Socket ---
-        newSocket.on('connect', () => {
-            console.log('Conectado al servidor de sockets con ID:', newSocket.id);
-            setIsConnected(true);
-        });
-
-        newSocket.on('disconnect', (reason) => {
-            console.log(`Desconectado del servidor. Razón: ${reason}`);
-            setIsConnected(false);
-        });
-
-        newSocket.on('game-created', (gameData) => {
-            setGame(gameData);
-            navigate(`/sala/${gameData.roomId}`);
-        });
-
-        newSocket.on('update-room', (gameData) => {
-            setGame(gameData);
-            setError('');
-        });
-
-        newSocket.on('error-message', (message) => {
-            console.error('Error del servidor:', message);
-            setError(message);
-            if (message.includes('no existe') || message.includes('El host ha abandonado')) {
-                setGame(null);
-                navigate('/');
-            }
-        });
-
-        return () => newSocket.disconnect();
-    }, [navigate]);
-
-    // Efecto para guardar el nombre del jugador en localStorage
-    useEffect(() => {
-        localStorage.setItem('trucoPlayerName', playerName);
-    }, [playerName]);
-
-    const value = {
-        socket,
-        isConnected,
-        playerName,
-        setPlayerName,
-        game,
-        setGame,
-        error,
-        setError
-    };
-
-    return (
-        <SocketContext.Provider value={value}>
-            {children}
-        </SocketContext.Provider>
-    );
-};
-
-// --- Componente Principal de la Aplicación ---
 function App() {
-    return (
-        <Router>
-            <AppProvider>
-                <div className="bg-gray-900 text-white min-h-screen font-sans">
-                    <main className="container mx-auto p-4">
-                        <h1 className="text-4xl font-bold text-center text-yellow-400 mb-6">Truco Estrella 🌟</h1>
-                        <Routes>
-                            <Route path="/" element={<GameLobby />} />
-                            <Route path="/sala/:roomId" element={<WaitingRoom />} />
-                        </Routes>
-                    </main>
-                </div>
-            </AppProvider>
-        </Router>
-    );
+  const [isConnected, setIsConnected] = useState(false);
+  const [user, setUser] = useState({ name: 'Cacho', id: 'user1' }); // Usuario hardcodeado por ahora
+  const [availableGames, setAvailableGames] = useState([]);
+  const [chatMessages, setChatMessages] = useState([]);
+
+  useEffect(() => {
+    socket.on('connect', () => setIsConnected(true));
+    socket.on('disconnect', () => setIsConnected(false));
+    
+    // Escuchar actualizaciones de la lista de partidas
+    socket.on('games-list-update', (games) => setAvailableGames(games));
+    
+    // Escuchar historial y nuevos mensajes del chat
+    socket.on('chat-history', (history) => setChatMessages(history));
+    socket.on('new-chat-message', (message) => {
+        setChatMessages(prevMessages => [...prevMessages, message]);
+    });
+
+    return () => {
+      socket.off('connect');
+      socket.off('disconnect');
+      socket.off('games-list-update');
+      socket.off('chat-history');
+      socket.off('new-chat-message');
+    };
+  }, []);
+
+  const contextValue = {
+    isConnected,
+    user,
+    availableGames,
+    chatMessages,
+    socket,
+  };
+
+  return (
+    <AppContext.Provider value={contextValue}>
+      <Router>
+        <div className="bg-gray-900 text-gray-200 min-h-screen font-sans">
+          <Routes>
+            <Route path="/" element={<Lobby />} />
+            <Route path="/sala/:roomId" element={<WaitingRoom />} />
+          </Routes>
+        </div>
+      </Router>
+    </AppContext.Provider>
+  );
 }
 
 export default App;
