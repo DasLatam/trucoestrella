@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useSocket } from './App'; // Importa el hook del contexto
 
 function GameLobby() {
-    const { socket, playerName, setPlayerName, error, setError } = useSocket();
+    const { socket, playerName, setPlayerName, error, setError, isConnected } = useSocket();
     const [gameMode, setGameMode] = useState('1v1');
     const [vsAI, setVsAI] = useState(false);
 
@@ -13,9 +13,12 @@ function GameLobby() {
             setError('Por favor, ingresa tu nombre de jugador.');
             return;
         }
-        if (socket) {
+        // Solo emitir si el socket existe y está conectado
+        if (socket && isConnected) {
             setError(''); // Limpiar errores anteriores
             socket.emit('create-game', { playerName, gameMode, vsAI });
+        } else {
+            setError('Aún no se ha conectado al servidor. Intenta de nuevo en un momento.');
         }
     };
 
@@ -62,9 +65,14 @@ function GameLobby() {
                 </div>
                 <button
                     type="submit"
-                    className="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-4 rounded-md transition duration-300"
+                    disabled={!isConnected} // Desactivado si no hay conexión
+                    className={`w-full font-bold py-3 px-4 rounded-md transition duration-300 ${
+                        !isConnected 
+                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                        : 'bg-yellow-500 hover:bg-yellow-600 text-gray-900'
+                    }`}
                 >
-                    Crear Sala
+                    {isConnected ? 'Crear Sala' : 'Conectando...'}
                 </button>
             </form>
         </div>

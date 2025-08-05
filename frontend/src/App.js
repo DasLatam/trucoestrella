@@ -12,27 +12,28 @@ export const useSocket = () => useContext(SocketContext);
 // --- Componente Proveedor de Contexto ---
 const AppProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
+    const [isConnected, setIsConnected] = useState(false); // Estado para la conexión
     const [playerName, setPlayerName] = useState(localStorage.getItem('trucoPlayerName') || '');
     const [game, setGame] = useState(null);
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
+    // Efecto para la conexión del Socket (se ejecuta una sola vez)
     useEffect(() => {
-        // --- CONEXIÓN DE SOCKET.IO CORREGIDA ---
         const newSocket = io('https://trucoestrella-backend.onrender.com', {
-            // Asegurarse de que el cliente también intente usar polling si websocket falla.
             transports: ['websocket', 'polling']
         });
         setSocket(newSocket);
 
-        // Guardar nombre de jugador en localStorage
-        if (playerName) {
-            localStorage.setItem('trucoPlayerName', playerName);
-        }
-
         // --- Listeners de Socket ---
         newSocket.on('connect', () => {
             console.log('Conectado al servidor de sockets con ID:', newSocket.id);
+            setIsConnected(true); // ¡Conexión exitosa!
+        });
+
+        newSocket.on('disconnect', (reason) => {
+            console.log(`Desconectado del servidor. Razón: ${reason}`);
+            setIsConnected(false); // Se perdió la conexión
         });
 
         newSocket.on('game-created', (gameData) => {
@@ -42,30 +43,29 @@ const AppProvider = ({ children }) => {
 
         newSocket.on('update-room', (gameData) => {
             setGame(gameData);
-            setError(''); // Limpiar errores al recibir una actualización exitosa
+            setError('');
         });
 
         newSocket.on('error-message', (message) => {
             console.error('Error del servidor:', message);
             setError(message);
-            // Si el error implica que no estamos en una sala, volvemos al lobby
             if (message.includes('no existe') || message.includes('El host ha abandonado')) {
                 setGame(null);
                 navigate('/');
             }
         });
 
-        // Escuchar el evento de desconexión para depuración
-        newSocket.on('disconnect', (reason) => {
-            console.log(`Desconectado del servidor. Razón: ${reason}`);
-            // Podrías mostrar un mensaje al usuario aquí si la desconexión no fue intencional
-        });
-
         return () => newSocket.disconnect();
-    }, [playerName, navigate]);
+    }, [navigate]); // Dependencia para que `navigate` esté disponible
+
+    // Efecto para guardar el nombre del jugador en localStorage
+    useEffect(() => {
+        localStorage.setItem('trucoPlayerName', playerName);
+    }, [playerName]);
 
     const value = {
         socket,
+        isConnected, // Pasamos el estado de la conexión al contexto
         playerName,
         setPlayerName,
         game,
