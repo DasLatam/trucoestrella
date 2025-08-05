@@ -12,7 +12,7 @@ export function CreateGameModal({ onClose }) {
     flor: true,
     gameMode: '2v2',
     vsAI: false,
-    password: ''
+    isPrivate: false, // Nueva opción
   });
   const [error, setError] = useState('');
 
@@ -30,6 +30,8 @@ export function CreateGameModal({ onClose }) {
 
   const inputStyle = "w-full p-3 bg-gray-700 rounded-md mt-1 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-truco-brown transition-all text-white";
   const labelStyle = "block text-sm font-medium text-gray-400";
+  const checkboxLabelStyle = "flex items-center justify-between bg-gray-800 p-4 rounded-md";
+  const checkboxStyle = "h-6 w-6 rounded text-truco-green bg-gray-600 border-gray-500 focus:ring-truco-green";
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
@@ -52,9 +54,19 @@ export function CreateGameModal({ onClose }) {
                     <option value={30}>30 Puntos (Partida completa)</option>
                 </select>
             </div>
-            <div className="flex items-center justify-between bg-gray-800 p-4 rounded-md">
-                <label className="text-gray-300 font-medium">Jugar con flor</label>
-                <input type="checkbox" checked={options.flor} onChange={e => setOptions({...options, flor: e.target.checked})} className="h-6 w-6 rounded text-truco-green bg-gray-600 border-gray-500 focus:ring-truco-green"/>
+            <div className="space-y-3">
+                <div className={checkboxLabelStyle}>
+                    <label className="text-gray-300 font-medium">Jugar con flor</label>
+                    <input type="checkbox" checked={options.flor} onChange={e => setOptions({...options, flor: e.target.checked})} className={checkboxStyle}/>
+                </div>
+                <div className={checkboxLabelStyle}>
+                    <label className="text-gray-300 font-medium">Partida Privada (solo con link)</label>
+                    <input type="checkbox" checked={options.isPrivate} onChange={e => setOptions({...options, isPrivate: e.target.checked})} className={checkboxStyle}/>
+                </div>
+                <div className={checkboxLabelStyle}>
+                    <label className="text-gray-300 font-medium">Jugar con IA</label>
+                    <input type="checkbox" checked={options.vsAI} onChange={e => setOptions({...options, vsAI: e.target.checked})} className={checkboxStyle}/>
+                </div>
             </div>
         </div>
         <div className="flex justify-end space-x-4 mt-8">
