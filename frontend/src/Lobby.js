@@ -1,19 +1,21 @@
-// Lobby.js
+// src/Lobby.js
 import React, { useState } from 'react';
 import { useAppContext } from './App';
 import { CreateGameModal } from './components/CreateGameModal';
 import { PublicChat } from './components/PublicChat';
+import { JoinGameModal } from './components/JoinGameModal';
 
 function Lobby() {
-  const { availableGames, isConnected } = useAppContext();
+  const { availableGames, isConnected, user } = useAppContext();
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
+  const [joiningGame, setJoiningGame] = useState(null); // Estado para saber a qué juego unirse
 
   return (
     <div className="container mx-auto p-4 max-w-7xl">
       <header className="flex justify-between items-center mb-6">
-        <h1 className="text-4xl font-bold text-[#C87941]">Truco Estrella</h1>
+        <h1 className="text-4xl font-bold text-truco-brown">Truco Estrella</h1>
         <div className="text-right">
-            <p className="font-semibold">Bienvenido, Cacho</p>
+            <p className="font-semibold text-white">Bienvenido, {user.name}</p>
             <p className={`text-sm ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
                 {isConnected ? '● Conectado' : '● Desconectado'}
             </p>
@@ -21,47 +23,50 @@ function Lobby() {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Columna de Partidas */}
-        <div className="lg:col-span-2 bg-[#000000] bg-opacity-30 p-6 rounded-lg shadow-lg border border-gray-700">
+        <div className="lg:col-span-2 bg-light-bg p-6 rounded-lg shadow-lg border border-light-border">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-semibold text-gray-300">Partidas Disponibles</h2>
             <button 
                 onClick={() => setCreateModalOpen(true)}
-                className="bg-[#346751] text-white font-bold py-2 px-4 rounded-md hover:bg-opacity-80 transition-all duration-300 shadow-md">
+                className="bg-truco-green text-white font-bold py-2 px-4 rounded-md hover:bg-opacity-80 transition-all duration-300 shadow-md">
                 + Crear Partida
             </button>
           </div>
           <div className="space-y-3 pr-2 overflow-y-auto h-[65vh]">
             {availableGames.length > 0 ? availableGames.map(game => (
-              <div key={game.roomId} className="bg-gray-800 p-4 rounded-lg flex justify-between items-center border border-gray-600 hover:border-[#C87941] transition-all">
+              <div key={game.roomId} className="bg-gray-800 p-4 rounded-lg flex justify-between items-center border border-gray-700 hover:border-truco-brown transition-all">
                 <div>
                   <p className="font-bold text-lg text-white">Partida de {game.creatorName}</p>
-                  <div className="flex space-x-4 text-sm text-gray-400 mt-1">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-400 mt-1">
                     <span>⚔️ {game.gameMode}</span>
                     <span>🏆 {game.points} Pts</span>
                     <span>{game.flor ? '🌺 Con Flor' : '🚫 Sin Flor'}</span>
                   </div>
                 </div>
-                <button className="bg-gray-700 text-gray-200 font-semibold py-2 px-4 rounded-md hover:bg-gray-600">
+                <button 
+                  onClick={() => setJoiningGame(game)}
+                  className="bg-gray-700 text-gray-200 font-semibold py-2 px-4 rounded-md hover:bg-gray-600">
                   Unirse
                 </button>
               </div>
             )) : (
-                <div className="text-center py-10 text-gray-500">
-                    <p>No hay partidas disponibles.</p>
-                    <p>¡Crea una para empezar a jugar!</p>
+                <div className="text-center flex items-center justify-center h-full text-gray-500">
+                    <div>
+                        <p>No hay partidas disponibles.</p>
+                        <p>¡Crea una para empezar a jugar!</p>
+                    </div>
                 </div>
             )}
           </div>
         </div>
 
-        {/* Columna de Chat */}
         <div className="lg:col-span-1">
             <PublicChat />
         </div>
       </div>
 
       {isCreateModalOpen && <CreateGameModal onClose={() => setCreateModalOpen(false)} />}
+      {joiningGame && <JoinGameModal game={joiningGame} onClose={() => setJoiningGame(null)} />}
     </div>
   );
 }

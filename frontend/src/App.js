@@ -19,16 +19,16 @@ const UserLogin = ({ onLogin }) => {
         }
     };
     return (
-        <div className="min-h-screen bg-dark-bg flex items-center justify-center">
-            <div className="bg-light-bg p-10 rounded-xl shadow-2xl border border-light-border">
+        <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
+            <div className="bg-light-bg p-10 rounded-xl shadow-2xl border border-light-border w-full max-w-md">
                 <form onSubmit={handleSubmit}>
                     <h1 className="text-3xl font-bold mb-6 text-center text-truco-brown">Bienvenido a Truco Estrella</h1>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Ingresa tu nombre para jugar</label>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Ingresa tu apodo para jugar</label>
                     <input
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full p-3 bg-gray-800 rounded-md border border-light-border focus:outline-none focus:ring-2 focus:ring-truco-brown"
+                        className="w-full p-3 bg-gray-800 rounded-md border border-light-border focus:outline-none focus:ring-2 focus:ring-truco-brown text-white"
                         autoFocus
                     />
                     <button type="submit" className="w-full mt-6 bg-truco-green text-white font-bold py-3 rounded-md hover:bg-opacity-90 transition-all">
@@ -57,7 +57,7 @@ function App() {
     socket.on('games-list-update', setAvailableGames);
     socket.on('chat-history', setChatMessages);
     socket.on('new-chat-message', (message) => {
-        setChatMessages(prev => [...prev, message]);
+        setChatMessages(prev => [...prev, message].slice(-100)); // Mantener últimos 100 mensajes
     });
 
     return () => {
@@ -70,16 +70,25 @@ function App() {
   }, []);
 
   const handleLogin = (name) => {
-      const newUser = { name, id: socket.id };
+      const newUser = { name, id: socket.id }; // La identidad se basa en el socket.id actual
       localStorage.setItem('trucoUser', JSON.stringify(newUser));
       setUser(newUser);
   };
+  
+  // Si el socket se reconecta, actualizamos el ID del usuario
+  useEffect(() => {
+      if (user && socket.id && user.id !== socket.id) {
+          const updatedUser = { ...user, id: socket.id };
+          localStorage.setItem('trucoUser', JSON.stringify(updatedUser));
+          setUser(updatedUser);
+      }
+  }, [socket.id, user]);
 
   if (!user) {
       return <UserLogin onLogin={handleLogin} />;
   }
 
-  const contextValue = { isConnected, user, availableGames, chatMessages, socket };
+  const contextValue = { isConnected, user, setUser, availableGames, chatMessages, socket };
 
   return (
     <AppContext.Provider value={contextValue}>

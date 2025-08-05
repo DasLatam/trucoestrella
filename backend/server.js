@@ -41,7 +41,6 @@ io.on('connection', (socket) => {
 
   socket.on('create-game', async (gameOptions, callback) => {
     try {
-      // VALIDACIÓN CLAVE: El jugador no puede estar en otra partida
       if (isPlayerInAnyGame(socket.id)) {
           return callback({ success: false, message: 'Ya estás en una partida. No puedes crear otra.' });
       }
@@ -50,9 +49,7 @@ io.on('connection', (socket) => {
       const roomId = uuidv4().substring(0, 6).toUpperCase();
       
       const newGame = {
-        roomId,
-        hostId: socket.id,
-        status: 'waiting',
+        roomId, hostId: socket.id, status: 'waiting',
         players: [{ id: socket.id, name: creatorName, team: 'A' }],
         teams: { A: [{ id: socket.id, name: creatorName }], B: [] },
         creatorName, points, flor, gameMode, vsAI, password,
@@ -61,7 +58,6 @@ io.on('connection', (socket) => {
 
       db.data.games[roomId] = newGame;
       await db.write();
-      
       socket.join(roomId);
       
       const logMessage = { id: uuidv4(), type: 'log', text: `Partida #${roomId} creada por ${creatorName}.`, timestamp: Date.now() };
@@ -74,8 +70,46 @@ io.on('connection', (socket) => {
     }
   });
 
-  // El resto de los eventos del servidor...
-  // ... (join-room, get-game-state, send-public-message, disconnect)
+  socket.on('join-room', async ({ roomId, playerName, team }) => {
+      const game = db.data.games[roomId];
+      if (!game) return;
+      if (game.players.some(p => p.id === socket.id)) return;
+
+      const newPlayer = { id: socket.id, name: playerName };
+      game.players.push({ ...newPlayer, team });
+      game.teams[team].push(newPlayer);
+
+      await db.write();
+      socket.join(roomId);
+
+      io.to(roomId).emit('update-game-state', game);
+
+      const logMessage = { id: uuidv4(), type: 'log', text: `${playerName} se unió a la partida #${roomId}.`, timestamp: Date.now() };
+      publicChatMessages.push(logMessage);
+      io.emit('new-chat-message', logMessage);
+  });
+  
+  socket.on('get-game-state', (roomId) => {
+      const game = db.data.games[roomId];
+      if (game) {
+          socket.join(roomId);
+          socket.emit('update-game-state', game);
+      } else {
+          socket.emit('error-message', 'La partida ya no existe.');
+      }
+  });
+
+  socket.on('send-public-message', (messageData) => {
+      const message = { id: uuidv4(), type: 'user', ...messageData, timestamp: Date.now() };
+      publicChatMessages.push(message);
+      if (publicChatMessages.length > 100) publicChatMessages.shift();
+      io.emit('new-chat-message', message);
+  });
+
+  socket.on('disconnect', async () => {
+    console.log(`Usuario desconectado: ${socket.id}`);
+    // Lógica para quitar al jugador y actualizar/eliminar la partida
+  });
 });
 
 const PORT = process.env.PORT || 3001;

@@ -1,4 +1,4 @@
-// /components/PublicChat.js
+// src/components/PublicChat.js
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppContext } from '../App';
 
@@ -17,16 +17,16 @@ export function PublicChat() {
             socket.emit('send-public-message', {
                 sender: user.name,
                 text: newMessage.trim(),
-                color: '#A78BFA', // Un color de ejemplo para el usuario
+                color: '#A78BFA',
             });
             setNewMessage('');
         }
     };
 
     return (
-        <div className="bg-black bg-opacity-30 p-4 rounded-lg shadow-lg border border-gray-700 h-full flex flex-col">
+        <div className="bg-light-bg p-4 rounded-lg shadow-lg border border-light-border h-[80vh] flex flex-col">
             <h2 className="text-xl font-semibold mb-4 text-gray-300 border-b border-gray-700 pb-3">Chat Público</h2>
-            <div className="flex-grow space-y-3 p-2 overflow-y-auto custom-scrollbar">
+            <div className="flex-grow space-y-3 p-2 overflow-y-auto">
                 {chatMessages.map(msg => (
                     <div key={msg.id} className="text-sm">
                         {msg.type === 'log' ? (
@@ -46,10 +46,10 @@ export function PublicChat() {
                     type="text"
                     value={newMessage}
                     onChange={e => setNewMessage(e.target.value)}
-                    className="flex-grow bg-gray-700 p-3 rounded-l-md focus:outline-none focus:ring-2 focus:ring-[#C87941] text-white"
+                    className="flex-grow bg-gray-800 p-3 rounded-l-md focus:outline-none focus:ring-2 focus:ring-truco-brown text-white"
                     placeholder="Escribe un mensaje..."
                 />
-                <button type="submit" className="bg-[#C87941] text-gray-900 font-bold px-5 rounded-r-md hover:bg-opacity-90 transition-all">Enviar</button>
+                <button type="submit" className="bg-truco-brown text-white font-bold px-5 rounded-r-md hover:bg-opacity-90 transition-all">Enviar</button>
             </form>
         </div>
     );
