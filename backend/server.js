@@ -18,23 +18,23 @@ const defaultData = { games: {} };
 const db = new Low(adapter, defaultData);
 await db.read(); // Carga la base de datos al iniciar
 
-// --- CONFIGURACIÓN DE SOCKET.IO CORREGIDA ---
+// --- CONFIGURACIÓN DE SOCKET.IO CORREGIDA Y ROBUSTA ---
 const io = new Server(server, {
   cors: {
-    origin: "*", // Para máxima compatibilidad. Idealmente, aquí va la URL de tu frontend de Vercel.
+    origin: "*", // Idealmente, la URL de tu frontend de Vercel
     methods: ["GET", "POST"],
     credentials: true
   },
-  // Permitir 'polling' como un método de conexión de respaldo. Esencial para Render/Heroku.
-  transports: ['websocket', 'polling'] 
+  transports: ['websocket', 'polling'],
+  // Aumentar el tiempo de espera antes de considerar una conexión como perdida.
+  pingTimeout: 60000, 
+  // Enviar un ping cada 25 segundos para mantener la conexión activa y evitar que los proxies la cierren.
+  pingInterval: 25000, 
+  // Permitir compatibilidad con clientes más antiguos (v3), por si acaso.
+  allowEIO3: true 
 });
 
 // --- Lógica de Ayuda ---
-/**
- * Verifica si un jugador (por su socket.id) ya está en alguna partida activa.
- * @param {string} socketId - El ID del socket del jugador.
- * @returns {boolean} - True si el jugador ya está en una partida.
- */
 const isPlayerInAnyGame = (socketId) => {
   const games = db.data.games;
   for (const roomId in games) {
@@ -45,17 +45,13 @@ const isPlayerInAnyGame = (socketId) => {
   return false;
 };
 
-/**
- * Añade los jugadores de IA necesarios a una partida.
- * @param {object} game - El objeto de la partida.
- */
 const addAIPlayers = (game) => {
     const humanPlayers = game.players.length;
     const totalPlayers = parseInt(game.gameMode[0], 10) * 2;
     const aiNeeded = totalPlayers - humanPlayers;
 
     for (let i = 0; i < aiNeeded; i++) {
-        const team = (i % 2 === 0) ? 'B' : 'A'; // Alterna equipos para la IA
+        const team = (i % 2 === 0) ? 'B' : 'A';
         game.players.push({
             id: `ai-${uuidv4()}`,
             name: `IA ${i + 1}`,
@@ -65,12 +61,10 @@ const addAIPlayers = (game) => {
     }
 };
 
-
 // --- Manejo de Conexiones de Socket.IO ---
 io.on('connection', (socket) => {
   console.log(`Usuario conectado: ${socket.id}`);
 
-  // **Crear una nueva partida**
   socket.on('create-game', async ({ playerName, gameMode, vsAI }) => {
     if (!playerName) {
       return socket.emit('error-message', 'Debes ingresar un nombre para jugar.');
@@ -83,15 +77,10 @@ io.on('connection', (socket) => {
     const newGame = {
       roomId,
       hostId: socket.id,
-      gameMode, // "1v1", "2v2", "3v3"
+      gameMode,
       vsAI,
       status: 'waiting',
-      players: [{
-        id: socket.id,
-        name: playerName,
-        team: 'A',
-        isAI: false
-      }],
+      players: [{ id: socket.id, name: playerName, team: 'A', isAI: false }],
       maxPlayers: parseInt(gameMode[0], 10) * 2
     };
 
@@ -103,7 +92,6 @@ io.on('connection', (socket) => {
     console.log(`Partida creada: ${roomId} por ${playerName}`);
   });
 
-  // **Unirse a una partida existente**
   socket.on('join-room', async ({ roomId, playerName }) => {
     if (!playerName) {
         return socket.emit('error-message', 'Falta el nombre del jugador.');
@@ -123,22 +111,15 @@ io.on('connection', (socket) => {
         return socket.emit('error-message', `El nombre "${playerName}" ya está en uso en esta sala.`);
     }
 
-    // Lógica para asignar equipos
     const teamACount = game.players.filter(p => p.team === 'A').length;
     const teamBCount = game.players.filter(p => p.team === 'B').length;
     const newPlayerTeam = teamACount <= teamBCount ? 'A' : 'B';
 
-    const newPlayer = {
-      id: socket.id,
-      name: playerName,
-      team: newPlayerTeam,
-      isAI: false
-    };
+    const newPlayer = { id: socket.id, name: playerName, team: newPlayerTeam, isAI: false };
 
     game.players.push(newPlayer);
     socket.join(roomId);
 
-    // Comprobar si la sala está llena de jugadores humanos
     const humanPlayersCount = game.players.filter(p => !p.isAI).length;
     const requiredHumanPlayers = game.vsAI ? (game.maxPlayers / 2) : game.maxPlayers;
 
@@ -146,7 +127,7 @@ io.on('connection', (socket) => {
         if (game.vsAI) {
             addAIPlayers(game);
         }
-        game.status = 'ready'; // O 'playing' si quieres que inicie de inmediato
+        game.status = 'ready';
     }
 
     await db.write();
@@ -155,19 +136,16 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('update-room', game);
   });
   
-  // **Obtener datos de una sala (para reconexiones o al cargar la URL directamente)**
   socket.on('get-room-data', (roomId) => {
     const game = db.data.games[roomId];
     if (game) {
-      socket.join(roomId); // Asegurarse de que el socket esté en el canal de la sala
+      socket.join(roomId);
       socket.emit('update-room', game);
     } else {
       socket.emit('error-message', 'No se encontró la información de la sala.');
     }
   });
 
-
-  // **Manejo de desconexión**
   socket.on('disconnect', async (reason) => {
     console.log(`Usuario desconectado: ${socket.id}. Razón: ${reason}`);
     let roomIdToRemove = null;
@@ -178,13 +156,11 @@ io.on('connection', (socket) => {
       const playerIndex = game.players.findIndex(p => p.id === socket.id);
 
       if (playerIndex !== -1) {
-        // Si el que se va es el host, eliminar la partida
         if (game.hostId === socket.id) {
           roomIdToRemove = roomId;
           io.to(roomId).emit('error-message', 'El host ha abandonado la partida. La sala se ha cerrado.');
           break;
         } else {
-          // Si es otro jugador, simplemente lo eliminamos
           game.players.splice(playerIndex, 1);
           gameToUpdate = game;
           break;
