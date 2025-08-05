@@ -1,6 +1,12 @@
+// ----------------------------------------------------
+// Archivo: frontend/tailwind.config.js
+// Propósito: Le dice a Tailwind qué archivos de tu proyecto analizar.
+// ----------------------------------------------------
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ["./src/**/*.{js,jsx,ts,tsx}"],
+  content: [
+    "./src/**/*.{js,jsx,ts,tsx}",
+  ],
   theme: {
     extend: {
       colors: {
