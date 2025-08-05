@@ -1,9 +1,10 @@
 // GameLobby.js
 import React, { useState } from 'react';
-import { useSocket } from './App';
+import { useGame } from './App'; // Ahora usamos useGame
+import { socket } from './socket'; // Importamos el socket directamente
 
 function GameLobby() {
-    const { socket, playerName, setPlayerName, error, setError, isConnected } = useSocket();
+    const { playerName, setPlayerName, error, setError, isConnected } = useGame();
     const [gameMode, setGameMode] = useState('1v1');
     const [vsAI, setVsAI] = useState(false);
 
@@ -13,7 +14,7 @@ function GameLobby() {
             setError('Por favor, ingresa tu nombre de jugador.');
             return;
         }
-        if (socket && isConnected) {
+        if (isConnected) {
             setError('');
             socket.emit('create-game', { playerName, gameMode, vsAI });
         } else {

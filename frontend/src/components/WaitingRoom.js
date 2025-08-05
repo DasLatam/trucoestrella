@@ -1,39 +1,76 @@
 // WaitingRoom.js
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSocket } from './App';
+import { useGame } from './App';
+import { socket } from './socket';
+
+// --- Componente Modal para pedir el nombre ---
+const NamePromptModal = ({ onSubmit }) => {
+    const [name, setName] = useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (name.trim()) {
+            onSubmit(name.trim());
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+            <div className="bg-gray-800 p-8 rounded-lg shadow-xl">
+                <form onSubmit={handleSubmit}>
+                    <h3 className="text-xl font-bold mb-4">Ingresa tu nombre para unirte</h3>
+                    <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                        autoFocus
+                    />
+                    <button type="submit" className="w-full mt-4 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-4 rounded-md">
+                        Unirse a la Partida
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
 
 function WaitingRoom() {
-    const { socket, game, playerName, setPlayerName, error } = useSocket();
+    const { game, playerName, setPlayerName, error } = useGame();
     const { roomId } = useParams();
     const navigate = useNavigate();
     const [copied, setCopied] = useState(false);
+    const [needsName, setNeedsName] = useState(false);
 
     useEffect(() => {
-        if (socket) {
-            const isPlayerInGame = game?.players.some(p => p.id === socket.id);
+        const isPlayerInGame = game?.players.some(p => p.id === socket.id);
 
-            if (!game || !isPlayerInGame) {
-                if (!playerName) {
-                    const name = prompt("Por favor, ingresa tu nombre para unirte a la partida:");
-                    if (name) {
-                        setPlayerName(name);
-                        socket.emit('join-room', { roomId, playerName: name });
-                    } else {
-                        navigate('/');
-                    }
-                } else {
-                    socket.emit('join-room', { roomId, playerName });
-                }
+        if (socket.connected && (!game || !isPlayerInGame)) {
+            if (!playerName) {
+                setNeedsName(true); // Mostrar el modal en lugar de prompt
+            } else {
+                socket.emit('join-room', { roomId, playerName });
             }
         }
-    }, [socket, roomId, playerName, game, setPlayerName, navigate]);
+    }, [socket.connected, roomId, playerName, game]);
 
+    const handleNameSubmit = (name) => {
+        setPlayerName(name);
+        setNeedsName(false);
+        socket.emit('join-room', { roomId, playerName: name });
+    };
+    
     const copyLinkToClipboard = () => {
         navigator.clipboard.writeText(window.location.href);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
+
+    if (needsName) {
+        return <NamePromptModal onSubmit={handleNameSubmit} />;
+    }
 
     if (!game || game.roomId !== roomId) {
         return (
@@ -67,10 +104,7 @@ function WaitingRoom() {
             </div>
 
             <div className="bg-gray-900 p-4 rounded-lg">
-                <h3 className="text-xl font-semibold mb-4">
-                    Jugadores ({humanPlayers.length}/{requiredHumanPlayers})
-                    {vsAI && ` (+ ${maxPlayers / 2} IA)`}
-                </h3>
+                <h3 className="text-xl font-semibold mb-4">Jugadores ({humanPlayers.length}/{requiredHumanPlayers}){vsAI && ` (+ ${maxPlayers / 2} IA)`}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-3 bg-gray-800 rounded-md"><h4 className="font-bold text-red-500 mb-2">Equipo A</h4><ul>{players.filter(p => p.team === 'A').map(p => (<li key={p.id} className="flex items-center space-x-2 text-lg"><span>{p.isAI ? '🤖' : '👤'}</span><span>{p.name}</span></li>))}</ul></div>
                     <div className="p-3 bg-gray-800 rounded-md"><h4 className="font-bold text-blue-500 mb-2">Equipo B</h4><ul>{players.filter(p => p.team === 'B').map(p => (<li key={p.id} className="flex items-center space-x-2 text-lg"><span>{p.isAI ? '🤖' : '👤'}</span><span>{p.name}</span></li>))}</ul></div>
