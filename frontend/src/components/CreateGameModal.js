@@ -12,8 +12,8 @@ const OptionButton = ({ label, value, selectedValue, onClick }) => (
     </button>
 );
 
-export function CreateGameModal({ onClose }) {
-  const { socket, user, setCurrentGame } = useAppContext(); // Añadimos setCurrentGame
+function CreateGameModal({ onClose }) {
+  const { socket, user } = useAppContext();
   const navigate = useNavigate();
   const [options, setOptions] = useState({ points: 30, flor: true, gameMode: '2v2', vsAI: false, isPrivate: false });
   const [error, setError] = useState('');
@@ -22,8 +22,6 @@ export function CreateGameModal({ onClose }) {
     const gameOptions = { ...options, creatorName: user.name };
     socket.emit('create-game', gameOptions, (response) => {
       if (response.success) {
-        // **CORRECCIÓN CLAVE:** Actualizamos el estado del juego ANTES de navegar.
-        socket.emit('get-game-state', response.roomId); 
         onClose();
         navigate(`/sala/${response.roomId}`);
       } else {
@@ -67,3 +65,5 @@ export function CreateGameModal({ onClose }) {
     </div>
   );
 }
+// CORRECCIÓN: Usar export default
+export default CreateGameModal;

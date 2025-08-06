@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppContext } from '../App';
 
-export function PublicChat() {
+function PublicChat() {
     const { chatMessages, user, socket } = useAppContext();
     const [newMessage, setNewMessage] = useState('');
     const chatEndRef = useRef(null);
@@ -47,3 +47,5 @@ export function PublicChat() {
         </div>
     );
 }
+// CORRECCIÓN: Usar export default
+export default PublicChat;

@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from './App';
-import { JoinGameModal } from './components/JoinGameModal';
+// CORRECCIÓN: Se quitan las llaves {} de la importación
+import JoinGameModal from './components/JoinGameModal';
 
 const CountdownTimer = ({ expiryTimestamp }) => {
     const calculateTimeLeft = () => {
@@ -31,7 +32,6 @@ function WaitingRoom() {
     const navigate = useNavigate();
     const [copied, setCopied] = useState(null);
     
-    // **LÓGICA CORREGIDA: Usamos el estado global `currentGame`**
     const game = currentGame;
 
     useEffect(() => {
@@ -41,7 +41,6 @@ function WaitingRoom() {
         };
         socket.on('room-expired', handleExpiry);
         
-        // Si no tenemos datos del juego O si no corresponden a esta sala, pedimos la info.
         if (!game || game.roomId !== roomId) {
             socket.emit('get-game-state', roomId);
         }
@@ -69,7 +68,6 @@ function WaitingRoom() {
         );
     }
     
-    // **CORRECCIÓN: Decidir si mostrar el modal de unión**
     const isPlayerInGame = game.players.some(p => p.id === user.id);
     if (!isPlayerInGame) {
         return <JoinGameModal game={game} onClose={() => navigate('/')} />;
