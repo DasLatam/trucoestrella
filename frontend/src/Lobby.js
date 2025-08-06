@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAppContext } from './App';
-// CORRECCIÓN: Se quitan las llaves {} para importar correctamente los componentes
 import CreateGameModal from './components/CreateGameModal';
 import PublicChat from './components/PublicChat';
 import JoinGameModal from './components/JoinGameModal';
