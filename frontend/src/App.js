@@ -1,16 +1,15 @@
 // src/App.js
 import React, { useState, useEffect, createContext, useContext, useCallback, useMemo } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import Lobby from './Lobby';
 import WaitingRoom from './WaitingRoom';
 
-// --- CONTEXTO Y SOCKET ---
 const AppContext = createContext();
 export const useAppContext = () => useContext(AppContext);
+
 const socket = io('https://trucoestrella-backend.onrender.com');
 
-// --- PANTALLA DE LOGIN ---
 const UserLogin = ({ onLogin }) => {
     const [name, setName] = useState('');
     const handleSubmit = (e) => {
@@ -41,16 +40,11 @@ const UserLogin = ({ onLogin }) => {
 
 const getRandomColor = () => `hsl(${Math.floor(Math.random() * 360)}, 70%, 80%)`;
 
-// --- COMPONENTE QUE MANEJA LAS RUTAS ---
-// Este componente se renderiza DENTRO del proveedor de contexto,
-// por lo que puede usar sus valores de forma segura.
-const AppRoutes = () => {
+const AppContent = () => {
     const { user, handleLogin } = useAppContext();
-
     if (!user) {
         return <UserLogin onLogin={handleLogin} />;
     }
-
     return (
         <div className="bg-dark-bg text-gray-200 min-h-screen font-sans">
             <Routes>
@@ -61,14 +55,13 @@ const AppRoutes = () => {
     );
 };
 
-// --- COMPONENTE APP PRINCIPAL ---
-// Su única responsabilidad es gestionar el estado y proveer el contexto.
 function App() {
     const [isConnected, setIsConnected] = useState(socket.connected);
     const [user, setUser] = useState(null);
     const [availableGames, setAvailableGames] = useState([]);
     const [chatMessages, setChatMessages] = useState([]);
     const [currentGame, setCurrentGame] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const savedUser = localStorage.getItem('trucoUser');
@@ -80,6 +73,12 @@ function App() {
         const onChatHistory = (history) => setChatMessages(history);
         const onNewChatMessage = (message) => setChatMessages(prev => [...prev, message].slice(-100));
         const onUpdateGameState = (gameState) => setCurrentGame(gameState);
+        
+        // **LA CORRECCIÓN CLAVE: Escuchar 'game-created' para manejar la navegación**
+        const onGameCreated = (gameData) => {
+            setCurrentGame(gameData);
+            navigate(`/sala/${gameData.roomId}`);
+        };
 
         socket.on('connect', onConnect);
         socket.on('disconnect', onDisconnect);
@@ -87,6 +86,7 @@ function App() {
         socket.on('chat-history', onChatHistory);
         socket.on('new-chat-message', onNewChatMessage);
         socket.on('update-game-state', onUpdateGameState);
+        socket.on('game-created', onGameCreated); // Nuevo listener
 
         return () => {
             socket.off('connect');
@@ -95,8 +95,9 @@ function App() {
             socket.off('chat-history');
             socket.off('new-chat-message');
             socket.off('update-game-state');
+            socket.off('game-created'); // Limpiar listener
         };
-    }, []);
+    }, [navigate]);
 
     const handleLogin = useCallback((name) => {
         const newUser = { name, id: socket.id, color: getRandomColor() };
@@ -111,9 +112,16 @@ function App() {
 
     return (
         <AppContext.Provider value={contextValue}>
-            <AppRoutes />
+            <AppContent />
         </AppContext.Provider>
     );
 }
 
-export default App;
+// Envolvemos App en el Router para que pueda usar 'useNavigate'
+const AppWrapper = () => (
+    <BrowserRouter>
+        <App />
+    </BrowserRouter>
+);
+
+export default AppWrapper;

@@ -1,6 +1,5 @@
 // src/components/CreateGameModal.js
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../App';
 
 const OptionButton = ({ label, value, selectedValue, onClick }) => (
@@ -15,21 +14,21 @@ const OptionButton = ({ label, value, selectedValue, onClick }) => (
 
 export default function CreateGameModal({ onClose }) {
   const { socket, user } = useAppContext();
-  const navigate = useNavigate();
   const [options, setOptions] = useState({ points: 30, flor: true, gameMode: '2v2', vsAI: false, isPrivate: false });
   const [error, setError] = useState('');
 
   const handleCreate = () => {
     const gameOptions = { ...options, creatorName: user.name };
+    // **CORRECCIÓN: Ya no navega. Solo emite y cierra el modal.**
     socket.emit('create-game', gameOptions, (response) => {
       if (response.success) {
         onClose();
-        navigate(`/sala/${response.roomId}`);
       } else {
         setError(response.message || 'No se pudo crear la partida.');
       }
     });
   };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
       <div className="bg-light-bg p-8 rounded-xl shadow-2xl w-full max-w-lg border border-light-border">
@@ -38,7 +37,7 @@ export default function CreateGameModal({ onClose }) {
         <div className="space-y-6">
             <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">Modo de Juego</label>
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 mt-2">
                     <OptionButton label="1 vs 1" value="1v1" selectedValue={options.gameMode} onClick={(v) => setOptions({...options, gameMode: v})} />
                     <OptionButton label="2 vs 2" value="2v2" selectedValue={options.gameMode} onClick={(v) => setOptions({...options, gameMode: v})} />
                     <OptionButton label="3 vs 3" value="3v3" selectedValue={options.gameMode} onClick={(v) => setOptions({...options, gameMode: v})} />
@@ -46,7 +45,7 @@ export default function CreateGameModal({ onClose }) {
             </div>
              <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">Puntos</label>
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 mt-2">
                     <OptionButton label="15 Puntos" value={15} selectedValue={options.points} onClick={(v) => setOptions({...options, points: v})} />
                     <OptionButton label="30 Puntos" value={30} selectedValue={options.points} onClick={(v) => setOptions({...options, points: v})} />
                 </div>
