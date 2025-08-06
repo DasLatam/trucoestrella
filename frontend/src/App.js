@@ -1,6 +1,6 @@
 // src/App.js
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import Lobby from './Lobby';
 import WaitingRoom from './WaitingRoom';
@@ -38,7 +38,7 @@ const UserLogin = ({ onLogin }) => {
 
 const getRandomColor = () => `hsl(${Math.floor(Math.random() * 360)}, 70%, 80%)`;
 
-const AppContent = () => {
+function App() {
     const [isConnected, setIsConnected] = useState(socket.connected);
     const [user, setUser] = useState(null);
     const [availableGames, setAvailableGames] = useState([]);
@@ -67,14 +67,12 @@ const AppContent = () => {
         return () => {
             socket.off('connect', onConnect);
             socket.off('disconnect', onDisconnect);
-            socket.off('games-list-update', onGamesListUpdate);
-            socket.off('chat-history', onChatHistory);
+            socket.off('games-list-update', onChatHistory);
             socket.off('new-chat-message', onNewChatMessage);
             socket.off('update-game-state', onUpdateGameState);
         };
     }, []);
-
-    // Limpiar el juego actual si volvemos al lobby
+    
     useEffect(() => {
         if (location.pathname === '/') {
             setCurrentGame(null);
@@ -101,10 +99,6 @@ const AppContent = () => {
             </div>
         </AppContext.Provider>
     );
-};
-
-function App() {
-    return (<Router><AppContent /></Router>);
 }
 
 export default App;
