@@ -144,30 +144,6 @@ io.on('connection', (socket) => {
       io.emit('new-chat-message', logMessage);
       callback({ success: true });
   });
-  
-  socket.on('close-room', async ({ roomId, userId }) => {
-      const game = db.data.games[roomId];
-      if (game && game.hostId === userId) {
-          io.to(roomId).emit('room-expired', 'La sala fue cerrada por el creador.');
-          delete db.data.games[roomId];
-          await db.write();
-          const logMessage = { id: uuidv4(), type: 'log', text: `La partida #${roomId} fue cerrada por el creador.`, timestamp: Date.now() };
-          publicChatMessages.push(logMessage);
-          io.emit('new-chat-message', logMessage);
-      }
-  });
-
-  socket.on('start-game', async ({roomId, userId}) => {
-      const game = db.data.games[roomId];
-      if (game && game.hostId === userId && game.status === 'ready') {
-          game.status = 'playing';
-          await db.write();
-          io.to(roomId).emit('update-game-state', game);
-          const logMessage = { id: uuidv4(), type: 'log', text: `¡La partida #${roomId} ha comenzado!`, timestamp: Date.now() };
-          publicChatMessages.push(logMessage);
-          io.emit('new-chat-message', logMessage);
-      }
-  });
 
   socket.on('get-game-state', (roomId) => {
       const game = db.data.games[roomId];
@@ -184,6 +160,31 @@ io.on('connection', (socket) => {
       publicChatMessages.push(message);
       if (publicChatMessages.length > 100) publicChatMessages.shift();
       io.emit('new-chat-message', message);
+  });
+
+  socket.on('start-game', async ({roomId, userId}) => {
+      const game = db.data.games[roomId];
+      if (game && game.hostId === userId && game.status === 'ready') {
+          game.status = 'playing';
+          await db.write();
+          io.to(roomId).emit('update-game-state', game);
+          
+          const logMessage = { id: uuidv4(), type: 'log', text: `¡La partida #${roomId} ha comenzado!`, timestamp: Date.now() };
+          publicChatMessages.push(logMessage);
+          io.emit('new-chat-message', logMessage);
+      }
+  });
+
+  socket.on('close-room', async ({ roomId, userId }) => {
+      const game = db.data.games[roomId];
+      if (game && game.hostId === userId) {
+          io.to(roomId).emit('room-expired', 'La sala fue cerrada por el creador.');
+          delete db.data.games[roomId];
+          await db.write();
+          const logMessage = { id: uuidv4(), type: 'log', text: `La partida #${roomId} fue cerrada por el creador.`, timestamp: Date.now() };
+          publicChatMessages.push(logMessage);
+          io.emit('new-chat-message', logMessage);
+      }
   });
 
   socket.on('disconnect', async (reason) => {

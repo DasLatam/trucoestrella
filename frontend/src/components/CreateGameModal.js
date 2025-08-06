@@ -13,7 +13,7 @@ const OptionButton = ({ label, value, selectedValue, onClick }) => (
     </button>
 );
 
-function CreateGameModal({ onClose }) {
+export default function CreateGameModal({ onClose }) {
   const { socket, user } = useAppContext();
   const navigate = useNavigate();
   const [options, setOptions] = useState({ points: 30, flor: true, gameMode: '2v2', vsAI: false, isPrivate: false });
@@ -30,7 +30,6 @@ function CreateGameModal({ onClose }) {
       }
     });
   };
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
       <div className="bg-light-bg p-8 rounded-xl shadow-2xl w-full max-w-lg border border-light-border">
@@ -66,4 +65,3 @@ function CreateGameModal({ onClose }) {
     </div>
   );
 }
-export default CreateGameModal;

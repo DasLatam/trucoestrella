@@ -1,6 +1,5 @@
 // src/Lobby.js
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { useAppContext } from './App';
 import CreateGameModal from './components/CreateGameModal';
 import PublicChat from './components/PublicChat';
@@ -28,16 +27,9 @@ const CountdownTimer = ({ expiryTimestamp }) => {
 };
 
 function Lobby() {
-  const { availableGames, isConnected, user, setCurrentGame } = useAppContext();
+  const { availableGames, isConnected, user } = useAppContext();
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [joiningGame, setJoiningGame] = useState(null);
-  const location = useLocation();
-
-  useEffect(() => {
-    if (location.pathname === '/') {
-        setCurrentGame(null);
-    }
-  }, [location, setCurrentGame]);
 
   return (
     <div className="container mx-auto p-4 max-w-7xl">
@@ -59,7 +51,7 @@ function Lobby() {
             </button>
           </div>
           <div className="space-y-3 pr-2 overflow-y-auto h-[65vh]">
-            {availableGames.map(game => (
+            {availableGames.length > 0 ? availableGames.map(game => (
               <div key={game.roomId} className="bg-gray-800 p-4 rounded-lg flex justify-between items-center border border-gray-700 hover:border-truco-brown transition-all">
                 <div>
                   <p className="font-bold text-lg text-white">Partida de {game.creatorName}</p>
@@ -67,8 +59,8 @@ function Lobby() {
                     <span>⚔️ {game.gameMode}</span>
                     <span>🏆 {game.points} Pts</span>
                     <span>{game.flor ? '🌺 Con Flor' : '🚫 Sin Flor'}</span>
-                    {game.vsAI && <span title="Contra la IA">🤖</span>}
-                    {game.password && <span title="Partida Privada">🔒</span>}
+                    {game.vsAI && <span title="Contra la IA">🤖 con IA</span>}
+                    {game.password && <span title="Partida Privada">🔒 Privada</span>}
                   </div>
                 </div>
                 <div className="text-right">
@@ -81,7 +73,11 @@ function Lobby() {
                     <p className="text-xs text-gray-500">Expira en <CountdownTimer expiryTimestamp={game.expiresAt} /></p>
                 </div>
               </div>
-            ))}
+            )) : (
+                <div className="text-center flex items-center justify-center h-full text-gray-500">
+                    <div><p>No hay partidas disponibles.</p><p>¡Crea una para empezar a jugar!</p></div>
+                </div>
+            )}
           </div>
         </div>
         <div className="lg:col-span-1"><PublicChat /></div>
