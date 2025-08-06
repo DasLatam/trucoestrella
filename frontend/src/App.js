@@ -40,7 +40,8 @@ const getRandomColor = () => `hsl(${Math.floor(Math.random() * 360)}, 70%, 80%)`
 
 // Este componente hijo SÍ puede usar useLocation porque vive DENTRO del Router
 const AppContent = () => {
-    const { user, currentGame, setCurrentGame } = useAppContext();
+    // LA CORRECCIÓN: Obtenemos handleLogin del contexto ANTES de cualquier condición.
+    const { user, currentGame, setCurrentGame, handleLogin } = useAppContext();
     const location = useLocation();
 
     useEffect(() => {
@@ -49,7 +50,8 @@ const AppContent = () => {
         }
     }, [location.pathname, setCurrentGame]);
 
-    if (!user) return <UserLogin onLogin={useAppContext().handleLogin} />;
+    // Esta condición ahora es segura porque todos los hooks se llamaron antes.
+    if (!user) return <UserLogin onLogin={handleLogin} />;
 
     return (
         <div className="bg-dark-bg text-gray-200 min-h-screen font-sans">
