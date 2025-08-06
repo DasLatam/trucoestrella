@@ -5,11 +5,12 @@ import { io } from 'socket.io-client';
 import Lobby from './Lobby';
 import WaitingRoom from './WaitingRoom';
 
+// --- CONTEXTO Y SOCKET ---
 const AppContext = createContext();
 export const useAppContext = () => useContext(AppContext);
-
 const socket = io('https://trucoestrella-backend.onrender.com');
 
+// --- PANTALLA DE LOGIN ---
 const UserLogin = ({ onLogin }) => {
     const [name, setName] = useState('');
     const handleSubmit = (e) => {
@@ -40,11 +41,23 @@ const UserLogin = ({ onLogin }) => {
 
 const getRandomColor = () => `hsl(${Math.floor(Math.random() * 360)}, 70%, 80%)`;
 
+// --- COMPONENTE QUE MANEJA LAS RUTAS ---
+// Este componente se renderiza DENTRO del proveedor de contexto,
+// por lo que puede usar sus valores de forma segura.
 const AppRoutes = () => {
-    const { user, handleLogin } = useAppContext();
+    const { user, handleLogin, setCurrentGame } = useAppContext();
+    const location = useLocation();
+
+    useEffect(() => {
+        if (location.pathname === '/') {
+            setCurrentGame(null);
+        }
+    }, [location.pathname, setCurrentGame]);
+
     if (!user) {
         return <UserLogin onLogin={handleLogin} />;
     }
+
     return (
         <div className="bg-dark-bg text-gray-200 min-h-screen font-sans">
             <Routes>
@@ -55,6 +68,8 @@ const AppRoutes = () => {
     );
 };
 
+// --- COMPONENTE APP PRINCIPAL ---
+// Su única responsabilidad es gestionar el estado y proveer el contexto.
 function App() {
     const [isConnected, setIsConnected] = useState(socket.connected);
     const [user, setUser] = useState(null);

@@ -25,57 +25,45 @@ const CountdownTimer = ({ expiryTimestamp }) => {
 };
 
 function WaitingRoom() {
-    const { socket, user } = useAppContext();
+    const { socket, user, currentGame, setCurrentGame } = useAppContext();
     const { roomId } = useParams();
     const navigate = useNavigate();
-    const [game, setGame] = useState(null);
-    const [error, setError] = useState('');
-
+    
     useEffect(() => {
-        const handleUpdate = (gameState) => {
-            if (gameState && gameState.roomId === roomId) setGame(gameState);
-        };
-        const handleError = (message) => setError(message);
         const handleExpiry = () => {
             alert("La sala de espera ha expirado.");
             navigate('/');
         };
-
-        socket.on('update-game-state', handleUpdate);
-        socket.on('error-message', handleError);
         socket.on('room-expired', handleExpiry);
         
-        socket.emit('get-game-state', roomId);
-
+        if (!currentGame || currentGame.roomId !== roomId) {
+            socket.emit('get-game-state', roomId);
+        }
+        
         return () => {
-            socket.off('update-game-state', handleUpdate);
-            socket.off('error-message', handleError);
             socket.off('room-expired', handleExpiry);
         };
-    }, [roomId, socket, navigate]);
+    }, [roomId, socket, navigate, currentGame]);
 
-    if (!game) {
+    if (!currentGame || currentGame.roomId !== roomId) {
         return (
-            <div className="text-center p-10">
-                <h2 className="text-2xl text-truco-brown font-bold animate-pulse">Cargando sala...</h2>
-                {error && <p className="text-red-500 mt-4">{error}</p>}
-            </div>
+            <div className="text-center p-10"><h2 className="text-2xl text-truco-brown font-bold animate-pulse">Cargando sala...</h2></div>
         );
     }
 
-    const isHost = game.hostId === user.id;
-    const canStart = isHost && game.status === 'ready';
+    const isHost = currentGame.hostId === user.id;
+    const canStart = isHost && currentGame.status === 'ready';
 
     return (
         <div className="container mx-auto p-4 max-w-4xl">
              <header className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-truco-brown">Sala: #{game.roomId}</h1>
-                    <p className="text-gray-400">Partida de {game.creatorName}</p>
+                    <h1 className="text-3xl font-bold text-truco-brown">Sala: #{currentGame.roomId}</h1>
+                    <p className="text-gray-400">Partida de {currentGame.creatorName}</p>
                 </div>
                 <div className="text-right">
                     <p className="text-gray-400">La sala expira en</p>
-                    <CountdownTimer expiryTimestamp={game.expiresAt} />
+                    <CountdownTimer expiryTimestamp={currentGame.expiresAt} />
                 </div>
             </header>
             <div className="bg-light-bg p-6 rounded-lg shadow-lg border border-light-border">
@@ -83,13 +71,13 @@ function WaitingRoom() {
                     <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                         <h3 className="font-bold text-red-500 text-xl mb-3 text-center">Equipo 1</h3>
                         <ul className="space-y-2 min-h-[100px]">
-                            {game.teams.A.map(p => <li key={p.id} className="text-white text-center text-lg">{p.isAI ? '🤖' : '👤'} {p.name}</li>)}
+                            {currentGame.teams.A.map(p => <li key={p.id} className="text-white text-center text-lg">{p.isAI ? '🤖' : '👤'} {p.name}</li>)}
                         </ul>
                     </div>
                     <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                         <h3 className="font-bold text-blue-500 text-xl mb-3 text-center">Equipo 2</h3>
                          <ul className="space-y-2 min-h-[100px]">
-                            {game.teams.B.map(p => <li key={p.id} className="text-white text-center text-lg">{p.isAI ? '🤖' : '👤'} {p.name}</li>)}
+                            {currentGame.teams.B.map(p => <li key={p.id} className="text-white text-center text-lg">{p.isAI ? '🤖' : '👤'} {p.name}</li>)}
                         </ul>
                     </div>
                 </div>
@@ -105,4 +93,3 @@ function WaitingRoom() {
     );
 }
 export default WaitingRoom;
-

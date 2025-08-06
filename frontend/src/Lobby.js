@@ -1,118 +1,94 @@
-// src/App.js
-import React, { useState, useEffect, createContext, useContext } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
-import { io } from 'socket.io-client';
-import Lobby from './Lobby';
-import WaitingRoom from './WaitingRoom';
+// src/Lobby.js
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useAppContext } from './App';
+import { CreateGameModal } from './components/CreateGameModal';
+import { PublicChat } from './components/PublicChat';
+import { JoinGameModal } from './components/JoinGameModal';
 
-const AppContext = createContext();
-export const useAppContext = () => useContext(AppContext);
-
-const socket = io('https://trucoestrella-backend.onrender.com');
-
-const UserLogin = ({ onLogin }) => {
-    const [name, setName] = useState('');
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (name.trim()) onLogin(name.trim());
-    };
-    return (
-        <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
-            <div className="bg-light-bg p-10 rounded-xl shadow-2xl border border-light-border w-full max-w-md">
-                <form onSubmit={handleSubmit}>
-                    <h1 className="text-3xl font-bold mb-6 text-center text-truco-brown">Bienvenido a Truco Estrella</h1>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Ingresa tu apodo para jugar</label>
-                    <input
-                        type="text" value={name} onChange={(e) => setName(e.target.value)}
-                        className="w-full p-3 bg-gray-800 rounded-md border border-light-border focus:outline-none focus:ring-2 focus:ring-truco-brown text-white"
-                        autoFocus
-                    />
-                    <button type="submit" className="w-full mt-6 bg-truco-green text-white font-bold py-3 rounded-md hover:bg-opacity-90 transition-all">
-                        Entrar
-                    </button>
-                </form>
-            </div>
-        </div>
-    );
-};
-
-const getRandomColor = () => `hsl(${Math.floor(Math.random() * 360)}, 70%, 80%)`;
-
-const AppContent = () => {
-    const { user, handleLogin, setCurrentGame } = useAppContext();
-    const location = useLocation();
-
-    useEffect(() => {
-        if (location.pathname === '/') {
-            setCurrentGame(null);
-        }
-    }, [location.pathname, setCurrentGame]);
-
-    if (!user) {
-        return <UserLogin onLogin={handleLogin} />;
-    }
-
-    return (
-        <div className="bg-dark-bg text-gray-200 min-h-screen font-sans">
-            <Routes>
-                <Route path="/" element={<Lobby />} />
-                <Route path="/sala/:roomId" element={<WaitingRoom />} />
-            </Routes>
-        </div>
-    );
-};
-
-function App() {
-    const [isConnected, setIsConnected] = useState(socket.connected);
-    const [user, setUser] = useState(null);
-    const [availableGames, setAvailableGames] = useState([]);
-    const [chatMessages, setChatMessages] = useState([]);
-    const [currentGame, setCurrentGame] = useState(null);
-
-    useEffect(() => {
-        const savedUser = localStorage.getItem('trucoUser');
-        if (savedUser) setUser(JSON.parse(savedUser));
-
-        const onConnect = () => setIsConnected(true);
-        const onDisconnect = () => setIsConnected(false);
-        const onGamesListUpdate = (games) => setAvailableGames(games);
-        const onChatHistory = (history) => setChatMessages(history);
-        const onNewChatMessage = (message) => setChatMessages(prev => [...prev, message].slice(-100));
-        const onUpdateGameState = (gameState) => setCurrentGame(gameState);
-
-        socket.on('connect', onConnect);
-        socket.on('disconnect', onDisconnect);
-        socket.on('games-list-update', onGamesListUpdate);
-        socket.on('chat-history', onChatHistory);
-        socket.on('new-chat-message', onNewChatMessage);
-        socket.on('update-game-state', onUpdateGameState);
-
-        return () => {
-            socket.off('connect');
-            socket.off('disconnect');
-            socket.off('games-list-update');
-            socket.off('chat-history');
-            socket.off('new-chat-message');
-            socket.off('update-game-state');
+const CountdownTimer = ({ expiryTimestamp }) => {
+    const calculateTimeLeft = () => {
+        const difference = +new Date(expiryTimestamp) - +new Date();
+        if (difference <= 0) return { minutes: 0, seconds: 0 };
+        return {
+            minutes: Math.floor((difference / 1000 / 60) % 60),
+            seconds: Math.floor((difference / 1000) % 60),
         };
-    }, []);
-
-    const handleLogin = (name) => {
-        const newUser = { name, id: socket.id, color: getRandomColor() };
-        localStorage.setItem('trucoUser', JSON.stringify(newUser));
-        setUser(newUser);
     };
-
-    const contextValue = { 
-        isConnected, user, availableGames, chatMessages, currentGame, socket,
-        setCurrentGame, handleLogin
-    };
-
+    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+    useEffect(() => {
+        const timer = setTimeout(() => setTimeLeft(calculateTimeLeft()), 1000);
+        return () => clearTimeout(timer);
+    });
     return (
-        <AppContext.Provider value={contextValue}>
-            <AppContent />
-        </AppContext.Provider>
+        <span className="font-mono bg-gray-700 px-2 py-1 rounded">
+            {String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
+        </span>
     );
-}
+};
 
-export default App;
+function Lobby() {
+  const { availableGames, isConnected, user, setCurrentGame } = useAppContext();
+  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
+  const [joiningGame, setJoiningGame] = useState(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.pathname === '/') {
+        setCurrentGame(null);
+    }
+  }, [location, setCurrentGame]);
+
+  return (
+    <div className="container mx-auto p-4 max-w-7xl">
+      <header className="flex justify-between items-center mb-6">
+          <h1 className="text-4xl font-bold text-truco-brown">Truco Estrella</h1>
+          <div className="text-right">
+              <p className="font-semibold text-white">Bienvenido, {user.name}</p>
+              <p className={`text-sm ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
+                  {isConnected ? '● Conectado' : '● Desconectado'}
+              </p>
+          </div>
+      </header>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 bg-light-bg p-6 rounded-lg shadow-lg border border-light-border">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-semibold text-gray-300">Partidas Públicas</h2>
+            <button onClick={() => setCreateModalOpen(true)} className="bg-truco-green text-white font-bold py-2 px-4 rounded-md hover:bg-opacity-80 transition-all">
+                + Crear Partida
+            </button>
+          </div>
+          <div className="space-y-3 pr-2 overflow-y-auto h-[65vh]">
+            {availableGames.map(game => (
+              <div key={game.roomId} className="bg-gray-800 p-4 rounded-lg flex justify-between items-center border border-gray-700 hover:border-truco-brown transition-all">
+                <div>
+                  <p className="font-bold text-lg text-white">Partida de {game.creatorName}</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-400 mt-1 items-center">
+                    <span>⚔️ {game.gameMode}</span>
+                    <span>🏆 {game.points} Pts</span>
+                    <span>{game.flor ? '🌺 Con Flor' : '🚫 Sin Flor'}</span>
+                    {game.vsAI && <span title="Contra la IA">🤖</span>}
+                    {game.password && <span title="Partida Privada">🔒</span>}
+                  </div>
+                </div>
+                <div className="text-right">
+                    <div className="flex items-center justify-end mb-2">
+                        <span className="text-sm mr-2 text-gray-300">{game.players.length}/{game.maxPlayers}</span>
+                        <button onClick={() => setJoiningGame(game)} className="bg-gray-700 text-gray-200 font-semibold py-2 px-4 rounded-md hover:bg-gray-600">
+                          Unirse
+                        </button>
+                    </div>
+                    <p className="text-xs text-gray-500">Expira en <CountdownTimer expiryTimestamp={game.expiresAt} /></p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="lg:col-span-1"><PublicChat /></div>
+      </div>
+      {isCreateModalOpen && <CreateGameModal onClose={() => setCreateModalOpen(false)} />}
+      {joiningGame && <JoinGameModal game={joiningGame} onClose={() => setJoiningGame(null)} />}
+    </div>
+  );
+}
+export default Lobby;
