@@ -11,6 +11,9 @@ export function JoinGameModal({ game, onClose }) {
     const [error, setError] = useState('');
 
     const handleJoin = () => {
+        // Limpiar errores anteriores
+        setError('');
+
         socket.emit('join-room', { 
             roomId: game.roomId, 
             playerName: user.name, 
@@ -19,10 +22,7 @@ export function JoinGameModal({ game, onClose }) {
         }, (response) => {
             if (response.success) {
                 onClose();
-                // Solo navegar si no estamos ya en la página de la sala
-                if (!window.location.pathname.includes('/sala/')) {
-                    navigate(`/sala/${game.roomId}`);
-                }
+                // La navegación se maneja en WaitingRoom, aquí solo cerramos el modal
             } else {
                 setError(response.message);
             }

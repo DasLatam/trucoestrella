@@ -32,11 +32,13 @@ function WaitingRoom() {
     const [game, setGame] = useState(null);
     const [error, setError] = useState('');
     const [needsToJoin, setNeedsToJoin] = useState(false);
+    const [copied, setCopied] = useState(null); // 'link' o 'key'
 
     useEffect(() => {
         const handleUpdate = (gameState) => {
             if (gameState && gameState.roomId === roomId) {
                 setGame(gameState);
+                // Si el usuario no está en la lista de jugadores, necesita unirse
                 if (!gameState.players.some(p => p.id === user.id)) {
                     setNeedsToJoin(true);
                 } else {
@@ -67,6 +69,12 @@ function WaitingRoom() {
         if (window.confirm('¿Estás seguro de que quieres cerrar esta sala para todos?')) {
             socket.emit('close-room', { roomId, userId: user.id });
         }
+    };
+    
+    const copyToClipboard = (text, type) => {
+        navigator.clipboard.writeText(text);
+        setCopied(type);
+        setTimeout(() => setCopied(null), 2000);
     };
 
     if (!game) {
@@ -99,20 +107,35 @@ function WaitingRoom() {
             </header>
             <div className="bg-light-bg p-6 rounded-lg shadow-lg border border-light-border">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center mb-6 border-b border-light-border pb-6">
-                    <div><p className="text-gray-500 text-sm">MODO</p><p className="font-bold text-lg">{game.gameMode}</p></div>
-                    <div><p className="text-gray-500 text-sm">PUNTOS</p><p className="font-bold text-lg">{game.points}</p></div>
-                    <div><p className="text-gray-500 text-sm">FLOR</p><p className="font-bold text-lg">{game.flor ? 'Sí' : 'No'}</p></div>
-                    <div><p className="text-gray-500 text-sm">vs. IA</p><p className="font-bold text-lg">{game.vsAI ? 'Sí' : 'No'}</p></div>
+                    <div><p className="text-gray-500 text-sm">⚔️ MODO</p><p className="font-bold text-lg">{game.gameMode}</p></div>
+                    <div><p className="text-gray-500 text-sm">🏆 PUNTOS</p><p className="font-bold text-lg">{game.points}</p></div>
+                    <div><p className="text-gray-500 text-sm">🌺 FLOR</p><p className="font-bold text-lg">{game.flor ? 'Sí' : 'No'}</p></div>
+                    <div><p className="text-gray-500 text-sm">🤖 vs. IA</p><p className="font-bold text-lg">{game.vsAI ? 'Sí' : 'No'}</p></div>
                 </div>
-                {game.password && (
-                    <div className="mb-6 text-center">
-                        <p className="text-gray-400">Clave de Partida Privada:</p>
-                        <div className="flex justify-center items-center mt-2">
-                            <p className="font-mono text-xl bg-gray-800 px-4 py-2 rounded-l-md">{game.password}</p>
-                            <button className="bg-truco-brown text-white font-bold px-4 py-2 rounded-r-md">Copiar</button>
+                
+                <div className="mb-6 space-y-4">
+                    <div className="text-center">
+                        <label className="block text-gray-400 mb-2">Compartir enlace de la sala:</label>
+                        <div className="flex justify-center">
+                            <input type="text" readOnly value={window.location.href} className="w-full max-w-sm p-2 bg-gray-800 rounded-l-md border border-gray-700 text-gray-400"/>
+                            <button onClick={() => copyToClipboard(window.location.href, 'link')} className="bg-truco-brown text-white font-bold px-4 rounded-r-md">
+                                {copied === 'link' ? 'Copiado' : 'Copiar'}
+                            </button>
                         </div>
                     </div>
-                )}
+                    {game.password && (
+                        <div className="text-center">
+                            <label className="block text-gray-400 mb-2">Clave de Partida Privada:</label>
+                            <div className="flex justify-center">
+                                <p className="font-mono text-xl bg-gray-800 px-4 py-2 rounded-l-md border border-gray-700">{game.password}</p>
+                                <button onClick={() => copyToClipboard(game.password, 'key')} className="bg-truco-brown text-white font-bold px-4 rounded-r-md">
+                                    {copied === 'key' ? 'Copiado' : 'Copiar'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                         <h3 className="font-bold text-red-500 text-xl mb-3 text-center">Equipo 1</h3>

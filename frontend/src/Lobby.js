@@ -45,7 +45,7 @@ function Lobby() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-light-bg p-6 rounded-lg shadow-lg border border-light-border">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-semibold text-gray-300">Partidas Públicas</h2>
+            <h2 className="text-2xl font-semibold text-gray-300">Partidas Disponibles</h2>
             <button onClick={() => setCreateModalOpen(true)} className="bg-truco-green text-white font-bold py-2 px-4 rounded-md hover:bg-opacity-80 transition-all">
                 + Crear Partida
             </button>
@@ -60,6 +60,7 @@ function Lobby() {
                     <span>🏆 {game.points} Pts</span>
                     <span>{game.flor ? '🌺 Con Flor' : '🚫 Sin Flor'}</span>
                     {game.vsAI && <span title="Contra la IA">🤖</span>}
+                    {game.password && <span title="Partida Privada">🔒</span>}
                   </div>
                 </div>
                 <div className="text-right">

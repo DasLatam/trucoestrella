@@ -67,7 +67,9 @@ setInterval(async () => {
         }
     }
     if (gamesChanged) await db.write();
-    const availableGames = Object.values(db.data.games).filter(g => g.status === 'waiting' && !g.password);
+    
+    // **CORRECCIÓN: Enviar TODAS las partidas en espera, no solo las públicas.**
+    const availableGames = Object.values(db.data.games).filter(g => g.status === 'waiting');
     io.emit('games-list-update', availableGames);
 }, 2000);
 
@@ -160,7 +162,6 @@ io.on('connection', (socket) => {
       io.emit('new-chat-message', message);
   });
 
-  // --- NUEVO: Iniciar Partida ---
   socket.on('start-game', async ({roomId, userId}) => {
       const game = db.data.games[roomId];
       if (game && game.hostId === userId && game.status === 'ready') {
@@ -174,7 +175,6 @@ io.on('connection', (socket) => {
       }
   });
 
-  // --- NUEVO: Cerrar Sala ---
   socket.on('close-room', async ({ roomId, userId }) => {
       const game = db.data.games[roomId];
       if (game && game.hostId === userId) {
@@ -187,7 +187,6 @@ io.on('connection', (socket) => {
       }
   });
 
-  // --- MEJORADO: Desconexión ---
   socket.on('disconnect', async (reason) => {
     console.log(`Usuario desconectado: ${socket.id}. Razón: ${reason}`);
     try {
