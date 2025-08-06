@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from './App';
-import { JoinGameModal } from './components/JoinGameModal';
+// CORRECCIÓN: Se quitan las llaves {} para importar correctamente el componente
+import JoinGameModal from './components/JoinGameModal';
 
 const CountdownTimer = ({ expiryTimestamp }) => {
     const calculateTimeLeft = () => {
@@ -26,45 +27,35 @@ const CountdownTimer = ({ expiryTimestamp }) => {
 };
 
 function WaitingRoom() {
-    const { socket, user } = useAppContext();
+    const { socket, user, currentGame, setCurrentGame } = useAppContext();
     const { roomId } = useParams();
     const navigate = useNavigate();
-    const [game, setGame] = useState(null);
-    const [error, setError] = useState('');
     const [copied, setCopied] = useState(null);
+    
+    const game = currentGame;
 
     useEffect(() => {
-        const handleUpdate = (gameState) => {
-            if (gameState && gameState.roomId === roomId) setGame(gameState);
-        };
-        const handleError = (message) => setError(message);
         const handleExpiry = (message) => {
             alert(message);
             navigate('/');
         };
-
-        socket.on('update-game-state', handleUpdate);
-        socket.on('error-message', handleError);
         socket.on('room-expired', handleExpiry);
         
-        socket.emit('get-game-state', roomId);
-
+        if (!game || game.roomId !== roomId) {
+            socket.emit('get-game-state', roomId);
+        }
+        
         return () => {
-            socket.off('update-game-state', handleUpdate);
-            socket.off('error-message', handleError);
             socket.off('room-expired', handleExpiry);
         };
-    }, [roomId, socket, navigate]);
+    }, [roomId, socket, navigate, game]);
 
-    if (!game) {
+    if (!game || game.roomId !== roomId) {
         return (
-            <div className="text-center p-10">
-                <h2 className="text-2xl text-truco-brown font-bold animate-pulse">Cargando sala...</h2>
-                {error && <p className="text-red-500 mt-4">{error}</p>}
-            </div>
+            <div className="text-center p-10"><h2 className="text-2xl text-truco-brown font-bold animate-pulse">Cargando sala...</h2></div>
         );
     }
-
+    
     const isPlayerInGame = game.players.some(p => p.id === user.id);
     if (!isPlayerInGame) {
         return <JoinGameModal game={game} onClose={() => navigate('/')} />;

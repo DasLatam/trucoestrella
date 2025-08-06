@@ -31,10 +31,7 @@ function CreateGameModal({ onClose }) {
     });
   };
 
-  const inputStyle = "w-full p-3 bg-gray-700 rounded-md mt-1 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-truco-brown text-white";
   const labelStyle = "block text-sm font-medium text-gray-400";
-  const checkboxLabelStyle = "flex items-center justify-between bg-gray-800 p-4 rounded-md";
-  const checkboxStyle = "h-6 w-6 rounded text-truco-green bg-gray-600 border-gray-500 focus:ring-truco-green";
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
@@ -44,7 +41,7 @@ function CreateGameModal({ onClose }) {
         <div className="space-y-6">
             <div>
                 <label className={labelStyle}>Modo de Juego</label>
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 mt-2">
                     <OptionButton label="1 vs 1" value="1v1" selectedValue={options.gameMode} onClick={(v) => setOptions({...options, gameMode: v})} />
                     <OptionButton label="2 vs 2" value="2v2" selectedValue={options.gameMode} onClick={(v) => setOptions({...options, gameMode: v})} />
                     <OptionButton label="3 vs 3" value="3v3" selectedValue={options.gameMode} onClick={(v) => setOptions({...options, gameMode: v})} />
@@ -52,7 +49,7 @@ function CreateGameModal({ onClose }) {
             </div>
              <div>
                 <label className={labelStyle}>Puntos</label>
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 mt-2">
                     <OptionButton label="15 Puntos" value={15} selectedValue={options.points} onClick={(v) => setOptions({...options, points: v})} />
                     <OptionButton label="30 Puntos" value={30} selectedValue={options.points} onClick={(v) => setOptions({...options, points: v})} />
                 </div>
