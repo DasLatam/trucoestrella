@@ -38,13 +38,36 @@ const UserLogin = ({ onLogin }) => {
 
 const getRandomColor = () => `hsl(${Math.floor(Math.random() * 360)}, 70%, 80%)`;
 
+// Este componente hijo SÍ puede usar useLocation porque vive DENTRO del Router
+const AppContent = () => {
+    const { user, currentGame, setCurrentGame } = useAppContext();
+    const location = useLocation();
+
+    useEffect(() => {
+        if (location.pathname === '/') {
+            setCurrentGame(null);
+        }
+    }, [location.pathname, setCurrentGame]);
+
+    if (!user) return <UserLogin onLogin={useAppContext().handleLogin} />;
+
+    return (
+        <div className="bg-dark-bg text-gray-200 min-h-screen font-sans">
+            <Routes>
+                <Route path="/" element={<Lobby />} />
+                <Route path="/sala/:roomId" element={<WaitingRoom />} />
+            </Routes>
+        </div>
+    );
+};
+
+// El componente App principal AHORA SOLO gestiona el estado.
 function App() {
     const [isConnected, setIsConnected] = useState(socket.connected);
     const [user, setUser] = useState(null);
     const [availableGames, setAvailableGames] = useState([]);
     const [chatMessages, setChatMessages] = useState([]);
     const [currentGame, setCurrentGame] = useState(null);
-    const location = useLocation();
 
     useEffect(() => {
         const savedUser = localStorage.getItem('trucoUser');
@@ -65,19 +88,14 @@ function App() {
         socket.on('update-game-state', onUpdateGameState);
 
         return () => {
-            socket.off('connect', onConnect);
-            socket.off('disconnect', onDisconnect);
-            socket.off('games-list-update', onGamesListUpdate);
-            socket.off('chat-history', onNewChatMessage);
-            socket.off('update-game-state', onUpdateGameState);
+            socket.off('connect');
+            socket.off('disconnect');
+            socket.off('games-list-update');
+            socket.off('chat-history');
+            socket.off('new-chat-message');
+            socket.off('update-game-state');
         };
     }, []);
-    
-    useEffect(() => {
-        if (location.pathname === '/') {
-            setCurrentGame(null);
-        }
-    }, [location.pathname]);
 
     const handleLogin = (name) => {
         const newUser = { name, id: socket.id, color: getRandomColor() };
@@ -85,18 +103,14 @@ function App() {
         setUser(newUser);
     };
 
-    if (!user) return <UserLogin onLogin={handleLogin} />;
-
-    const contextValue = { isConnected, user, availableGames, chatMessages, currentGame, socket };
+    const contextValue = { 
+        isConnected, user, availableGames, chatMessages, currentGame, socket,
+        setCurrentGame, handleLogin
+    };
 
     return (
         <AppContext.Provider value={contextValue}>
-            <div className="bg-dark-bg text-gray-200 min-h-screen font-sans">
-                <Routes>
-                    <Route path="/" element={<Lobby />} />
-                    <Route path="/sala/:roomId" element={<WaitingRoom />} />
-                </Routes>
-            </div>
+            <AppContent />
         </AppContext.Provider>
     );
 }
