@@ -5,11 +5,12 @@ import { io } from 'socket.io-client';
 import Lobby from './Lobby';
 import WaitingRoom from './WaitingRoom';
 
+// --- CONTEXTO Y SOCKET (NO CAMBIA) ---
 const AppContext = createContext();
 export const useAppContext = () => useContext(AppContext);
-
 const socket = io('https://trucoestrella-backend.onrender.com');
 
+// --- PANTALLA DE LOGIN (NO CAMBIA) ---
 const UserLogin = ({ onLogin }) => {
     const [name, setName] = useState('');
     const handleSubmit = (e) => {
@@ -38,39 +39,18 @@ const UserLogin = ({ onLogin }) => {
 
 const getRandomColor = () => `hsl(${Math.floor(Math.random() * 360)}, 70%, 80%)`;
 
-// Este componente hijo SÍ puede usar useLocation porque vive DENTRO del Router
-const AppContent = () => {
-    // LA CORRECCIÓN: Obtenemos handleLogin del contexto ANTES de cualquier condición.
-    const { user, currentGame, setCurrentGame, handleLogin } = useAppContext();
-    const location = useLocation();
-
-    useEffect(() => {
-        if (location.pathname === '/') {
-            setCurrentGame(null);
-        }
-    }, [location.pathname, setCurrentGame]);
-
-    // Esta condición ahora es segura porque todos los hooks se llamaron antes.
-    if (!user) return <UserLogin onLogin={handleLogin} />;
-
-    return (
-        <div className="bg-dark-bg text-gray-200 min-h-screen font-sans">
-            <Routes>
-                <Route path="/" element={<Lobby />} />
-                <Route path="/sala/:roomId" element={<WaitingRoom />} />
-            </Routes>
-        </div>
-    );
-};
-
-// El componente App principal AHORA SOLO gestiona el estado.
+// --- COMPONENTE PRINCIPAL DE LA APLICACIÓN ---
 function App() {
     const [isConnected, setIsConnected] = useState(socket.connected);
     const [user, setUser] = useState(null);
     const [availableGames, setAvailableGames] = useState([]);
     const [chatMessages, setChatMessages] = useState([]);
     const [currentGame, setCurrentGame] = useState(null);
+    
+    // El hook de enrutamiento se usa aquí, en el componente principal que está envuelto por el Router.
+    const location = useLocation();
 
+    // Efecto para cargar usuario y conectar listeners del socket
     useEffect(() => {
         const savedUser = localStorage.getItem('trucoUser');
         if (savedUser) setUser(JSON.parse(savedUser));
@@ -98,6 +78,13 @@ function App() {
             socket.off('update-game-state');
         };
     }, []);
+    
+    // Efecto para limpiar el estado del juego al volver al lobby
+    useEffect(() => {
+        if (location.pathname === '/') {
+            setCurrentGame(null);
+        }
+    }, [location.pathname]);
 
     const handleLogin = (name) => {
         const newUser = { name, id: socket.id, color: getRandomColor() };
@@ -105,14 +92,26 @@ function App() {
         setUser(newUser);
     };
 
+    // La condición de login se maneja aquí. Si no hay usuario, se muestra el login.
+    if (!user) {
+        return <UserLogin onLogin={handleLogin} />;
+    }
+
+    // El valor del contexto que se pasa a los componentes hijos
     const contextValue = { 
         isConnected, user, availableGames, chatMessages, currentGame, socket,
         setCurrentGame, handleLogin
     };
 
+    // Si hay usuario, se renderiza la aplicación principal
     return (
         <AppContext.Provider value={contextValue}>
-            <AppContent />
+            <div className="bg-dark-bg text-gray-200 min-h-screen font-sans">
+                <Routes>
+                    <Route path="/" element={<Lobby />} />
+                    <Route path="/sala/:roomId" element={<WaitingRoom />} />
+                </Routes>
+            </div>
         </AppContext.Provider>
     );
 }
