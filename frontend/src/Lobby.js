@@ -1,10 +1,9 @@
 // src/Lobby.js
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from './App';
-// CORRECCIÓN: Se quitan las llaves {} de las importaciones
-import CreateGameModal from './components/CreateGameModal';
-import PublicChat from './components/PublicChat';
-import JoinGameModal from './components/JoinGameModal';
+import { CreateGameModal } from './components/CreateGameModal';
+import { PublicChat } from './components/PublicChat';
+import { JoinGameModal } from './components/JoinGameModal';
 
 const CountdownTimer = ({ expiryTimestamp }) => {
     const calculateTimeLeft = () => {
@@ -52,7 +51,7 @@ function Lobby() {
             </button>
           </div>
           <div className="space-y-3 pr-2 overflow-y-auto h-[65vh]">
-            {availableGames.map(game => (
+            {availableGames.length > 0 ? availableGames.map(game => (
               <div key={game.roomId} className="bg-gray-800 p-4 rounded-lg flex justify-between items-center border border-gray-700 hover:border-truco-brown transition-all">
                 <div>
                   <p className="font-bold text-lg text-white">Partida de {game.creatorName}</p>
@@ -74,7 +73,11 @@ function Lobby() {
                     <p className="text-xs text-gray-500">Expira en <CountdownTimer expiryTimestamp={game.expiresAt} /></p>
                 </div>
               </div>
-            ))}
+            )) : (
+                <div className="text-center flex items-center justify-center h-full text-gray-500">
+                    <div><p>No hay partidas disponibles.</p><p>¡Crea una para empezar a jugar!</p></div>
+                </div>
+            )}
           </div>
         </div>
         <div className="lg:col-span-1"><PublicChat /></div>

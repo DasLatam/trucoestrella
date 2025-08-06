@@ -5,6 +5,7 @@ import { useAppContext } from '../App';
 
 const OptionButton = ({ label, value, selectedValue, onClick }) => (
     <button
+        type="button"
         onClick={() => onClick(value)}
         className={`flex-1 py-3 text-sm font-bold rounded-md transition-all ${selectedValue === value ? 'bg-truco-brown text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
     >
@@ -30,6 +31,11 @@ function CreateGameModal({ onClose }) {
     });
   };
 
+  const inputStyle = "w-full p-3 bg-gray-700 rounded-md mt-1 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-truco-brown text-white";
+  const labelStyle = "block text-sm font-medium text-gray-400";
+  const checkboxLabelStyle = "flex items-center justify-between bg-gray-800 p-4 rounded-md";
+  const checkboxStyle = "h-6 w-6 rounded text-truco-green bg-gray-600 border-gray-500 focus:ring-truco-green";
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
       <div className="bg-light-bg p-8 rounded-xl shadow-2xl w-full max-w-lg border border-light-border">
@@ -37,7 +43,7 @@ function CreateGameModal({ onClose }) {
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
         <div className="space-y-6">
             <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Modo de Juego</label>
+                <label className={labelStyle}>Modo de Juego</label>
                 <div className="flex space-x-2">
                     <OptionButton label="1 vs 1" value="1v1" selectedValue={options.gameMode} onClick={(v) => setOptions({...options, gameMode: v})} />
                     <OptionButton label="2 vs 2" value="2v2" selectedValue={options.gameMode} onClick={(v) => setOptions({...options, gameMode: v})} />
@@ -45,7 +51,7 @@ function CreateGameModal({ onClose }) {
                 </div>
             </div>
              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Puntos</label>
+                <label className={labelStyle}>Puntos</label>
                 <div className="flex space-x-2">
                     <OptionButton label="15 Puntos" value={15} selectedValue={options.points} onClick={(v) => setOptions({...options, points: v})} />
                     <OptionButton label="30 Puntos" value={30} selectedValue={options.points} onClick={(v) => setOptions({...options, points: v})} />
@@ -58,12 +64,11 @@ function CreateGameModal({ onClose }) {
             </div>
         </div>
         <div className="flex justify-end space-x-4 mt-8">
-          <button onClick={onClose} className="py-2 px-6 rounded-md bg-gray-600 hover:bg-gray-500 text-white font-semibold">Cancelar</button>
-          <button onClick={handleCreate} className="py-2 px-6 rounded-md bg-truco-green hover:bg-opacity-90 text-white font-bold">Crear</button>
+          <button type="button" onClick={onClose} className="py-2 px-6 rounded-md bg-gray-600 hover:bg-gray-500 text-white font-semibold">Cancelar</button>
+          <button type="button" onClick={handleCreate} className="py-2 px-6 rounded-md bg-truco-green hover:bg-opacity-90 text-white font-bold">Crear</button>
         </div>
       </div>
     </div>
   );
 }
-// CORRECCIÓN: Usar export default
 export default CreateGameModal;

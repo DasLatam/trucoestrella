@@ -14,7 +14,11 @@ function PublicChat() {
     const handleSend = (e) => {
         e.preventDefault();
         if (newMessage.trim()) {
-            socket.emit('send-public-message', { sender: user.name, text: newMessage.trim(), color: user.color });
+            socket.emit('send-public-message', { 
+                sender: user.name, 
+                text: newMessage.trim(), 
+                color: user.color 
+            });
             setNewMessage('');
         }
     };
@@ -38,7 +42,10 @@ function PublicChat() {
                 <div ref={chatEndRef} />
             </div>
             <form onSubmit={handleSend} className="mt-4 flex border-t border-gray-700 pt-4">
-                <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)}
+                <input 
+                    type="text" 
+                    value={newMessage} 
+                    onChange={e => setNewMessage(e.target.value)}
                     className="flex-grow bg-gray-800 p-3 rounded-l-md focus:outline-none focus:ring-2 focus:ring-truco-brown text-white"
                     placeholder="Escribe un mensaje..."
                 />
@@ -47,5 +54,4 @@ function PublicChat() {
         </div>
     );
 }
-// CORRECCIÓN: Usar export default
 export default PublicChat;
