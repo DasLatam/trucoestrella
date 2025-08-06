@@ -1,101 +1,110 @@
-// src/Lobby.js
-import React, { useState, useEffect } from 'react';
-import { useAppContext } from './App';
-import { CreateGameModal } from './components/CreateGameModal';
-import { PublicChat } from './components/PublicChat';
-import { JoinGameModal } from './components/JoinGameModal';
+// src/App.js
+import React, { useState, useEffect, createContext, useContext } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { io } from 'socket.io-client';
+import Lobby from './Lobby';
+import WaitingRoom from './WaitingRoom';
 
-// Componente para la cuenta regresiva
-const CountdownTimer = ({ expiryTimestamp }) => {
-    const calculateTimeLeft = () => {
-        const difference = +new Date(expiryTimestamp) - +new Date();
-        let timeLeft = {};
-        if (difference > 0) {
-            timeLeft = {
-                minutes: Math.floor((difference / 1000 / 60) % 60),
-                seconds: Math.floor((difference / 1000) % 60),
-            };
-        }
-        return timeLeft;
+const AppContext = createContext();
+export const useAppContext = () => useContext(AppContext);
+
+const socket = io('https://trucoestrella-backend.onrender.com');
+
+const UserLogin = ({ onLogin }) => {
+    const [name, setName] = useState('');
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (name.trim()) onLogin(name.trim());
     };
-
-    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setTimeLeft(calculateTimeLeft());
-        }, 1000);
-        return () => clearTimeout(timer);
-    });
-
     return (
-        <span className="font-mono bg-gray-700 px-2 py-1 rounded">
-            {timeLeft.minutes ? `${timeLeft.minutes.toString().padStart(2, '0')}:${timeLeft.seconds.toString().padStart(2, '0')}` : '00:00'}
-        </span>
+        <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
+            <div className="bg-light-bg p-10 rounded-xl shadow-2xl border border-light-border w-full max-w-md">
+                <form onSubmit={handleSubmit}>
+                    <h1 className="text-3xl font-bold mb-6 text-center text-truco-brown">Bienvenido a Truco Estrella</h1>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Ingresa tu apodo para jugar</label>
+                    <input
+                        type="text" value={name} onChange={(e) => setName(e.target.value)}
+                        className="w-full p-3 bg-gray-800 rounded-md border border-light-border focus:outline-none focus:ring-2 focus:ring-truco-brown text-white"
+                        autoFocus
+                    />
+                    <button type="submit" className="w-full mt-6 bg-truco-green text-white font-bold py-3 rounded-md hover:bg-opacity-90 transition-all">
+                        Entrar
+                    </button>
+                </form>
+            </div>
+        </div>
     );
 };
 
-function Lobby() {
-  const { availableGames, isConnected, user } = useAppContext();
-  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
-  const [joiningGame, setJoiningGame] = useState(null);
+const getRandomColor = () => `hsl(${Math.floor(Math.random() * 360)}, 70%, 80%)`;
 
-  return (
-    <div className="container mx-auto p-4 max-w-7xl">
-      <header className="flex justify-between items-center mb-6">
-          <h1 className="text-4xl font-bold text-truco-brown">Truco Estrella</h1>
-          <div className="text-right">
-              <p className="font-semibold text-white">Bienvenido, {user.name}</p>
-              <p className={`text-sm ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
-                  {isConnected ? '● Conectado' : '● Desconectado'}
-              </p>
-          </div>
-      </header>
+const AppContent = () => {
+    const [isConnected, setIsConnected] = useState(socket.connected);
+    const [user, setUser] = useState(null);
+    const [availableGames, setAvailableGames] = useState([]);
+    const [chatMessages, setChatMessages] = useState([]);
+    const [currentGame, setCurrentGame] = useState(null);
+    const location = useLocation();
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-light-bg p-6 rounded-lg shadow-lg border border-light-border">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-semibold text-gray-300">Partidas Públicas</h2>
-            <button 
-                onClick={() => setCreateModalOpen(true)}
-                className="bg-truco-green text-white font-bold py-2 px-4 rounded-md hover:bg-opacity-80 transition-all duration-300 shadow-md">
-                + Crear Partida
-            </button>
-          </div>
-          <div className="space-y-3 pr-2 overflow-y-auto h-[65vh]">
-            {availableGames.length > 0 ? availableGames.map(game => (
-              <div key={game.roomId} className="bg-gray-800 p-4 rounded-lg flex justify-between items-center border border-gray-700 hover:border-truco-brown transition-all">
-                <div>
-                  <p className="font-bold text-lg text-white">Partida de {game.creatorName}</p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-400 mt-1 items-center">
-                    <span>⚔️ {game.gameMode}</span>
-                    <span>🏆 {game.points} Pts</span>
-                    <span>{game.flor ? '🌺 Con Flor' : '🚫 Sin Flor'}</span>
-                    {game.vsAI && <span>🤖 vs. IA</span>}
-                  </div>
-                </div>
-                <div className="text-right">
-                    <button onClick={() => setJoiningGame(game)} className="bg-gray-700 text-gray-200 font-semibold py-2 px-4 rounded-md hover:bg-gray-600 mb-2">
-                      Unirse
-                    </button>
-                    <p className="text-xs text-gray-500">Expira en <CountdownTimer expiryTimestamp={game.expiresAt} /></p>
-                </div>
-              </div>
-            )) : (
-                <div className="text-center flex items-center justify-center h-full text-gray-500">
-                    <div>
-                        <p>No hay partidas disponibles.</p>
-                        <p>¡Crea una para empezar a jugar!</p>
-                    </div>
-                </div>
-            )}
-          </div>
-        </div>
-        <div className="lg:col-span-1"><PublicChat /></div>
-      </div>
-      {isCreateModalOpen && <CreateGameModal onClose={() => setCreateModalOpen(false)} />}
-      {joiningGame && <JoinGameModal game={joiningGame} onClose={() => setJoiningGame(null)} />}
-    </div>
-  );
+    useEffect(() => {
+        const savedUser = localStorage.getItem('trucoUser');
+        if (savedUser) setUser(JSON.parse(savedUser));
+
+        const onConnect = () => setIsConnected(true);
+        const onDisconnect = () => setIsConnected(false);
+        const onGamesListUpdate = (games) => setAvailableGames(games);
+        const onChatHistory = (history) => setChatMessages(history);
+        const onNewChatMessage = (message) => setChatMessages(prev => [...prev, message].slice(-100));
+        const onUpdateGameState = (gameState) => setCurrentGame(gameState);
+
+        socket.on('connect', onConnect);
+        socket.on('disconnect', onDisconnect);
+        socket.on('games-list-update', onGamesListUpdate);
+        socket.on('chat-history', onChatHistory);
+        socket.on('new-chat-message', onNewChatMessage);
+        socket.on('update-game-state', onUpdateGameState);
+
+        return () => {
+            socket.off('connect', onConnect);
+            socket.off('disconnect', onDisconnect);
+            socket.off('games-list-update', onGamesListUpdate);
+            socket.off('chat-history', onChatHistory);
+            socket.off('new-chat-message', onNewChatMessage);
+            socket.off('update-game-state', onUpdateGameState);
+        };
+    }, []);
+
+    // Limpiar el juego actual si volvemos al lobby
+    useEffect(() => {
+        if (location.pathname === '/') {
+            setCurrentGame(null);
+        }
+    }, [location.pathname]);
+
+    const handleLogin = (name) => {
+        const newUser = { name, id: socket.id, color: getRandomColor() };
+        localStorage.setItem('trucoUser', JSON.stringify(newUser));
+        setUser(newUser);
+    };
+
+    if (!user) return <UserLogin onLogin={handleLogin} />;
+
+    const contextValue = { isConnected, user, availableGames, chatMessages, currentGame, socket };
+
+    return (
+        <AppContext.Provider value={contextValue}>
+            <div className="bg-dark-bg text-gray-200 min-h-screen font-sans">
+                <Routes>
+                    <Route path="/" element={<Lobby />} />
+                    <Route path="/sala/:roomId" element={<WaitingRoom />} />
+                </Routes>
+            </div>
+        </AppContext.Provider>
+    );
+};
+
+function App() {
+    return (<Router><AppContent /></Router>);
 }
-export default Lobby;
+
+export default App;
