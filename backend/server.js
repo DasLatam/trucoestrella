@@ -37,22 +37,30 @@ const generateGameKey = () => {
     return key;
 };
 
-const addAIPlayers = (game) => { /* ... (sin cambios) ... */ };
+const addAIPlayers = (game) => {
+    const totalSlots = parseInt(game.gameMode[0], 10) * 2;
+    const playersNeeded = totalSlots - game.players.length;
 
-// Bucle para actualizar la lista de partidas y limpiar las expiradas
+    for (let i = 0; i < playersNeeded; i++) {
+        const teamACount = game.teams.A.length;
+        const teamBCount = game.teams.B.length;
+        const team = teamACount <= teamBCount ? 'A' : 'B';
+        
+        const aiPlayer = { id: `ai-${uuidv4()}`, name: `IA Truco Estrella ${i + 1}`, isAI: true };
+        game.players.push({ ...aiPlayer, team });
+        game.teams[team].push(aiPlayer);
+    }
+};
+
 setInterval(async () => {
     const now = Date.now();
     let gamesChanged = false;
-
     for (const roomId in db.data.games) {
         const game = db.data.games[roomId];
         if (game.status === 'waiting' && now > game.expiresAt) {
-            // Notificar a los jugadores en la sala que ha expirado
             io.to(roomId).emit('room-expired');
             delete db.data.games[roomId];
             gamesChanged = true;
-            console.log(`Partida expirada y eliminada: ${roomId}`);
-            
             const logMessage = { id: uuidv4(), type: 'log', text: `La partida #${roomId} ha expirado.`, timestamp: Date.now() };
             publicChatMessages.push(logMessage);
             io.emit('new-chat-message', logMessage);
@@ -60,10 +68,8 @@ setInterval(async () => {
     }
     if (gamesChanged) await db.write();
     
-    // Enviar lista actualizada de partidas públicas
     const availableGames = Object.values(db.data.games).filter(g => g.status === 'waiting' && !g.password);
     io.emit('games-list-update', availableGames);
-
 }, 2000);
 
 io.on('connection', (socket) => {
@@ -77,7 +83,6 @@ io.on('connection', (socket) => {
       }
       const { creatorName, points, flor, gameMode, vsAI, isPrivate } = gameOptions;
       const roomId = uuidv4().substring(0, 6).toUpperCase();
-      
       const newGame = {
         roomId, hostId: socket.id, status: 'waiting',
         players: [{ id: socket.id, name: creatorName, team: 'A' }],
@@ -91,7 +96,6 @@ io.on('connection', (socket) => {
       db.data.games[roomId] = newGame;
       await db.write();
       socket.join(roomId);
-      
       const logMessage = { id: uuidv4(), type: 'log', text: `Partida #${roomId} creada por ${creatorName}.`, timestamp: Date.now() };
       publicChatMessages.push(logMessage);
       io.emit('new-chat-message', logMessage);
@@ -107,8 +111,6 @@ io.on('connection', (socket) => {
       if (game.password && game.password !== password) {
           return callback({ success: false, message: 'Clave de partida incorrecta.' });
       }
-
-      // Lógica de cambio de equipo
       const existingPlayerIndex = game.players.findIndex(p => p.id === socket.id);
       if (existingPlayerIndex > -1) {
           const player = game.players[existingPlayerIndex];
@@ -122,7 +124,6 @@ io.on('connection', (socket) => {
           game.players.push({ ...newPlayer, team });
           game.teams[team].push(newPlayer);
       }
-      
       const totalSlots = game.maxPlayers;
       if (game.vsAI) {
           const humanPlayersNeeded = totalSlots / 2;
@@ -133,18 +134,34 @@ io.on('connection', (socket) => {
       } else {
           if (game.players.length === totalSlots) game.status = 'ready';
       }
-
       await db.write();
       socket.join(roomId);
       io.to(roomId).emit('update-game-state', game);
-
       const logMessage = { id: uuidv4(), type: 'log', text: `${playerName} se unió a la partida #${roomId}.`, timestamp: Date.now() };
       publicChatMessages.push(logMessage);
       io.emit('new-chat-message', logMessage);
       callback({ success: true });
   });
-  
-  // ... (resto de eventos como 'start-game', 'get-game-state', 'send-public-message', 'disconnect')
+
+  socket.on('get-game-state', (roomId) => {
+      const game = db.data.games[roomId];
+      if (game) {
+          socket.join(roomId);
+          socket.emit('update-game-state', game);
+      } else {
+          socket.emit('error-message', 'La partida ya no existe o ha expirado.');
+      }
+  });
+
+  socket.on('send-public-message', (messageData) => {
+      const message = { id: uuidv4(), type: 'user', ...messageData, timestamp: Date.now() };
+      publicChatMessages.push(message);
+      if (publicChatMessages.length > 100) publicChatMessages.shift();
+      // **LA CORRECCIÓN CLAVE: Usar io.emit para que TODOS reciban el mensaje.**
+      io.emit('new-chat-message', message);
+  });
+
+  // ... (resto de eventos como start-game y disconnect)
 });
 
 const PORT = process.env.PORT || 3001;
