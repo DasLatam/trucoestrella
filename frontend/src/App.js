@@ -1,6 +1,6 @@
 // src/App.js
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import Lobby from './Lobby';
 import WaitingRoom from './WaitingRoom';
@@ -39,10 +39,19 @@ const UserLogin = ({ onLogin }) => {
 const getRandomColor = () => `hsl(${Math.floor(Math.random() * 360)}, 70%, 80%)`;
 
 const AppContent = () => {
-    const { user, handleLogin } = useAppContext();
+    const { user, handleLogin, setCurrentGame } = useAppContext();
+    const location = useLocation();
+
+    useEffect(() => {
+        if (location.pathname === '/') {
+            setCurrentGame(null);
+        }
+    }, [location.pathname, setCurrentGame]);
+
     if (!user) {
         return <UserLogin onLogin={handleLogin} />;
     }
+
     return (
         <div className="bg-dark-bg text-gray-200 min-h-screen font-sans">
             <Routes>
@@ -58,6 +67,7 @@ function App() {
     const [user, setUser] = useState(null);
     const [availableGames, setAvailableGames] = useState([]);
     const [chatMessages, setChatMessages] = useState([]);
+    const [currentGame, setCurrentGame] = useState(null);
 
     useEffect(() => {
         const savedUser = localStorage.getItem('trucoUser');
@@ -67,15 +77,15 @@ function App() {
         const onDisconnect = () => setIsConnected(false);
         const onGamesListUpdate = (games) => setAvailableGames(games);
         const onChatHistory = (history) => setChatMessages(history);
-        const onNewChatMessage = (message) => {
-            setChatMessages(prev => [...prev, message].slice(-100));
-        };
+        const onNewChatMessage = (message) => setChatMessages(prev => [...prev, message].slice(-100));
+        const onUpdateGameState = (gameState) => setCurrentGame(gameState);
 
         socket.on('connect', onConnect);
         socket.on('disconnect', onDisconnect);
         socket.on('games-list-update', onGamesListUpdate);
         socket.on('chat-history', onChatHistory);
         socket.on('new-chat-message', onNewChatMessage);
+        socket.on('update-game-state', onUpdateGameState);
 
         return () => {
             socket.off('connect');
@@ -83,6 +93,7 @@ function App() {
             socket.off('games-list-update');
             socket.off('chat-history');
             socket.off('new-chat-message');
+            socket.off('update-game-state');
         };
     }, []);
 
@@ -92,13 +103,14 @@ function App() {
         setUser(newUser);
     };
 
-    const contextValue = { isConnected, user, availableGames, chatMessages, socket, handleLogin };
+    const contextValue = { 
+        isConnected, user, availableGames, chatMessages, currentGame, socket,
+        setCurrentGame, handleLogin
+    };
 
     return (
         <AppContext.Provider value={contextValue}>
-            <BrowserRouter>
-                <AppContent />
-            </BrowserRouter>
+            <AppContent />
         </AppContext.Provider>
     );
 }
