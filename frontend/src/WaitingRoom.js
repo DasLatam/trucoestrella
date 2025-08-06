@@ -4,7 +4,26 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from './App';
 import { JoinGameModal } from './components/JoinGameModal';
 
-const CountdownTimer = ({ expiryTimestamp }) => { /* ... (código sin cambios) ... */ };
+const CountdownTimer = ({ expiryTimestamp }) => {
+    const calculateTimeLeft = () => {
+        const difference = +new Date(expiryTimestamp) - +new Date();
+        if (difference <= 0) return { minutes: 0, seconds: 0 };
+        return {
+            minutes: Math.floor((difference / 1000 / 60) % 60),
+            seconds: Math.floor((difference / 1000) % 60),
+        };
+    };
+    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+    useEffect(() => {
+        const timer = setTimeout(() => setTimeLeft(calculateTimeLeft()), 1000);
+        return () => clearTimeout(timer);
+    });
+    return (
+        <span className="font-mono text-2xl text-truco-brown">
+            {String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
+        </span>
+    );
+};
 
 function WaitingRoom() {
     const { socket, user } = useAppContext();
@@ -18,9 +37,10 @@ function WaitingRoom() {
         const handleUpdate = (gameState) => {
             if (gameState && gameState.roomId === roomId) {
                 setGame(gameState);
-                // Si el usuario no está en la lista de jugadores, necesita unirse
                 if (!gameState.players.some(p => p.id === user.id)) {
                     setNeedsToJoin(true);
+                } else {
+                    setNeedsToJoin(false);
                 }
             }
         };
@@ -84,9 +104,28 @@ function WaitingRoom() {
                     <div><p className="text-gray-500 text-sm">FLOR</p><p className="font-bold text-lg">{game.flor ? 'Sí' : 'No'}</p></div>
                     <div><p className="text-gray-500 text-sm">vs. IA</p><p className="font-bold text-lg">{game.vsAI ? 'Sí' : 'No'}</p></div>
                 </div>
-                {game.password && ( /* ... (JSX sin cambios) ... */ )}
+                {game.password && (
+                    <div className="mb-6 text-center">
+                        <p className="text-gray-400">Clave de Partida Privada:</p>
+                        <div className="flex justify-center items-center mt-2">
+                            <p className="font-mono text-xl bg-gray-800 px-4 py-2 rounded-l-md">{game.password}</p>
+                            <button className="bg-truco-brown text-white font-bold px-4 py-2 rounded-r-md">Copiar</button>
+                        </div>
+                    </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* ... (JSX de equipos sin cambios) ... */}
+                    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                        <h3 className="font-bold text-red-500 text-xl mb-3 text-center">Equipo 1</h3>
+                        <ul className="space-y-2 min-h-[100px]">
+                            {game.teams.A.map(p => <li key={p.id} className="text-white text-center text-lg">{p.isAI ? '🤖' : '👤'} {p.name}</li>)}
+                        </ul>
+                    </div>
+                    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                        <h3 className="font-bold text-blue-500 text-xl mb-3 text-center">Equipo 2</h3>
+                         <ul className="space-y-2 min-h-[100px]">
+                            {game.teams.B.map(p => <li key={p.id} className="text-white text-center text-lg">{p.isAI ? '🤖' : '👤'} {p.name}</li>)}
+                        </ul>
+                    </div>
                 </div>
                 <div className="mt-8 flex justify-between items-center">
                     <Link to="/" className="text-gray-400 hover:text-white">← Salir al Lobby</Link>
