@@ -19,10 +19,10 @@ export default function CreateGameModal({ onClose }) {
 
   const handleCreate = () => {
     const gameOptions = { ...options, creatorName: user.name };
+    // **CORRECCIÓN: Ya no navega. Solo emite y cierra el modal.**
     socket.emit('create-game', gameOptions, (response) => {
       if (response.success) {
         onClose();
-        // La navegación ahora la maneja el listener 'game-created' en App.js
       } else {
         setError(response.message || 'No se pudo crear la partida.');
       }
