@@ -1,6 +1,5 @@
 // src/Lobby.js
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { useAppContext } from './App';
 import { CreateGameModal } from './components/CreateGameModal';
 import { PublicChat } from './components/PublicChat';
@@ -28,17 +27,9 @@ const CountdownTimer = ({ expiryTimestamp }) => {
 };
 
 function Lobby() {
-  const { availableGames, isConnected, user, setCurrentGame } = useAppContext();
+  const { availableGames, isConnected, user } = useAppContext();
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [joiningGame, setJoiningGame] = useState(null);
-  const location = useLocation();
-
-  // LA LÓGICA DE LIMPIEZA AHORA VIVE AQUÍ, DONDE ES SEGURO USAR useLocation
-  useEffect(() => {
-    if (location.pathname === '/') {
-        setCurrentGame(null);
-    }
-  }, [location, setCurrentGame]);
 
   return (
     <div className="container mx-auto p-4 max-w-7xl">
@@ -73,9 +64,12 @@ function Lobby() {
                   </div>
                 </div>
                 <div className="text-right">
-                    <button onClick={() => setJoiningGame(game)} className="bg-gray-700 text-gray-200 font-semibold py-2 px-4 rounded-md hover:bg-gray-600 mb-2">
-                      Unirse
-                    </button>
+                    <div className="flex items-center justify-end mb-2">
+                        <span className="text-sm mr-2 text-gray-300">{game.players.length}/{game.maxPlayers}</span>
+                        <button onClick={() => setJoiningGame(game)} className="bg-gray-700 text-gray-200 font-semibold py-2 px-4 rounded-md hover:bg-gray-600">
+                          Unirse
+                        </button>
+                    </div>
                     <p className="text-xs text-gray-500">Expira en <CountdownTimer expiryTimestamp={game.expiresAt} /></p>
                 </div>
               </div>

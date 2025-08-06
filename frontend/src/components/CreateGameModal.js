@@ -3,6 +3,15 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../App';
 
+const OptionButton = ({ label, value, selectedValue, onClick }) => (
+    <button
+        onClick={() => onClick(value)}
+        className={`flex-1 py-3 text-sm font-bold rounded-md transition-all ${selectedValue === value ? 'bg-truco-brown text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+    >
+        {label}
+    </button>
+);
+
 export function CreateGameModal({ onClose }) {
   const { socket, user } = useAppContext();
   const navigate = useNavigate();
@@ -21,11 +30,6 @@ export function CreateGameModal({ onClose }) {
     });
   };
 
-  const inputStyle = "w-full p-3 bg-gray-700 rounded-md mt-1 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-truco-brown text-white";
-  const labelStyle = "block text-sm font-medium text-gray-400";
-  const checkboxLabelStyle = "flex items-center justify-between bg-gray-800 p-4 rounded-md";
-  const checkboxStyle = "h-6 w-6 rounded text-truco-green bg-gray-600 border-gray-500 focus:ring-truco-green";
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
       <div className="bg-light-bg p-8 rounded-xl shadow-2xl w-full max-w-lg border border-light-border">
@@ -33,21 +37,24 @@ export function CreateGameModal({ onClose }) {
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
         <div className="space-y-6">
             <div>
-                <label className={labelStyle}>Modo de Juego</label>
-                <select value={options.gameMode} onChange={e => setOptions({...options, gameMode: e.target.value})} className={inputStyle}>
-                    <option value="1v1">1 vs 1</option><option value="2v2">2 vs 2</option><option value="3v3">3 vs 3</option>
-                </select>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Modo de Juego</label>
+                <div className="flex space-x-2">
+                    <OptionButton label="1 vs 1" value="1v1" selectedValue={options.gameMode} onClick={(v) => setOptions({...options, gameMode: v})} />
+                    <OptionButton label="2 vs 2" value="2v2" selectedValue={options.gameMode} onClick={(v) => setOptions({...options, gameMode: v})} />
+                    <OptionButton label="3 vs 3" value="3v3" selectedValue={options.gameMode} onClick={(v) => setOptions({...options, gameMode: v})} />
+                </div>
             </div>
              <div>
-                <label className={labelStyle}>Puntos para ganar</label>
-                <select value={options.points} onChange={e => setOptions({...options, points: parseInt(e.target.value)})} className={inputStyle}>
-                    <option value={15}>15 Puntos</option><option value={30}>30 Puntos</option>
-                </select>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Puntos</label>
+                <div className="flex space-x-2">
+                    <OptionButton label="15 Puntos" value={15} selectedValue={options.points} onClick={(v) => setOptions({...options, points: v})} />
+                    <OptionButton label="30 Puntos" value={30} selectedValue={options.points} onClick={(v) => setOptions({...options, points: v})} />
+                </div>
             </div>
             <div className="space-y-3">
-                <div className={checkboxLabelStyle}><label className="text-gray-300 font-medium">Jugar con flor</label><input type="checkbox" checked={options.flor} onChange={e => setOptions({...options, flor: e.target.checked})} className={checkboxStyle}/></div>
-                <div className={checkboxLabelStyle}><label className="text-gray-300 font-medium">Partida Privada</label><input type="checkbox" checked={options.isPrivate} onChange={e => setOptions({...options, isPrivate: e.target.checked})} className={checkboxStyle}/></div>
-                <div className={checkboxLabelStyle}><label className="text-gray-300 font-medium">Jugar con IA</label><input type="checkbox" checked={options.vsAI} onChange={e => setOptions({...options, vsAI: e.target.checked})} className={checkboxStyle}/></div>
+                <OptionButton label={options.flor ? 'Con Flor 🌺' : 'Sin Flor 🚫'} value={!options.flor} selectedValue={false} onClick={(v) => setOptions({...options, flor: v})} />
+                <OptionButton label={options.isPrivate ? 'Partida Privada 🔒' : 'Partida Pública 🌐'} value={!options.isPrivate} selectedValue={false} onClick={(v) => setOptions({...options, isPrivate: v})} />
+                <OptionButton label={options.vsAI ? 'Con IA 🤖' : 'Sin IA 👤'} value={!options.vsAI} selectedValue={false} onClick={(v) => setOptions({...options, vsAI: v})} />
             </div>
         </div>
         <div className="flex justify-end space-x-4 mt-8">

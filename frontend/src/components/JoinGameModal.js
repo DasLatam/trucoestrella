@@ -11,10 +11,14 @@ export function JoinGameModal({ game, onClose }) {
     const [error, setError] = useState('');
 
     const handleJoin = () => {
-        if (game.password && !password) return setError('Esta partida es privada, por favor ingresa la clave.');
-        socket.emit('join-room', { roomId: game.roomId, playerName: user.name, team: selectedTeam, password });
-        onClose();
-        navigate(`/sala/${game.roomId}`);
+        socket.emit('join-room', { roomId: game.roomId, playerName: user.name, team: selectedTeam, password }, (response) => {
+            if (response.success) {
+                onClose();
+                navigate(`/sala/${game.roomId}`);
+            } else {
+                setError(response.message);
+            }
+        });
     };
 
     return (

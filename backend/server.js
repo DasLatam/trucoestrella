@@ -21,27 +21,36 @@ const io = new Server(server, {
 
 let publicChatMessages = [];
 
-// --- FUNCIONES DE AYUDA ---
-const isPlayerInAnyGame = (socketId) => { /* ... sin cambios ... */ };
-const generateGameKey = () => { /* ... sin cambios ... */ };
-const addAIPlayers = (game) => { /* ... sin cambios ... */ };
+const isPlayerInAnyGame = (socketId) => {
+    for (const game of Object.values(db.data.games)) {
+        if (game.players.some(p => p.id === socketId)) return true;
+    }
+    return false;
+};
 
-// --- BUCLES PRINCIPALES ---
-// Bucle para actualizar la lista de partidas
-setInterval(() => {
-  const availableGames = Object.values(db.data.games).filter(g => g.status === 'waiting' && !g.password);
-  io.emit('games-list-update', availableGames);
-}, 2000);
+const generateGameKey = () => {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const numbers = '0123456789';
+    let key = '';
+    for (let i = 0; i < 6; i++) key += letters.charAt(Math.floor(Math.random() * letters.length));
+    for (let i = 0; i < 3; i++) key += numbers.charAt(Math.floor(Math.random() * numbers.length));
+    return key;
+};
 
-// Bucle para limpiar partidas expiradas
+const addAIPlayers = (game) => { /* ... (sin cambios) ... */ };
+
+// Bucle para actualizar la lista de partidas y limpiar las expiradas
 setInterval(async () => {
     const now = Date.now();
-    let changed = false;
+    let gamesChanged = false;
+
     for (const roomId in db.data.games) {
         const game = db.data.games[roomId];
         if (game.status === 'waiting' && now > game.expiresAt) {
+            // Notificar a los jugadores en la sala que ha expirado
+            io.to(roomId).emit('room-expired');
             delete db.data.games[roomId];
-            changed = true;
+            gamesChanged = true;
             console.log(`Partida expirada y eliminada: ${roomId}`);
             
             const logMessage = { id: uuidv4(), type: 'log', text: `La partida #${roomId} ha expirado.`, timestamp: Date.now() };
@@ -49,12 +58,14 @@ setInterval(async () => {
             io.emit('new-chat-message', logMessage);
         }
     }
-    if (changed) {
-        await db.write();
-    }
-}, 5000); // Revisa cada 5 segundos
+    if (gamesChanged) await db.write();
+    
+    // Enviar lista actualizada de partidas públicas
+    const availableGames = Object.values(db.data.games).filter(g => g.status === 'waiting' && !g.password);
+    io.emit('games-list-update', availableGames);
 
-// --- MANEJO DE CONEXIONES ---
+}, 2000);
+
 io.on('connection', (socket) => {
   console.log(`Usuario conectado: ${socket.id}`);
   socket.emit('chat-history', publicChatMessages);
@@ -74,7 +85,8 @@ io.on('connection', (socket) => {
         creatorName, points, flor, gameMode, vsAI,
         password: isPrivate ? generateGameKey() : null,
         createdAt: Date.now(),
-        expiresAt: Date.now() + 30 * 60 * 1000, // 30 minutos de vida
+        expiresAt: Date.now() + 30 * 60 * 1000,
+        maxPlayers: parseInt(gameMode[0], 10) * 2
       };
       db.data.games[roomId] = newGame;
       await db.write();
@@ -89,17 +101,14 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('join-room', async ({ roomId, playerName, team, password }) => {
+  socket.on('join-room', async ({ roomId, playerName, team, password }, callback) => {
       const game = db.data.games[roomId];
-      if (!game) return;
-      
-      // **Validación de clave para partidas privadas**
+      if (!game) return callback({ success: false, message: 'La partida no existe.' });
       if (game.password && game.password !== password) {
-          socket.emit('error-message', 'Clave de partida incorrecta.');
-          return;
+          return callback({ success: false, message: 'Clave de partida incorrecta.' });
       }
 
-      // Lógica para cambio de equipo
+      // Lógica de cambio de equipo
       const existingPlayerIndex = game.players.findIndex(p => p.id === socket.id);
       if (existingPlayerIndex > -1) {
           const player = game.players[existingPlayerIndex];
@@ -114,8 +123,7 @@ io.on('connection', (socket) => {
           game.teams[team].push(newPlayer);
       }
       
-      // Lógica para empezar la partida
-      const totalSlots = parseInt(game.gameMode[0], 10) * 2;
+      const totalSlots = game.maxPlayers;
       if (game.vsAI) {
           const humanPlayersNeeded = totalSlots / 2;
           if (game.players.filter(p => !p.isAI).length === humanPlayersNeeded) {
@@ -123,9 +131,7 @@ io.on('connection', (socket) => {
               game.status = 'ready';
           }
       } else {
-          if (game.players.length === totalSlots) {
-              game.status = 'ready';
-          }
+          if (game.players.length === totalSlots) game.status = 'ready';
       }
 
       await db.write();
@@ -135,9 +141,10 @@ io.on('connection', (socket) => {
       const logMessage = { id: uuidv4(), type: 'log', text: `${playerName} se unió a la partida #${roomId}.`, timestamp: Date.now() };
       publicChatMessages.push(logMessage);
       io.emit('new-chat-message', logMessage);
+      callback({ success: true });
   });
   
-  // ... (resto de los eventos sin cambios)
+  // ... (resto de eventos como 'start-game', 'get-game-state', 'send-public-message', 'disconnect')
 });
 
 const PORT = process.env.PORT || 3001;
