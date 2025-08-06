@@ -26,44 +26,30 @@ const CountdownTimer = ({ expiryTimestamp }) => {
 };
 
 function WaitingRoom() {
-    const { socket, user } = useAppContext();
+    const { socket, user, currentGame, setCurrentGame } = useAppContext();
     const { roomId } = useParams();
     const navigate = useNavigate();
-    const [game, setGame] = useState(null);
-    const [error, setError] = useState('');
-    const [needsToJoin, setNeedsToJoin] = useState(false);
-    const [copied, setCopied] = useState(null); // 'link' o 'key'
+    const [copied, setCopied] = useState(null);
+    
+    // **LÓGICA CORREGIDA: Usamos el estado global `currentGame`**
+    const game = currentGame;
 
     useEffect(() => {
-        const handleUpdate = (gameState) => {
-            if (gameState && gameState.roomId === roomId) {
-                setGame(gameState);
-                // Si el usuario no está en la lista de jugadores, necesita unirse
-                if (!gameState.players.some(p => p.id === user.id)) {
-                    setNeedsToJoin(true);
-                } else {
-                    setNeedsToJoin(false);
-                }
-            }
-        };
-        const handleError = (message) => setError(message);
         const handleExpiry = (message) => {
             alert(message);
             navigate('/');
         };
-
-        socket.on('update-game-state', handleUpdate);
-        socket.on('error-message', handleError);
         socket.on('room-expired', handleExpiry);
         
-        socket.emit('get-game-state', roomId);
-
+        // Si no tenemos datos del juego O si no corresponden a esta sala, pedimos la info.
+        if (!game || game.roomId !== roomId) {
+            socket.emit('get-game-state', roomId);
+        }
+        
         return () => {
-            socket.off('update-game-state', handleUpdate);
-            socket.off('error-message', handleError);
             socket.off('room-expired', handleExpiry);
         };
-    }, [roomId, socket, navigate, user.id]);
+    }, [roomId, socket, navigate, game]);
 
     const handleCloseRoom = () => {
         if (window.confirm('¿Estás seguro de que quieres cerrar esta sala para todos?')) {
@@ -77,16 +63,15 @@ function WaitingRoom() {
         setTimeout(() => setCopied(null), 2000);
     };
 
-    if (!game) {
+    if (!game || game.roomId !== roomId) {
         return (
-            <div className="text-center p-10">
-                <h2 className="text-2xl text-truco-brown font-bold animate-pulse">Cargando sala...</h2>
-                {error && <p className="text-red-500 mt-4">{error}</p>}
-            </div>
+            <div className="text-center p-10"><h2 className="text-2xl text-truco-brown font-bold animate-pulse">Cargando sala...</h2></div>
         );
     }
     
-    if (needsToJoin) {
+    // **CORRECCIÓN: Decidir si mostrar el modal de unión**
+    const isPlayerInGame = game.players.some(p => p.id === user.id);
+    if (!isPlayerInGame) {
         return <JoinGameModal game={game} onClose={() => navigate('/')} />;
     }
 
