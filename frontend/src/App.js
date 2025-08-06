@@ -1,5 +1,5 @@
 // src/App.js
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import Lobby from './Lobby';
@@ -97,11 +97,13 @@ function App() {
         };
     }, []);
 
-    const handleLogin = (name) => {
+    // LA CORRECCIÓN: useCallback previene que esta función se recree en cada render,
+    // rompiendo el bucle infinito.
+    const handleLogin = useCallback((name) => {
         const newUser = { name, id: socket.id, color: getRandomColor() };
         localStorage.setItem('trucoUser', JSON.stringify(newUser));
         setUser(newUser);
-    };
+    }, []);
 
     const contextValue = { 
         isConnected, user, availableGames, chatMessages, currentGame, socket,
