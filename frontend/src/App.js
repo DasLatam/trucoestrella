@@ -1,5 +1,5 @@
 // src/App.js
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext, useCallback, useMemo } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import Lobby from './Lobby';
@@ -21,8 +21,10 @@ const UserLogin = ({ onLogin }) => {
             <div className="bg-light-bg p-10 rounded-xl shadow-2xl border border-light-border w-full max-w-md">
                 <form onSubmit={handleSubmit}>
                     <h1 className="text-3xl font-bold mb-6 text-center text-truco-brown">Bienvenido a Truco Estrella</h1>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Ingresa tu apodo para jugar</label>
+                    <label htmlFor="playerNameInput" className="block text-sm font-medium text-gray-400 mb-2">Ingresa tu apodo para jugar</label>
                     <input
+                        id="playerNameInput"
+                        name="playerName"
                         type="text" value={name} onChange={(e) => setName(e.target.value)}
                         className="w-full p-3 bg-gray-800 rounded-md border border-light-border focus:outline-none focus:ring-2 focus:ring-truco-brown text-white"
                         autoFocus
@@ -38,20 +40,11 @@ const UserLogin = ({ onLogin }) => {
 
 const getRandomColor = () => `hsl(${Math.floor(Math.random() * 360)}, 70%, 80%)`;
 
-const AppContent = () => {
-    const { user, handleLogin, setCurrentGame } = useAppContext();
-    const location = useLocation();
-
-    useEffect(() => {
-        if (location.pathname === '/') {
-            setCurrentGame(null);
-        }
-    }, [location.pathname, setCurrentGame]);
-
+const AppRoutes = () => {
+    const { user, handleLogin } = useAppContext();
     if (!user) {
         return <UserLogin onLogin={handleLogin} />;
     }
-
     return (
         <div className="bg-dark-bg text-gray-200 min-h-screen font-sans">
             <Routes>
@@ -97,20 +90,20 @@ function App() {
         };
     }, []);
 
-    const handleLogin = (name) => {
+    const handleLogin = useCallback((name) => {
         const newUser = { name, id: socket.id, color: getRandomColor() };
         localStorage.setItem('trucoUser', JSON.stringify(newUser));
         setUser(newUser);
-    };
+    }, []);
 
-    const contextValue = { 
+    const contextValue = useMemo(() => ({
         isConnected, user, availableGames, chatMessages, currentGame, socket,
         setCurrentGame, handleLogin
-    };
+    }), [isConnected, user, availableGames, chatMessages, currentGame, handleLogin]);
 
     return (
         <AppContext.Provider value={contextValue}>
-            <AppContent />
+            <AppRoutes />
         </AppContext.Provider>
     );
 }
