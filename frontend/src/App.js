@@ -38,8 +38,7 @@ const UserLogin = ({ onLogin }) => {
 
 const getRandomColor = () => `hsl(${Math.floor(Math.random() * 360)}, 70%, 80%)`;
 
-// Este es el componente principal que ahora se exporta
-function AppContent() {
+function App() {
     const [isConnected, setIsConnected] = useState(socket.connected);
     const [user, setUser] = useState(null);
     const [availableGames, setAvailableGames] = useState([]);
@@ -69,8 +68,7 @@ function AppContent() {
             socket.off('connect', onConnect);
             socket.off('disconnect', onDisconnect);
             socket.off('games-list-update', onGamesListUpdate);
-            socket.off('chat-history', onChatHistory);
-            socket.off('new-chat-message', onNewChatMessage);
+            socket.off('chat-history', onNewChatMessage);
             socket.off('update-game-state', onUpdateGameState);
         };
     }, []);
@@ -101,11 +99,6 @@ function AppContent() {
             </div>
         </AppContext.Provider>
     );
-}
-
-// El componente App ahora solo envuelve el contenido
-function App() {
-    return <AppContent />;
 }
 
 export default App;
