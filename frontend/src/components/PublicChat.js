@@ -17,7 +17,7 @@ export function PublicChat() {
             socket.emit('send-public-message', {
                 sender: user.name,
                 text: newMessage.trim(),
-                color: '#A78BFA',
+                color: user.color,
             });
             setNewMessage('');
         }

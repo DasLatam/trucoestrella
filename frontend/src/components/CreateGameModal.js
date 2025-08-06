@@ -12,7 +12,7 @@ export function CreateGameModal({ onClose }) {
     flor: true,
     gameMode: '2v2',
     vsAI: false,
-    isPrivate: false, // Nueva opción
+    isPrivate: false,
   });
   const [error, setError] = useState('');
 

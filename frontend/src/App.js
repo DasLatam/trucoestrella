@@ -40,6 +40,12 @@ const UserLogin = ({ onLogin }) => {
     );
 };
 
+// Función para generar un color pastel aleatorio
+const getRandomColor = () => {
+    const hue = Math.floor(Math.random() * 360);
+    return `hsl(${hue}, 70%, 80%)`;
+};
+
 function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [user, setUser] = useState(null);
@@ -70,12 +76,15 @@ function App() {
   }, []);
 
   const handleLogin = (name) => {
-      const newUser = { name, id: socket.id }; // La identidad se basa en el socket.id actual
+      const newUser = { 
+          name, 
+          id: socket.id,
+          color: getRandomColor() // Asignar color al hacer login
+      };
       localStorage.setItem('trucoUser', JSON.stringify(newUser));
       setUser(newUser);
   };
   
-  // Si el socket se reconecta, actualizamos el ID del usuario
   useEffect(() => {
       if (user && socket.id && user.id !== socket.id) {
           const updatedUser = { ...user, id: socket.id };
