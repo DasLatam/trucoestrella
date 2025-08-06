@@ -74,7 +74,6 @@ function App() {
         const onNewChatMessage = (message) => setChatMessages(prev => [...prev, message].slice(-100));
         const onUpdateGameState = (gameState) => setCurrentGame(gameState);
         
-        // **LA CORRECCIÓN CLAVE: Escuchar 'game-created' para manejar la navegación**
         const onGameCreated = (gameData) => {
             setCurrentGame(gameData);
             navigate(`/sala/${gameData.roomId}`);
@@ -86,7 +85,7 @@ function App() {
         socket.on('chat-history', onChatHistory);
         socket.on('new-chat-message', onNewChatMessage);
         socket.on('update-game-state', onUpdateGameState);
-        socket.on('game-created', onGameCreated); // Nuevo listener
+        socket.on('game-created', onGameCreated);
 
         return () => {
             socket.off('connect');
@@ -95,7 +94,7 @@ function App() {
             socket.off('chat-history');
             socket.off('new-chat-message');
             socket.off('update-game-state');
-            socket.off('game-created'); // Limpiar listener
+            socket.off('game-created');
         };
     }, [navigate]);
 
@@ -117,7 +116,6 @@ function App() {
     );
 }
 
-// Envolvemos App en el Router para que pueda usar 'useNavigate'
 const AppWrapper = () => (
     <BrowserRouter>
         <App />
