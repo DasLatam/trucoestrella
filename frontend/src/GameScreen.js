@@ -153,21 +153,27 @@ function GameScreen() {
                 ))}
 
                 {/* Mesa Ovalada */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl flex items-center">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl">
                     {/* Slot Ronda 1 (Izquierda) */}
-                    <div className="w-1/3 h-full flex flex-col justify-between items-center py-12">
-                        {playedCardsByRound[0].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[0].find(c => c.playedBy !== user.id)} />}
-                        {playedCardsByRound[0].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[0].find(c => c.playedBy === user.id)} />}
+                    <div className="absolute top-1/2 -translate-y-1/2 left-[25%] -translate-x-1/2">
+                        <div className="flex flex-col items-center space-y-5">
+                            {playedCardsByRound[0].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[0].find(c => c.playedBy !== user.id)} />}
+                            {playedCardsByRound[0].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[0].find(c => c.playedBy === user.id)} />}
+                        </div>
                     </div>
                     {/* Slot Ronda 2 (Centro) */}
-                    <div className="w-1/3 h-full flex flex-col justify-between items-center py-12">
-                        {playedCardsByRound[1].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy !== user.id)} />}
-                        {playedCardsByRound[1].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy === user.id)} />}
+                    <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2">
+                        <div className="flex flex-col items-center space-y-5">
+                            {playedCardsByRound[1].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy !== user.id)} />}
+                            {playedCardsByRound[1].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy === user.id)} />}
+                        </div>
                     </div>
                     {/* Slot Ronda 3 (Derecha) */}
-                    <div className="w-1/3 h-full flex flex-col justify-between items-center py-12">
-                        {playedCardsByRound[2].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy !== user.id)} />}
-                        {playedCardsByRound[2].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy === user.id)} />}
+                    <div className="absolute top-1/2 -translate-y-1/2 left-[75%] -translate-x-1/2">
+                         <div className="flex flex-col items-center space-y-5">
+                            {playedCardsByRound[2].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy !== user.id)} />}
+                            {playedCardsByRound[2].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy === user.id)} />}
+                        </div>
                     </div>
                 </div>
 
