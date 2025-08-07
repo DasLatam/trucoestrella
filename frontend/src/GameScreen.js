@@ -45,7 +45,6 @@ const GameChat = ({ messages, onSendMessage }) => {
         }
     };
     return (
-        // **DISEÑO MEJORADO:** El chat ahora ocupa toda la altura de su contenedor.
         <div className="w-full h-full bg-light-bg flex flex-col p-2">
             <h3 className="text-lg font-semibold text-center text-gray-300 p-2 border-b border-light-border flex-shrink-0">Chat Mesa</h3>
             <div className="flex-grow p-2 overflow-y-auto">
@@ -134,7 +133,6 @@ function GameScreen() {
     const opponents = gameState.players.filter(p => p.id !== user.id);
 
     return (
-        // **DISEÑO MEJORADO:** Layout principal con Flexbox.
         <div className="w-full h-screen bg-truco-green flex overflow-hidden">
             {/* Área de Juego Principal */}
             <div className="flex-grow relative p-4 flex flex-col">
@@ -153,32 +151,43 @@ function GameScreen() {
                 ))}
 
                 {/* Mesa Ovalada */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl flex justify-center items-center space-x-2.5">
-                    {/* **ESPACIADO CORREGIDO:** Usamos space-x-2.5 (10px) */}
-                    {playedCardsByRound.map((round, roundIndex) => (
-                        <div key={roundIndex} className="flex flex-col justify-between h-full py-12">
-                            <div>
-                                {round.find(c => c.playedBy !== user.id) && <Card card={round.find(c => c.playedBy !== user.id)} />}
-                            </div>
-                            <div>
-                                {round.find(c => c.playedBy === user.id) && <Card card={round.find(c => c.playedBy === user.id)} />}
-                            </div>
-                        </div>
-                    ))}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl flex items-center">
+                    {/* **DISEÑO MEJORADO: Slots fijos para las rondas** */}
+                    <div className="w-1/3 h-full flex flex-col justify-between items-center py-12">
+                        {playedCardsByRound[0].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[0].find(c => c.playedBy !== user.id)} />}
+                        {playedCardsByRound[0].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[0].find(c => c.playedBy === user.id)} />}
+                    </div>
+                    <div className="w-1/3 h-full flex flex-col justify-between items-center py-12">
+                        {playedCardsByRound[1].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy !== user.id)} />}
+                        {playedCardsByRound[1].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy === user.id)} />}
+                    </div>
+                    <div className="w-1/3 h-full flex flex-col justify-between items-center py-12">
+                        {playedCardsByRound[2].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy !== user.id)} />}
+                        {playedCardsByRound[2].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy === user.id)} />}
+                    </div>
                 </div>
 
-                {/* Mi Mano y Acciones */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center space-y-4 w-full">
-                    <div className={`px-4 py-1 rounded-full text-white font-bold transition-all ${gameState.turn === user.id ? 'bg-yellow-500 scale-110 shadow-lg' : 'bg-black bg-opacity-50'}`}>
-                        {user.name} (Tú)
-                    </div>
+                {/* Mi Área (Abajo) */}
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center items-end px-4">
+                    <div className="flex-1"></div> {/* Espacio a la izquierda */}
+                    
+                    {/* Mi Mano */}
                     <div className="flex justify-center space-x-4 h-36">
                         {myHand.map((card) => <Card key={card.id} card={card} isPlayable={gameState.turn === user.id} onClick={() => handlePlayCard(card.id)} />)}
                     </div>
-                    <div className="flex space-x-4">
-                        <button className="bg-yellow-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg disabled:bg-gray-500">Envido</button>
-                        <button className="bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg disabled:bg-gray-500">Truco</button>
-                        <button className="bg-gray-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg">Ir al Mazo</button>
+
+                    {/* **DISEÑO MEJORADO: Mi Nombre y Acciones a la derecha** */}
+                    <div className="flex-1 flex justify-center">
+                         <div className="flex flex-col items-center space-y-4">
+                            <div className={`px-4 py-1 rounded-full text-white font-bold transition-all ${gameState.turn === user.id ? 'bg-yellow-500 scale-110 shadow-lg' : 'bg-black bg-opacity-50'}`}>
+                                {user.name} (Tú)
+                            </div>
+                            <div className="flex space-x-2">
+                                <button className="bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg disabled:bg-gray-500 text-sm">Envido</button>
+                                <button className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg disabled:bg-gray-500 text-sm">Truco</button>
+                                <button className="bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">Ir al Mazo</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
