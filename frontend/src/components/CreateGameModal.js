@@ -1,5 +1,6 @@
 // src/components/CreateGameModal.js
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../App';
 
 const OptionButton = ({ label, value, selectedValue, onClick }) => (
@@ -14,15 +15,17 @@ const OptionButton = ({ label, value, selectedValue, onClick }) => (
 
 export default function CreateGameModal({ onClose }) {
   const { socket, user } = useAppContext();
+  const navigate = useNavigate(); // Se añade el hook para la navegación
   const [options, setOptions] = useState({ points: 30, flor: true, gameMode: '2v2', vsAI: false, isPrivate: false });
   const [error, setError] = useState('');
 
   const handleCreate = () => {
     const gameOptions = { ...options, creatorName: user.name };
-    // **CORRECCIÓN: Ya no navega. Solo emite y cierra el modal.**
     socket.emit('create-game', gameOptions, (response) => {
       if (response.success) {
         onClose();
+        // **CORRECCIÓN: Navegar a la sala DESPUÉS de la confirmación del servidor.**
+        navigate(`/sala/${response.roomId}`);
       } else {
         setError(response.message || 'No se pudo crear la partida.');
       }
