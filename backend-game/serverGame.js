@@ -45,8 +45,15 @@ const startNewHand = (game) => {
     });
     game.table = [];
     game.round = 1;
-    // Lógica para rotar quién empieza la mano (a implementar)
-    game.turn = game.players[0].id; 
+
+    // **LÓGICA MEJORADA: Rotar quién empieza la mano**
+    game.handStarterIndex = (game.handStarterIndex + 1) % game.players.length;
+    game.turn = game.players[game.handStarterIndex].id;
+    
+    const starterPlayer = game.players[game.handStarterIndex];
+    const logMessage = { id: uuidv4(), type: 'log', text: `${starterPlayer.name} es mano.`, timestamp: Date.now() };
+    game.chat.push(logMessage);
+
     return game;
 };
 
@@ -62,9 +69,10 @@ app.post('/init-game', (req, res) => {
     status: 'playing',
     scores: { A: 0, B: 0 },
     chat: [],
+    handStarterIndex: -1, // Se incrementará a 0 en la primera mano
   };
 
-  game = startNewHand(game); // Reparte la primera mano
+  game = startNewHand(game);
   activeGames[gameData.roomId] = game;
 
   console.log(`Partida ${gameData.roomId} inicializada y lista.`);
@@ -100,6 +108,12 @@ io.on('connection', (socket) => {
       const cardToPlay = playerHand.splice(cardIndex, 1)[0];
       game.table.push({ ...cardToPlay, playedBy: userId });
 
+      // **Log de la jugada**
+      const player = game.players.find(p => p.id === userId);
+      const logMessage = { id: uuidv4(), type: 'log', text: `${player.name} juega el ${cardToPlay.number} de ${cardToPlay.suit}.`, timestamp: Date.now() };
+      game.chat.push(logMessage);
+      io.to(roomId).emit('new-game-message', logMessage);
+
       const currentPlayerIndex = game.players.findIndex(p => p.id === userId);
       const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
       game.turn = game.players[nextPlayerIndex].id;
@@ -108,12 +122,9 @@ io.on('connection', (socket) => {
 
       // Lógica de fin de mano (cuando se juegan todas las cartas)
       if (game.table.length === game.players.length * 3) {
-          // Placeholder: sumar puntos al ganador
-          // game.scores.A += 1; 
-          
-          const logMessage = { id: uuidv4(), type: 'log', text: `Mano terminada.`, timestamp: Date.now() };
-          game.chat.push(logMessage);
-          io.to(roomId).emit('new-game-message', logMessage);
+          const endHandLog = { id: uuidv4(), type: 'log', text: `Mano terminada. Repartiendo de nuevo...`, timestamp: Date.now() };
+          game.chat.push(endHandLog);
+          io.to(roomId).emit('new-game-message', endHandLog);
 
           setTimeout(() => {
               const newHandGame = startNewHand(game);

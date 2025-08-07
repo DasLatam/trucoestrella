@@ -1,5 +1,5 @@
 // src/GameScreen.js
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from './App';
 import { io } from 'socket.io-client';
@@ -116,21 +116,37 @@ function GameScreen() {
 
     const myHand = gameState.hands[user.id] || [];
     const opponents = gameState.players.filter(p => p.id !== user.id);
-    const myPlayedCards = gameState.table.filter(c => c.playedBy === user.id);
-    const opponentPlayedCards = gameState.table.filter(c => c.playedBy !== user.id);
+    
+    // **LÓGICA MEJORADA: Organizar cartas jugadas por ronda**
+    const playedCardsByRound = useMemo(() => {
+        const rounds = [[], [], []];
+        const players = gameState.players;
+        for(let i = 0; i < gameState.table.length; i++) {
+            const roundIndex = Math.floor(i / players.length);
+            if(rounds[roundIndex]) {
+                rounds[roundIndex].push(gameState.table[i]);
+            }
+        }
+        return rounds;
+    }, [gameState.table, gameState.players]);
+
 
     return (
         <div className="w-full h-screen bg-truco-green p-4 flex items-center justify-center relative overflow-hidden">
             {/* Mesa Ovalada */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[50vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl">
-                {/* Cartas del Oponente */}
-                <div className="absolute top-8 left-1/2 -translate-x-1/2 flex space-x-4">
-                    {opponentPlayedCards.map(card => <Card key={card.id} card={card} />)}
-                </div>
-                {/* Mis Cartas Jugadas */}
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex space-x-4">
-                    {myPlayedCards.map(card => <Card key={card.id} card={card} />)}
-                </div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[60vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl flex justify-around items-center px-20">
+                {playedCardsByRound.map((round, roundIndex) => (
+                    <div key={roundIndex} className="flex flex-col justify-between h-full py-10">
+                        {/* Carta del Oponente */}
+                        <div>
+                            {round.find(c => c.playedBy !== user.id) && <Card card={round.find(c => c.playedBy !== user.id)} />}
+                        </div>
+                        {/* Carta Mía */}
+                        <div>
+                            {round.find(c => c.playedBy === user.id) && <Card card={round.find(c => c.playedBy === user.id)} />}
+                        </div>
+                    </div>
+                ))}
             </div>
 
             {/* Jugadores */}
