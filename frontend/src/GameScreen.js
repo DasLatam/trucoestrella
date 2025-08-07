@@ -151,42 +151,53 @@ function GameScreen() {
                 ))}
 
                 {/* Mesa Ovalada */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl flex items-center">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl">
                     {/* **DISEÑO MEJORADO: Slots fijos para las rondas** */}
-                    <div className="w-1/3 h-full flex flex-col justify-between items-center py-12">
-                        {playedCardsByRound[0].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[0].find(c => c.playedBy !== user.id)} />}
-                        {playedCardsByRound[0].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[0].find(c => c.playedBy === user.id)} />}
+                    {/* Slot Ronda 1 (Izquierda) */}
+                    <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-center items-center transform -translate-x-[116px]">
+                        <div className="flex flex-col items-center space-y-5">
+                            {playedCardsByRound[0].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[0].find(c => c.playedBy !== user.id)} />}
+                            {playedCardsByRound[0].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[0].find(c => c.playedBy === user.id)} />}
+                        </div>
                     </div>
-                    <div className="w-1/3 h-full flex flex-col justify-between items-center py-12">
-                        {playedCardsByRound[1].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy !== user.id)} />}
-                        {playedCardsByRound[1].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy === user.id)} />}
+                    {/* Slot Ronda 2 (Centro) */}
+                    <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-center items-center">
+                        <div className="flex flex-col items-center space-y-5">
+                            {playedCardsByRound[1].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy !== user.id)} />}
+                            {playedCardsByRound[1].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy === user.id)} />}
+                        </div>
                     </div>
-                    <div className="w-1/3 h-full flex flex-col justify-between items-center py-12">
-                        {playedCardsByRound[2].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy !== user.id)} />}
-                        {playedCardsByRound[2].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy === user.id)} />}
+                    {/* Slot Ronda 3 (Derecha) */}
+                    <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-center items-center transform translate-x-[116px]">
+                         <div className="flex flex-col items-center space-y-5">
+                            {playedCardsByRound[2].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy !== user.id)} />}
+                            {playedCardsByRound[2].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy === user.id)} />}
+                        </div>
                     </div>
                 </div>
 
                 {/* Mi Área (Abajo) */}
-                <div className="absolute bottom-4 left-0 right-0 flex justify-center items-end px-4">
-                    <div className="flex-1"></div> {/* Espacio a la izquierda */}
+                <div className="absolute bottom-4 left-0 right-0 flex justify-between items-end px-4">
+                    {/* **DISEÑO MEJORADO: Botonera a la izquierda** */}
+                    <div className="w-1/3 flex justify-center">
+                        <div className="flex flex-col items-center space-y-2">
+                            <div className="flex space-x-2">
+                                <button className="bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg disabled:bg-gray-500 text-sm">Envido</button>
+                                <button className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg disabled:bg-gray-500 text-sm">Truco</button>
+                            </div>
+                            <button className="bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm w-full">Ir al Mazo</button>
+                        </div>
+                    </div>
                     
-                    {/* Mi Mano */}
+                    {/* Mi Mano (Centro) */}
                     <div className="flex justify-center space-x-4 h-36">
                         {myHand.map((card) => <Card key={card.id} card={card} isPlayable={gameState.turn === user.id} onClick={() => handlePlayCard(card.id)} />)}
                     </div>
 
-                    {/* **DISEÑO MEJORADO: Mi Nombre y Acciones a la derecha** */}
-                    <div className="flex-1 flex justify-center">
-                         <div className="flex flex-col items-center space-y-4">
-                            <div className={`px-4 py-1 rounded-full text-white font-bold transition-all ${gameState.turn === user.id ? 'bg-yellow-500 scale-110 shadow-lg' : 'bg-black bg-opacity-50'}`}>
-                                {user.name} (Tú)
-                            </div>
-                            <div className="flex space-x-2">
-                                <button className="bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg disabled:bg-gray-500 text-sm">Envido</button>
-                                <button className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg disabled:bg-gray-500 text-sm">Truco</button>
-                                <button className="bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">Ir al Mazo</button>
-                            </div>
+                    {/* **DISEÑO MEJORADO: Mi Nombre a la derecha** */}
+                    <div className="w-1/3 flex justify-center">
+                         <div className={`px-4 py-1 rounded-full text-white font-bold transition-all ${gameState.turn === user.id ? 'bg-yellow-500 scale-110 shadow-lg' : 'bg-black bg-opacity-50'}`}>
+                            {user.name} (Tú)
                         </div>
                     </div>
                 </div>
