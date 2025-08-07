@@ -116,12 +116,21 @@ function GameScreen() {
 
     const myHand = gameState.hands[user.id] || [];
     const opponents = gameState.players.filter(p => p.id !== user.id);
+    const myPlayedCards = gameState.table.filter(c => c.playedBy === user.id);
+    const opponentPlayedCards = gameState.table.filter(c => c.playedBy !== user.id);
 
     return (
         <div className="w-full h-screen bg-truco-green p-4 flex items-center justify-center relative overflow-hidden">
             {/* Mesa Ovalada */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[50vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl flex items-center justify-center space-x-4">
-                {gameState.table.map(card => <Card key={card.id} card={card} />)}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[50vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl">
+                {/* Cartas del Oponente */}
+                <div className="absolute top-8 left-1/2 -translate-x-1/2 flex space-x-4">
+                    {opponentPlayedCards.map(card => <Card key={card.id} card={card} />)}
+                </div>
+                {/* Mis Cartas Jugadas */}
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex space-x-4">
+                    {myPlayedCards.map(card => <Card key={card.id} card={card} />)}
+                </div>
             </div>
 
             {/* Jugadores */}
@@ -134,7 +143,7 @@ function GameScreen() {
                  <div className={`px-4 py-1 rounded-full text-white font-bold transition-all mb-4 ${gameState.turn === user.id ? 'bg-yellow-500 scale-110 shadow-lg' : 'bg-black bg-opacity-50'}`}>
                     {user.name} (Tú)
                 </div>
-                <div className="flex justify-center space-x-4">
+                <div className="flex justify-center space-x-4 h-36">
                     {myHand.map((card) => <Card key={card.id} card={card} isPlayable={gameState.turn === user.id} onClick={() => handlePlayCard(card.id)} />)}
                 </div>
                 <div className="flex space-x-4 mt-4">

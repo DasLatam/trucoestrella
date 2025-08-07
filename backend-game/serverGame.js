@@ -37,6 +37,19 @@ const shuffleDeck = (deck) => {
     return deck;
 };
 
+const startNewHand = (game) => {
+    const deck = shuffleDeck(createDeck());
+    game.hands = {};
+    game.players.forEach(player => {
+        game.hands[player.id] = deck.splice(0, 3);
+    });
+    game.table = [];
+    game.round = 1;
+    // Lógica para rotar quién empieza la mano (a implementar)
+    game.turn = game.players[0].id; 
+    return game;
+};
+
 // --- ENDPOINT DE HAND-OFF ---
 app.post('/init-game', (req, res) => {
   const gameData = req.body;
@@ -44,21 +57,15 @@ app.post('/init-game', (req, res) => {
     return res.status(400).json({ message: "Faltan datos de la partida." });
   }
 
-  const deck = shuffleDeck(createDeck());
-  const hands = {};
-  gameData.players.forEach(player => {
-      hands[player.id] = deck.splice(0, 3);
-  });
-
-  activeGames[gameData.roomId] = {
+  let game = {
     ...gameData,
     status: 'playing',
-    hands,
-    turn: gameData.players[0].id,
-    table: [],
     scores: { A: 0, B: 0 },
     chat: [],
   };
+
+  game = startNewHand(game); // Reparte la primera mano
+  activeGames[gameData.roomId] = game;
 
   console.log(`Partida ${gameData.roomId} inicializada y lista.`);
   res.status(200).json({ message: "Partida inicializada con éxito." });
@@ -99,13 +106,20 @@ io.on('connection', (socket) => {
 
       io.to(roomId).emit('update-game-state', game);
 
-      // Lógica de fin de ronda
-      if (game.table.length === game.players.length) {
+      // Lógica de fin de mano (cuando se juegan todas las cartas)
+      if (game.table.length === game.players.length * 3) {
+          // Placeholder: sumar puntos al ganador
+          // game.scores.A += 1; 
+          
+          const logMessage = { id: uuidv4(), type: 'log', text: `Mano terminada.`, timestamp: Date.now() };
+          game.chat.push(logMessage);
+          io.to(roomId).emit('new-game-message', logMessage);
+
           setTimeout(() => {
-              game.table = [];
-              // Aquí iría la lógica para determinar el ganador de la ronda y asignar el siguiente turno
-              io.to(roomId).emit('update-game-state', game);
-          }, 2000); // Pausa de 2 segundos para ver las cartas
+              const newHandGame = startNewHand(game);
+              activeGames[roomId] = newHandGame;
+              io.to(roomId).emit('update-game-state', newHandGame);
+          }, 3000); // Pausa de 3 segundos
       }
   });
 
