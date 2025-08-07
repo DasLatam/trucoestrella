@@ -147,13 +147,14 @@ function GameScreen() {
                     <Link to="/" className="bg-red-600 text-white font-bold py-2 px-4 rounded-md mt-4 inline-block">Abandonar</Link>
                 </div>
 
-                {/* Jugadores Oponentes */}
+                {/* **CORRECCIÓN: Jugador Oponente centrado arriba** */}
                 {opponents.map((opp) => (
-                    <PlayerUI key={opp.id} player={opp} cardsCount={gameState.hands[opp.id]?.length || 0} position="top-4 right-4" isTurn={gameState.turn === opp.id} />
+                    <PlayerUI key={opp.id} player={opp} cardsCount={gameState.hands[opp.id]?.length || 0} position="top-4 left-1/2 -translate-x-1/2" isTurn={gameState.turn === opp.id} />
                 ))}
 
                 {/* Mesa Ovalada */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl">
+                    {/* **CORRECCIÓN: Slots fijos para las rondas con posicionamiento absoluto** */}
                     {/* Slot Ronda 1 (Izquierda) */}
                     <div className="absolute top-1/2 -translate-y-1/2 left-[25%] -translate-x-1/2">
                         <div className="flex flex-col items-center space-y-5">
@@ -179,6 +180,7 @@ function GameScreen() {
 
                 {/* Mi Área (Abajo) */}
                 <div className="absolute bottom-4 left-0 right-0 flex justify-between items-end px-4">
+                    {/* **CORRECCIÓN: Botonera a la izquierda** */}
                     <div className="w-1/3 flex justify-center">
                         <div className="flex flex-col items-center space-y-2">
                             <div className="flex space-x-2">
@@ -189,10 +191,12 @@ function GameScreen() {
                         </div>
                     </div>
                     
+                    {/* Mi Mano (Centro) */}
                     <div className="flex justify-center space-x-4 h-36">
                         {myHand.map((card) => <Card key={card.id} card={card} isPlayable={gameState.turn === user.id} onClick={() => handlePlayCard(card.id)} />)}
                     </div>
 
+                    {/* **CORRECCIÓN: Mi Nombre a la derecha** */}
                     <div className="w-1/3 flex justify-center">
                          <div className={`px-4 py-1 rounded-full text-white font-bold transition-all ${gameState.turn === user.id ? 'bg-yellow-500 scale-110 shadow-lg' : 'bg-black bg-opacity-50'}`}>
                             {user.name} (Tú)
