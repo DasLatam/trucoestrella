@@ -1,6 +1,6 @@
 // src/App.js
 import React, { useState, useEffect, createContext, useContext, useCallback, useMemo } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import Lobby from './Lobby';
 import WaitingRoom from './WaitingRoom';
@@ -21,10 +21,8 @@ const UserLogin = ({ onLogin }) => {
             <div className="bg-light-bg p-10 rounded-xl shadow-2xl border border-light-border w-full max-w-md">
                 <form onSubmit={handleSubmit}>
                     <h1 className="text-3xl font-bold mb-6 text-center text-truco-brown">Bienvenido a Truco Estrella</h1>
-                    <label htmlFor="playerNameInput" className="block text-sm font-medium text-gray-400 mb-2">Ingresa tu apodo para jugar</label>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">Ingresa tu apodo para jugar</label>
                     <input
-                        id="playerNameInput"
-                        name="playerName"
                         type="text" value={name} onChange={(e) => setName(e.target.value)}
                         className="w-full p-3 bg-gray-800 rounded-md border border-light-border focus:outline-none focus:ring-2 focus:ring-truco-brown text-white"
                         autoFocus
@@ -37,31 +35,13 @@ const UserLogin = ({ onLogin }) => {
         </div>
     );
 };
-
 const getRandomColor = () => `hsl(${Math.floor(Math.random() * 360)}, 70%, 80%)`;
-
-const AppContent = () => {
-    const { user, handleLogin } = useAppContext();
-    if (!user) {
-        return <UserLogin onLogin={handleLogin} />;
-    }
-    return (
-        <div className="bg-dark-bg text-gray-200 min-h-screen font-sans">
-            <Routes>
-                <Route path="/" element={<Lobby />} />
-                <Route path="/sala/:roomId" element={<WaitingRoom />} />
-            </Routes>
-        </div>
-    );
-};
 
 function App() {
     const [isConnected, setIsConnected] = useState(socket.connected);
     const [user, setUser] = useState(null);
     const [availableGames, setAvailableGames] = useState([]);
     const [chatMessages, setChatMessages] = useState([]);
-    const [currentGame, setCurrentGame] = useState(null);
-    const navigate = useNavigate();
 
     useEffect(() => {
         const savedUser = localStorage.getItem('trucoUser');
@@ -71,13 +51,8 @@ function App() {
         const onDisconnect = () => setIsConnected(false);
         const onGamesListUpdate = (games) => setAvailableGames(games);
         const onChatHistory = (history) => setChatMessages(history);
-        const onNewChatMessage = (message) => setChatMessages(prev => [...prev, message].slice(-100));
-        const onUpdateGameState = (gameState) => setCurrentGame(gameState);
-        
-        // **LA CORRECCIÓN CLAVE: Escuchar 'game-created' para manejar la navegación**
-        const onGameCreated = (gameData) => {
-            setCurrentGame(gameData);
-            navigate(`/sala/${gameData.roomId}`);
+        const onNewChatMessage = (message) => {
+            setChatMessages(prev => [...prev, message].slice(-100));
         };
 
         socket.on('connect', onConnect);
@@ -85,8 +60,6 @@ function App() {
         socket.on('games-list-update', onGamesListUpdate);
         socket.on('chat-history', onChatHistory);
         socket.on('new-chat-message', onNewChatMessage);
-        socket.on('update-game-state', onUpdateGameState);
-        socket.on('game-created', onGameCreated); // Nuevo listener
 
         return () => {
             socket.off('connect');
@@ -94,10 +67,8 @@ function App() {
             socket.off('games-list-update');
             socket.off('chat-history');
             socket.off('new-chat-message');
-            socket.off('update-game-state');
-            socket.off('game-created'); // Limpiar listener
         };
-    }, [navigate]);
+    }, []);
 
     const handleLogin = useCallback((name) => {
         const newUser = { name, id: socket.id, color: getRandomColor() };
@@ -106,22 +77,25 @@ function App() {
     }, []);
 
     const contextValue = useMemo(() => ({
-        isConnected, user, availableGames, chatMessages, currentGame, socket,
-        setCurrentGame, handleLogin
-    }), [isConnected, user, availableGames, chatMessages, currentGame, handleLogin]);
+        isConnected, user, availableGames, chatMessages, socket, handleLogin
+    }), [isConnected, user, availableGames, chatMessages, handleLogin]);
+
+    if (!user) {
+        return <UserLogin onLogin={handleLogin} />;
+    }
 
     return (
         <AppContext.Provider value={contextValue}>
-            <AppContent />
+            <BrowserRouter>
+                <div className="bg-dark-bg text-gray-200 min-h-screen font-sans">
+                    <Routes>
+                        <Route path="/" element={<Lobby />} />
+                        <Route path="/sala/:roomId" element={<WaitingRoom />} />
+                    </Routes>
+                </div>
+            </BrowserRouter>
         </AppContext.Provider>
     );
 }
 
-// Envolvemos App en el Router para que pueda usar 'useNavigate'
-const AppWrapper = () => (
-    <BrowserRouter>
-        <App />
-    </BrowserRouter>
-);
-
-export default AppWrapper;
+export default App;

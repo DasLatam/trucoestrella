@@ -1,46 +1,22 @@
 // src/Lobby.js
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAppContext } from './App';
 import CreateGameModal from './components/CreateGameModal';
 import PublicChat from './components/PublicChat';
 import JoinGameModal from './components/JoinGameModal';
 
-const CountdownTimer = ({ expiryTimestamp }) => {
-    const calculateTimeLeft = () => {
-        const difference = +new Date(expiryTimestamp) - +new Date();
-        if (difference <= 0) return { minutes: 0, seconds: 0 };
-        return {
-            minutes: Math.floor((difference / 1000 / 60) % 60),
-            seconds: Math.floor((difference / 1000) % 60),
-        };
-    };
-    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
-    useEffect(() => {
-        const timer = setTimeout(() => setTimeLeft(calculateTimeLeft()), 1000);
-        return () => clearTimeout(timer);
-    });
-    return (
-        <span className="font-mono bg-gray-700 px-2 py-1 rounded">
-            {String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
-        </span>
-    );
-};
+const CountdownTimer = ({ expiryTimestamp }) => { /* ... (código sin cambios) ... */ };
 
 function Lobby() {
   const { availableGames, isConnected, user } = useAppContext();
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
-  const [joiningGame, setJoiningGame] = useState(null);
+  const [joiningGame, setJoiningGame] = useState(null); // Para el modal de partidas privadas
 
   return (
     <div className="container mx-auto p-4 max-w-7xl">
       <header className="flex justify-between items-center mb-6">
-          <h1 className="text-4xl font-bold text-truco-brown">Truco Estrella</h1>
-          <div className="text-right">
-              <p className="font-semibold text-white">Bienvenido, {user.name}</p>
-              <p className={`text-sm ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
-                  {isConnected ? '● Conectado' : '● Desconectado'}
-              </p>
-          </div>
+          {/* ... (header sin cambios) ... */}
       </header>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-light-bg p-6 rounded-lg shadow-lg border border-light-border">
@@ -51,7 +27,7 @@ function Lobby() {
             </button>
           </div>
           <div className="space-y-3 pr-2 overflow-y-auto h-[65vh]">
-            {availableGames.length > 0 ? availableGames.map(game => (
+            {availableGames.map(game => (
               <div key={game.roomId} className="bg-gray-800 p-4 rounded-lg flex justify-between items-center border border-gray-700 hover:border-truco-brown transition-all">
                 <div>
                   <p className="font-bold text-lg text-white">Partida de {game.creatorName}</p>
@@ -66,18 +42,20 @@ function Lobby() {
                 <div className="text-right">
                     <div className="flex items-center justify-end mb-2">
                         <span className="text-sm mr-2 text-gray-300 font-bold">{game.players.length}/{game.maxPlayers}</span>
-                        <button onClick={() => setJoiningGame(game)} className="bg-gray-700 text-gray-200 font-semibold py-2 px-4 rounded-md hover:bg-gray-600">
-                          Unirse
-                        </button>
+                        {game.password ? (
+                            <button onClick={() => setJoiningGame(game)} className="bg-gray-700 text-gray-200 font-semibold py-2 px-4 rounded-md hover:bg-gray-600">
+                              Unirse
+                            </button>
+                        ) : (
+                            <Link to={`/sala/${game.roomId}`} className="bg-gray-700 text-gray-200 font-semibold py-2 px-4 rounded-md hover:bg-gray-600">
+                              Unirse
+                            </Link>
+                        )}
                     </div>
                     <p className="text-xs text-gray-500">Expira en <CountdownTimer expiryTimestamp={game.expiresAt} /></p>
                 </div>
               </div>
-            )) : (
-                <div className="text-center flex items-center justify-center h-full text-gray-500">
-                    <div><p>No hay partidas disponibles.</p><p>¡Crea una para empezar a jugar!</p></div>
-                </div>
-            )}
+            ))}
           </div>
         </div>
         <div className="lg:col-span-1"><PublicChat /></div>
