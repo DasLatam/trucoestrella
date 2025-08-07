@@ -64,6 +64,13 @@ function WaitingRoom() {
         }
     };
     
+    // --- NUEVA FUNCIÓN ---
+    const handleStartGame = () => {
+        if (game.hostId === user.id && game.status === 'ready') {
+            socket.emit('start-game', { roomId, userId: user.id });
+        }
+    };
+
     const copyToClipboard = (text, type) => {
         navigator.clipboard.writeText(text);
         setCopied(type);
@@ -150,7 +157,9 @@ function WaitingRoom() {
                         {isHost && (
                             <button onClick={handleCloseRoom} className="text-red-500 hover:text-red-400 font-semibold mr-4">Cerrar Sala</button>
                         )}
-                        <button disabled={!canStart}
+                        <button 
+                            onClick={handleStartGame} // Añadimos el handler
+                            disabled={!canStart}
                             className={`font-bold py-3 px-8 rounded-md text-lg transition-all ${canStart ? 'bg-truco-green text-white hover:bg-opacity-80' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}>
                             {isHost ? (canStart ? '¡Empezar Partida!' : 'Esperando jugadores...') : 'Esperando al host...'}
                         </button>

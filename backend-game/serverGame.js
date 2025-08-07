@@ -1,32 +1,29 @@
-// Archivo: backend-game/serverGame.js
+// backend-game/serverGame.js
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import { v4 as uuidv4 } from 'uuid';
 
-// --- CONFIGURACIÓN INICIAL ---
 const app = express();
 app.use(cors());
 app.use(express.json());
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
+  cors: { origin: "*", methods: ["GET", "POST"] },
 });
 
 let activeGames = {};
 
-// --- LÓGICA DE BARAJAR Y REPARTIR ---
+// --- LÓGICA DE JUEGO ---
 const createDeck = () => {
     const suits = ['espada', 'basto', 'oro', 'copa'];
     const numbers = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
-    const deck = [];
+    let deck = [];
     for (const suit of suits) {
         for (const number of numbers) {
-            deck.push({ number, suit });
+            deck.push({ number, suit, id: `${number}-${suit}` });
         }
     }
     return deck;
@@ -47,51 +44,65 @@ app.post('/init-game', (req, res) => {
     return res.status(400).json({ message: "Faltan datos de la partida." });
   }
 
-  // Barajar y repartir cartas
   const deck = shuffleDeck(createDeck());
   const hands = {};
   gameData.players.forEach(player => {
-      if (!player.isAI) {
-          hands[player.id] = deck.splice(0, 3);
-      }
+      hands[player.id] = deck.splice(0, 3);
   });
 
   activeGames[gameData.roomId] = {
     ...gameData,
     status: 'playing',
-    hands, // Manos de los jugadores
+    hands,
     turn: gameData.players[0].id, // El primer jugador empieza
-    table: [], // Cartas en la mesa
-    scores: { A: 0, B: 0 }
+    table: [],
+    scores: { A: 0, B: 0 },
+    chat: [], // Chat/Log de la partida
   };
 
-  console.log(`Partida ${gameData.roomId} inicializada y lista para recibir jugadores.`);
+  console.log(`Partida ${gameData.roomId} inicializada y lista.`);
   res.status(200).json({ message: "Partida inicializada con éxito." });
 });
 
 // --- MANEJO DE CONEXIONES DE JUGADORES ---
 io.on('connection', (socket) => {
-  socket.on('join-game-room', (roomId) => {
-    const game = activeGames[roomId];
-    if (game) {
-      socket.join(roomId);
-      console.log(`Jugador ${socket.id} se unió a la sala de juego ${roomId}`);
-      
-      // **LA CORRECCIÓN CLAVE: Enviar el estado completo del juego al jugador que se une.**
-      // En una versión final, se enviaría a cada jugador solo su propia mano.
-      io.to(roomId).emit('update-game-state', game);
+  let currentRoomId = null;
 
+  socket.on('join-game-room', ({ roomId, userId }) => {
+    const game = activeGames[roomId];
+    if (game && game.players.some(p => p.id === userId)) {
+      currentRoomId = roomId;
+      socket.join(roomId);
+      console.log(`Jugador ${userId} se unió a la sala de juego ${roomId}`);
+      
+      // Enviamos el estado completo del juego a todos en la sala
+      io.to(roomId).emit('update-game-state', game);
     } else {
-      socket.emit('error', { message: 'La partida no fue encontrada en este servidor.' });
+      socket.emit('error', { message: 'No tienes permiso para unirte a esta partida.' });
     }
+  });
+
+  // --- Chat de Partida ---
+  socket.on('send-game-message', ({ roomId, message }) => {
+      const game = activeGames[roomId];
+      if (game) {
+          const chatMessage = {
+              id: uuidv4(),
+              type: 'user',
+              ...message,
+              timestamp: Date.now(),
+          };
+          game.chat.push(chatMessage);
+          io.to(roomId).emit('new-game-message', chatMessage);
+      }
   });
 
   socket.on('disconnect', () => {
     console.log(`Jugador desconectado: ${socket.id}`);
+    // Lógica futura para manejar desconexión en partida
   });
 });
 
-// --- INICIAR SERVIDOR DE JUEGO ---
 const PORT = process.env.PORT || 3002;
 server.listen(PORT, () => {
   console.log(`Servidor de JUEGO escuchando en el puerto ${PORT}`);
