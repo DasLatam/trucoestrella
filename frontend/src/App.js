@@ -1,9 +1,10 @@
-// src/App.js
+// frontend/src/App.js
 import React, { useState, useEffect, createContext, useContext, useCallback, useMemo } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import Lobby from './Lobby';
 import WaitingRoom from './WaitingRoom';
+import GameScreen from './GameScreen'; // Importamos la nueva pantalla
 
 const AppContext = createContext();
 export const useAppContext = () => useContext(AppContext);
@@ -50,6 +51,7 @@ const AppContent = () => {
             <Routes>
                 <Route path="/" element={<Lobby />} />
                 <Route path="/sala/:roomId" element={<WaitingRoom />} />
+                <Route path="/partida/:roomId" element={<GameScreen />} /> {/* Nueva ruta */}
             </Routes>
         </div>
     );
@@ -73,11 +75,18 @@ function App() {
         const onChatHistory = (history) => setChatMessages(history);
         const onNewChatMessage = (message) => setChatMessages(prev => [...prev, message].slice(-100));
         const onUpdateGameState = (gameState) => setCurrentGame(gameState);
-        
-        // **LA CORRECCIÓN CLAVE: Escuchar 'game-created' para manejar la navegación**
         const onGameCreated = (gameData) => {
             setCurrentGame(gameData);
             navigate(`/sala/${gameData.roomId}`);
+        };
+        
+        // --- NUEVA LÓGICA DE REDIRECCIÓN ---
+        const onGameStarting = ({ gameServerUrl, roomId }) => {
+            console.log(`Redirigiendo a la partida ${roomId} en ${gameServerUrl}`);
+            sessionStorage.setItem('gameServerUrl', gameServerUrl);
+            sessionStorage.setItem('currentGameId', roomId);
+            socket.disconnect(); // Nos desconectamos del lobby
+            navigate(`/partida/${roomId}`);
         };
 
         socket.on('connect', onConnect);
@@ -86,7 +95,8 @@ function App() {
         socket.on('chat-history', onChatHistory);
         socket.on('new-chat-message', onNewChatMessage);
         socket.on('update-game-state', onUpdateGameState);
-        socket.on('game-created', onGameCreated); // Nuevo listener
+        socket.on('game-created', onGameCreated);
+        socket.on('game-starting', onGameStarting); // Nuevo listener
 
         return () => {
             socket.off('connect');
@@ -95,7 +105,8 @@ function App() {
             socket.off('chat-history');
             socket.off('new-chat-message');
             socket.off('update-game-state');
-            socket.off('game-created'); // Limpiar listener
+            socket.off('game-created');
+            socket.off('game-starting'); // Limpiar listener
         };
     }, [navigate]);
 
@@ -117,7 +128,6 @@ function App() {
     );
 }
 
-// Envolvemos App en el Router para que pueda usar 'useNavigate'
 const AppWrapper = () => (
     <BrowserRouter>
         <App />

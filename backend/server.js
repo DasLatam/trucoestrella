@@ -1,4 +1,4 @@
-// server.js
+// backend/server.js
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
@@ -6,6 +6,7 @@ import cors from 'cors';
 import { Low } from 'lowdb';
 import { JSONFile } from 'lowdb/node';
 import { v4 as uuidv4 } from 'uuid';
+import axios from 'axios'; // Importamos axios
 
 const app = express();
 const server = http.createServer(app);
@@ -19,6 +20,7 @@ const io = new Server(server, {
   transports: ['websocket', 'polling'],
 });
 
+const GAME_SERVER_URL = 'https://trucoestrella-game.onrender.com';
 let publicChatMessages = [];
 
 // --- FUNCIONES DE AYUDA ---
@@ -68,7 +70,6 @@ setInterval(async () => {
     }
     if (gamesChanged) await db.write();
     
-    // **CORRECCIÓN: Enviar TODAS las partidas en espera, no solo las públicas.**
     const availableGames = Object.values(db.data.games).filter(g => g.status === 'waiting');
     io.emit('games-list-update', availableGames);
 }, 2000);
@@ -126,16 +127,24 @@ io.on('connection', (socket) => {
           game.players.push({ ...newPlayer, team });
           game.teams[team].push(newPlayer);
       }
+
       const totalSlots = game.maxPlayers;
+      let gameIsReady = false;
+
       if (game.vsAI) {
           const humanPlayersNeeded = totalSlots / 2;
           if (game.players.filter(p => !p.isAI).length === humanPlayersNeeded) {
               addAIPlayers(game);
               game.status = 'ready';
+              gameIsReady = true;
           }
       } else {
-          if (game.players.length === totalSlots) game.status = 'ready';
+          if (game.players.length === totalSlots) {
+              game.status = 'ready';
+              gameIsReady = true;
+          }
       }
+      
       await db.write();
       socket.join(roomId);
       io.to(roomId).emit('update-game-state', game);
@@ -143,8 +152,25 @@ io.on('connection', (socket) => {
       publicChatMessages.push(logMessage);
       io.emit('new-chat-message', logMessage);
       callback({ success: true });
-  });
 
+      // --- LÓGICA DE HAND-OFF ---
+      if (gameIsReady) {
+          try {
+              console.log(`Partida ${roomId} lista. Realizando hand-off a ${GAME_SERVER_URL}...`);
+              await axios.post(`${GAME_SERVER_URL}/init-game`, game);
+              
+              io.to(roomId).emit('game-starting', { gameServerUrl: GAME_SERVER_URL, roomId });
+              
+              delete db.data.games[roomId];
+              await db.write();
+
+          } catch (error) {
+              console.error(`Error en el hand-off para la partida ${roomId}:`, error.response ? error.response.data : error.message);
+              io.to(roomId).emit('error-message', 'No se pudo iniciar la partida en el servidor de juego.');
+          }
+      }
+  });
+  
   socket.on('get-game-state', (roomId) => {
       const game = db.data.games[roomId];
       if (game) {
@@ -162,7 +188,6 @@ io.on('connection', (socket) => {
       io.emit('new-chat-message', message);
   });
 
-  // --- NUEVO: Iniciar Partida ---
   socket.on('start-game', async ({roomId, userId}) => {
       const game = db.data.games[roomId];
       if (game && game.hostId === userId && game.status === 'ready') {
@@ -176,7 +201,6 @@ io.on('connection', (socket) => {
       }
   });
 
-  // --- NUEVO: Cerrar Sala ---
   socket.on('close-room', async ({ roomId, userId }) => {
       const game = db.data.games[roomId];
       if (game && game.hostId === userId) {
@@ -189,7 +213,6 @@ io.on('connection', (socket) => {
       }
   });
 
-  // --- MEJORADO: Desconexión ---
   socket.on('disconnect', async (reason) => {
     console.log(`Usuario desconectado: ${socket.id}. Razón: ${reason}`);
     try {
@@ -225,4 +248,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => console.log(`Servidor escuchando en el puerto ${PORT}`));
+server.listen(PORT, () => console.log(`Servidor de LOBBY escuchando en el puerto ${PORT}`));
