@@ -55,6 +55,12 @@ const shuffleDeck = (deck) => {
     return deck;
 };
 
+const addLog = (game, text) => {
+    const logMessage = { id: uuidv4(), type: 'log', text, timestamp: Date.now() };
+    game.chat.push(logMessage);
+    io.to(game.roomId).emit('new-game-message', logMessage);
+};
+
 const startNewHand = (game) => {
     const deck = shuffleDeck(createDeck());
     game.hands = {};
@@ -63,14 +69,14 @@ const startNewHand = (game) => {
     });
     game.table = [];
     game.round = 1;
-    game.roundWinners = []; // [winnerId, winnerId, winnerId]
+    game.roundWinners = [];
+    game.truco = { level: 1, points: 1, offeredBy: null, turn: null };
 
     game.handStarterIndex = (game.handStarterIndex + 1) % game.players.length;
     game.turn = game.players[game.handStarterIndex].id;
     
-    const starterPlayer = game.players[game.handStarterIndex];
-    const logMessage = { id: uuidv4(), type: 'log', text: `Nueva mano. ${starterPlayer.name} es mano.`, timestamp: Date.now() };
-    game.chat.push(logMessage);
+    const starterPlayer = game.players.find(p => p.id === game.turn);
+    addLog(game, `Nueva mano. ${starterPlayer.name} es mano.`);
 
     return game;
 };
@@ -97,7 +103,7 @@ app.post('/init-game', (req, res) => {
   res.status(200).json({ message: "Partida inicializada con éxito." });
 });
 
-// --- MANEJO DE CONEXIONES DE JUGADORES ---
+// --- MANEJO DE CONEXIONES ---
 io.on('connection', (socket) => {
   let currentRoomId = null;
   let currentUserId = null;
@@ -110,8 +116,6 @@ io.on('connection', (socket) => {
       socket.join(roomId);
       console.log(`Jugador ${userId} se unió a la sala de juego ${roomId}`);
       io.to(roomId).emit('update-game-state', game);
-    } else {
-      socket.emit('error', { message: 'No tienes permiso para unirte a esta partida.' });
     }
   });
 
@@ -127,9 +131,7 @@ io.on('connection', (socket) => {
       game.table.push({ ...cardToPlay, playedBy: userId, round: game.round });
 
       const player = game.players.find(p => p.id === userId);
-      const logMessage = { id: uuidv4(), type: 'log', text: `${player.name} juega el ${cardToPlay.number} de ${cardToPlay.suit}.`, timestamp: Date.now() };
-      game.chat.push(logMessage);
-      io.to(roomId).emit('new-game-message', logMessage);
+      addLog(game, `${player.name} juega el ${cardToPlay.number} de ${cardToPlay.suit}.`);
 
       const currentPlayerIndex = game.players.findIndex(p => p.id === userId);
       const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
@@ -155,42 +157,45 @@ io.on('connection', (socket) => {
 
           if (isParda) {
               winnerId = 'parda';
-              game.turn = game.players[game.handStarterIndex].id; // En caso de parda, empieza el mano
+              game.turn = game.players[game.handStarterIndex].id;
+              addLog(game, `Ronda ${game.round} es parda.`);
           } else {
-              game.turn = winnerId; // El ganador de la ronda empieza la siguiente
+              game.turn = winnerId;
+              const winnerPlayer = game.players.find(p => p.id === winnerId);
+              addLog(game, `${winnerPlayer.name} gana la ${game.round}ª ronda.`);
           }
           
           game.roundWinners.push(winnerId);
           game.round++;
-          
-          const winnerPlayer = game.players.find(p => p.id === winnerId);
-          const roundLog = { id: uuidv4(), type: 'log', text: isParda ? `Ronda ${game.round-1} es parda.` : `${winnerPlayer.name} gana la ${game.round-1}ª ronda.`, timestamp: Date.now() };
-          game.chat.push(roundLog);
-          io.to(roomId).emit('new-game-message', roundLog);
-      }
+          io.to(roomId).emit('update-game-state', game);
 
-      io.to(roomId).emit('update-game-state', game);
-
-      // Lógica de fin de mano
-      if (game.round > 3 || (game.round > 1 && (game.roundWinners.filter(w => w === 'parda').length === 0))) {
-          // Simplificado: por ahora, si se completan las rondas, se reinicia.
-          // Aquí iría la lógica compleja de 2 de 3, parda en primera, etc.
+          // Lógica de fin de mano
           const teamAWins = game.roundWinners.filter(w => game.teams.A.some(p => p.id === w)).length;
           const teamBWins = game.roundWinners.filter(w => game.teams.B.some(p => p.id === w)).length;
+          let handWinnerTeam = null;
+
+          if (teamAWins >= 2) handWinnerTeam = 'A';
+          if (teamBWins >= 2) handWinnerTeam = 'B';
           
-          if(teamAWins > teamBWins) game.scores.A += 1;
-          if(teamBWins > teamAWins) game.scores.B += 1;
-          // Falta lógica de parda
+          // Lógica de parda en primera
+          if (!handWinnerTeam && game.roundWinners[0] === 'parda') {
+              const secondRoundWinnerId = game.roundWinners[1];
+              if (secondRoundWinnerId && secondRoundWinnerId !== 'parda') {
+                  handWinnerTeam = game.players.find(p => p.id === secondRoundWinnerId).team;
+              }
+          }
 
-          const endHandLog = { id: uuidv4(), type: 'log', text: `Mano terminada. Repartiendo de nuevo...`, timestamp: Date.now() };
-          game.chat.push(endHandLog);
-          io.to(roomId).emit('new-game-message', endHandLog);
-
-          setTimeout(() => {
-              const newHandGame = startNewHand(game);
-              activeGames[roomId] = newHandGame;
-              io.to(roomId).emit('update-game-state', newHandGame);
-          }, 4000);
+          if (handWinnerTeam) {
+              game.scores[handWinnerTeam] += game.truco.points;
+              addLog(game, `Equipo ${handWinnerTeam} gana la mano y ${game.truco.points} punto(s).`);
+              setTimeout(() => {
+                  const newHandGame = startNewHand(game);
+                  activeGames[roomId] = newHandGame;
+                  io.to(roomId).emit('update-game-state', newHandGame);
+              }, 4000);
+          }
+      } else {
+        io.to(roomId).emit('update-game-state', game);
       }
   });
 

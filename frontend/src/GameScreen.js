@@ -45,7 +45,7 @@ const GameChat = ({ messages, onSendMessage }) => {
         }
     };
     return (
-        <div className="w-full h-full bg-light-bg flex flex-col p-2">
+        <div className="absolute top-4 right-4 w-80 h-[calc(100vh-2rem)] bg-light-bg rounded-lg shadow-2xl border border-light-border flex flex-col p-2">
             <h3 className="text-lg font-semibold text-center text-gray-300 p-2 border-b border-light-border flex-shrink-0">Chat Mesa</h3>
             <div className="flex-grow p-2 overflow-y-auto">
                 {messages.map(msg => (
@@ -75,19 +75,6 @@ function GameScreen() {
     const [gameSocket, setGameSocket] = useState(null);
     const [gameState, setGameState] = useState(null);
     const [chatMessages, setChatMessages] = useState([]);
-
-    const playedCardsByRound = useMemo(() => {
-        if (!gameState) return [[], [], []];
-        const rounds = [[], [], []];
-        const players = gameState.players;
-        for(let i = 0; i < gameState.table.length; i++) {
-            const roundIndex = Math.floor(i / players.length);
-            if(rounds[roundIndex]) {
-                rounds[roundIndex].push(gameState.table[i]);
-            }
-        }
-        return rounds;
-    }, [gameState]);
 
     useEffect(() => {
         const gameServerUrl = sessionStorage.getItem('gameServerUrl');
@@ -125,63 +112,53 @@ function GameScreen() {
         }
     };
 
+    const playedCardsByRound = useMemo(() => {
+        const rounds = { 1: [], 2: [], 3: [] };
+        if (gameState) {
+            gameState.table.forEach(card => {
+                if(rounds[card.round]) rounds[card.round].push(card);
+            });
+        }
+        return rounds;
+    }, [gameState]);
+
     if (!gameState) {
         return <div className="text-center p-10"><h2 className="text-2xl text-truco-brown font-bold animate-pulse">Conectando a la partida...</h2></div>;
     }
 
     const myHand = gameState.hands[user.id] || [];
     const opponents = gameState.players.filter(p => p.id !== user.id);
-    
-    // **MEJORA: Crear nombres de equipos dinámicamente**
     const teamAPlayers = gameState.teams.A.map(p => p.name).join(' y ');
     const teamBPlayers = gameState.teams.B.map(p => p.name).join(' y ');
 
     return (
         <div className="w-full h-screen bg-truco-green flex overflow-hidden">
-            {/* Área de Juego Principal */}
             <div className="flex-grow relative p-4 flex flex-col">
-                {/* Marcador y Salir */}
                 <div className="absolute top-4 left-4 z-20">
                     <div className="bg-black bg-opacity-50 p-3 rounded-lg text-white text-base w-56">
-                        {/* **MEJORA: Usar nombres de jugadores en el marcador** */}
                         <h3 className="font-bold text-red-400 truncate">{teamAPlayers}: {gameState.scores.A}</h3>
                         <h3 className="font-bold text-blue-400 truncate">{teamBPlayers}: {gameState.scores.B}</h3>
                     </div>
-                    {/* **MEJORA: Cambiar texto del botón** */}
                     <Link to="/" className="bg-red-600 text-white font-bold py-2 px-4 rounded-md mt-4 inline-block">Abandonar</Link>
                 </div>
 
-                {/* Jugadores Oponentes */}
                 {opponents.map((opp) => (
                     <PlayerUI key={opp.id} player={opp} cardsCount={gameState.hands[opp.id]?.length || 0} position="top-4 left-1/2 -translate-x-1/2" isTurn={gameState.turn === opp.id} />
                 ))}
 
-                {/* Mesa Ovalada */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl">
-                    {/* Slot Ronda 1 (Izquierda) */}
-                    <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-center items-center transform -translate-x-[116px]">
-                        <div className="flex flex-col items-center space-y-5">
-                            {playedCardsByRound[0].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[0].find(c => c.playedBy !== user.id)} />}
-                            {playedCardsByRound[0].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[0].find(c => c.playedBy === user.id)} />}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl flex justify-around items-center px-10">
+                    {[1, 2, 3].map(roundNum => (
+                        <div key={roundNum} className="flex flex-col justify-between h-full py-10">
+                            <div>
+                                {playedCardsByRound[roundNum].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[roundNum].find(c => c.playedBy !== user.id)} />}
+                            </div>
+                            <div>
+                                {playedCardsByRound[roundNum].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[roundNum].find(c => c.playedBy === user.id)} />}
+                            </div>
                         </div>
-                    </div>
-                    {/* Slot Ronda 2 (Centro) */}
-                    <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-center items-center">
-                        <div className="flex flex-col items-center space-y-5">
-                            {playedCardsByRound[1].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy !== user.id)} />}
-                            {playedCardsByRound[1].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy === user.id)} />}
-                        </div>
-                    </div>
-                    {/* Slot Ronda 3 (Derecha) */}
-                    <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-center items-center transform translate-x-[116px]">
-                         <div className="flex flex-col items-center space-y-5">
-                            {playedCardsByRound[2].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy !== user.id)} />}
-                            {playedCardsByRound[2].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy === user.id)} />}
-                        </div>
-                    </div>
+                    ))}
                 </div>
 
-                {/* Mi Área (Abajo) */}
                 <div className="absolute bottom-4 left-0 right-0 flex justify-between items-end px-4">
                     <div className="w-1/3 flex justify-center">
                         <div className="flex flex-col items-center space-y-2">
@@ -205,7 +182,6 @@ function GameScreen() {
                 </div>
             </div>
 
-            {/* Área del Chat */}
             <div className="w-80 flex-shrink-0 border-l-4 border-yellow-800">
                 <GameChat messages={chatMessages} onSendMessage={handleSendMessage} />
             </div>
