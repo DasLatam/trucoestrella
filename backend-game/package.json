@@ -1,0 +1,16 @@
+{
+  "name": "backend-game",
+  "version": "1.0.0",
+  "description": "Servidor para la lógica del juego Truco Estrella",
+  "main": "serverGame.js",
+  "type": "module",
+  "scripts": {
+    "start": "node serverGame.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5",
+    "uuid": "^10.0.0"
+  }
+}
