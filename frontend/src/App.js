@@ -1,16 +1,15 @@
-// src/App.js
+// frontend/src/App.js
 import React, { useState, useEffect, createContext, useContext, useCallback, useMemo } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import Lobby from './Lobby';
 import WaitingRoom from './WaitingRoom';
+import GameScreen from './GameScreen'; // Importamos la nueva pantalla
 
 const AppContext = createContext();
 export const useAppContext = () => useContext(AppContext);
 
-const socket = io('https://trucoestrella-backend.onrender.com', {
-    autoConnect: false, // Prevenimos la conexión automática para controlar el flujo
-});
+const socket = io('https://trucoestrella-backend.onrender.com');
 
 const UserLogin = ({ onLogin }) => {
     const [name, setName] = useState('');
@@ -52,6 +51,7 @@ const AppContent = () => {
             <Routes>
                 <Route path="/" element={<Lobby />} />
                 <Route path="/sala/:roomId" element={<WaitingRoom />} />
+                <Route path="/partida/:roomId" element={<GameScreen />} /> {/* Nueva ruta */}
             </Routes>
         </div>
     );
@@ -65,27 +65,11 @@ function App() {
     const [currentGame, setCurrentGame] = useState(null);
     const navigate = useNavigate();
 
-    // **LA CORRECCIÓN CLAVE: Sincronizar el ID del usuario con el socket activo**
     useEffect(() => {
         const savedUser = localStorage.getItem('trucoUser');
-        if (savedUser) {
-            // Cargamos el nombre, pero esperamos la conexión para el ID
-            setUser(JSON.parse(savedUser));
-        }
+        if (savedUser) setUser(JSON.parse(savedUser));
 
-        const onConnect = () => {
-            setIsConnected(true);
-            // Sincronizamos el ID del usuario con el nuevo socket.id
-            setUser(currentUser => {
-                if (currentUser && currentUser.id !== socket.id) {
-                    const updatedUser = { ...currentUser, id: socket.id };
-                    localStorage.setItem('trucoUser', JSON.stringify(updatedUser));
-                    return updatedUser;
-                }
-                return currentUser;
-            });
-        };
-
+        const onConnect = () => setIsConnected(true);
         const onDisconnect = () => setIsConnected(false);
         const onGamesListUpdate = (games) => setAvailableGames(games);
         const onChatHistory = (history) => setChatMessages(history);
@@ -95,6 +79,15 @@ function App() {
             setCurrentGame(gameData);
             navigate(`/sala/${gameData.roomId}`);
         };
+        
+        // --- NUEVA LÓGICA DE REDIRECCIÓN ---
+        const onGameStarting = ({ gameServerUrl, roomId }) => {
+            console.log(`Redirigiendo a la partida ${roomId} en ${gameServerUrl}`);
+            sessionStorage.setItem('gameServerUrl', gameServerUrl);
+            sessionStorage.setItem('currentGameId', roomId);
+            socket.disconnect(); // Nos desconectamos del lobby
+            navigate(`/partida/${roomId}`);
+        };
 
         socket.on('connect', onConnect);
         socket.on('disconnect', onDisconnect);
@@ -103,19 +96,17 @@ function App() {
         socket.on('new-chat-message', onNewChatMessage);
         socket.on('update-game-state', onUpdateGameState);
         socket.on('game-created', onGameCreated);
-        
-        // Conectamos el socket explícitamente
-        socket.connect();
+        socket.on('game-starting', onGameStarting); // Nuevo listener
 
         return () => {
-            socket.off('connect', onConnect);
-            socket.off('disconnect', onDisconnect);
-            socket.off('games-list-update', onGamesListUpdate);
-            socket.off('chat-history', onChatHistory);
-            socket.off('new-chat-message', onNewChatMessage);
-            socket.off('update-game-state', onUpdateGameState);
+            socket.off('connect');
+            socket.off('disconnect');
+            socket.off('games-list-update');
+            socket.off('chat-history');
+            socket.off('new-chat-message');
+            socket.off('update-game-state');
             socket.off('game-created');
-            socket.disconnect();
+            socket.off('game-starting'); // Limpiar listener
         };
     }, [navigate]);
 
