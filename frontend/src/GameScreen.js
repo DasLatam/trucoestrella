@@ -23,7 +23,7 @@ const CardPlaceholder = () => (
 );
 
 const PlayerUI = ({ player, cardsCount, position, isTurn }) => (
-    <div className={`absolute ${position} flex flex-col items-center space-y-2 transition-all duration-500`}>
+    <div className={`absolute ${position} flex flex-col items-center space-y-2 transition-all duration-500 z-10`}>
         <div className="flex space-x-[-50px]">
             {Array.from({ length: cardsCount }).map((_, i) => <CardPlaceholder key={i} />)}
         </div>
@@ -45,8 +45,9 @@ const GameChat = ({ messages, onSendMessage }) => {
         }
     };
     return (
-        <div className="absolute top-4 right-4 w-80 h-[calc(100vh-2rem)] bg-light-bg rounded-lg shadow-2xl border border-light-border flex flex-col p-2">
-            <h3 className="text-lg font-semibold text-center text-gray-300 p-2 border-b border-light-border">Chat Mesa</h3>
+        // **DISEÑO MEJORADO:** El chat ahora ocupa toda la altura de su contenedor.
+        <div className="w-full h-full bg-light-bg flex flex-col p-2">
+            <h3 className="text-lg font-semibold text-center text-gray-300 p-2 border-b border-light-border flex-shrink-0">Chat Mesa</h3>
             <div className="flex-grow p-2 overflow-y-auto">
                 {messages.map(msg => (
                      <div key={msg.id} className="text-sm mb-2">
@@ -59,7 +60,7 @@ const GameChat = ({ messages, onSendMessage }) => {
                 ))}
                 <div ref={chatEndRef} />
             </div>
-            <form onSubmit={handleSend} className="flex p-1">
+            <form onSubmit={handleSend} className="flex p-1 mt-2 flex-shrink-0">
                 <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} className="flex-grow bg-gray-800 p-2 rounded-l-md text-white focus:outline-none focus:ring-2 focus:ring-truco-brown" />
                 <button type="submit" className="bg-truco-brown text-white font-bold px-4 rounded-r-md">Enviar</button>
             </form>
@@ -76,9 +77,8 @@ function GameScreen() {
     const [gameState, setGameState] = useState(null);
     const [chatMessages, setChatMessages] = useState([]);
 
-    // **LA CORRECCIÓN CLAVE: Mover el hook useMemo a la parte superior del componente.**
     const playedCardsByRound = useMemo(() => {
-        if (!gameState) return [[], [], []]; // Devolver un valor por defecto si no hay estado
+        if (!gameState) return [[], [], []];
         const rounds = [[], [], []];
         const players = gameState.players;
         for(let i = 0; i < gameState.table.length; i++) {
@@ -89,7 +89,6 @@ function GameScreen() {
         }
         return rounds;
     }, [gameState]);
-
 
     useEffect(() => {
         const gameServerUrl = sessionStorage.getItem('gameServerUrl');
@@ -135,54 +134,59 @@ function GameScreen() {
     const opponents = gameState.players.filter(p => p.id !== user.id);
 
     return (
-        <div className="w-full h-screen bg-truco-green p-4 flex items-center justify-center relative overflow-hidden">
-            {/* Mesa Ovalada */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[60vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl flex justify-around items-center px-20">
-                {playedCardsByRound.map((round, roundIndex) => (
-                    <div key={roundIndex} className="flex flex-col justify-between h-full py-10">
-                        {/* Carta del Oponente */}
-                        <div>
-                            {round.find(c => c.playedBy !== user.id) && <Card card={round.find(c => c.playedBy !== user.id)} />}
-                        </div>
-                        {/* Carta Mía */}
-                        <div>
-                            {round.find(c => c.playedBy === user.id) && <Card card={round.find(c => c.playedBy === user.id)} />}
-                        </div>
+        // **DISEÑO MEJORADO:** Layout principal con Flexbox.
+        <div className="w-full h-screen bg-truco-green flex overflow-hidden">
+            {/* Área de Juego Principal */}
+            <div className="flex-grow relative p-4 flex flex-col">
+                {/* Marcador y Salir */}
+                <div className="absolute top-4 left-4 z-20">
+                    <div className="bg-black bg-opacity-50 p-3 rounded-lg text-white text-lg">
+                        <h3 className="font-bold text-red-400">Equipo Truco: {gameState.scores.A}</h3>
+                        <h3 className="font-bold text-blue-400">Equipo Estrella: {gameState.scores.B}</h3>
                     </div>
+                    <Link to="/" className="bg-red-600 text-white font-bold py-2 px-4 rounded-md mt-4 inline-block">Salir</Link>
+                </div>
+
+                {/* Jugadores Oponentes */}
+                {opponents.map((opp) => (
+                    <PlayerUI key={opp.id} player={opp} cardsCount={gameState.hands[opp.id]?.length || 0} position="top-4 left-1/2 -translate-x-1/2" isTurn={gameState.turn === opp.id} />
                 ))}
+
+                {/* Mesa Ovalada */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl flex justify-center items-center space-x-2.5">
+                    {/* **ESPACIADO CORREGIDO:** Usamos space-x-2.5 (10px) */}
+                    {playedCardsByRound.map((round, roundIndex) => (
+                        <div key={roundIndex} className="flex flex-col justify-between h-full py-12">
+                            <div>
+                                {round.find(c => c.playedBy !== user.id) && <Card card={round.find(c => c.playedBy !== user.id)} />}
+                            </div>
+                            <div>
+                                {round.find(c => c.playedBy === user.id) && <Card card={round.find(c => c.playedBy === user.id)} />}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Mi Mano y Acciones */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center space-y-4 w-full">
+                    <div className={`px-4 py-1 rounded-full text-white font-bold transition-all ${gameState.turn === user.id ? 'bg-yellow-500 scale-110 shadow-lg' : 'bg-black bg-opacity-50'}`}>
+                        {user.name} (Tú)
+                    </div>
+                    <div className="flex justify-center space-x-4 h-36">
+                        {myHand.map((card) => <Card key={card.id} card={card} isPlayable={gameState.turn === user.id} onClick={() => handlePlayCard(card.id)} />)}
+                    </div>
+                    <div className="flex space-x-4">
+                        <button className="bg-yellow-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg disabled:bg-gray-500">Envido</button>
+                        <button className="bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg disabled:bg-gray-500">Truco</button>
+                        <button className="bg-gray-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg">Ir al Mazo</button>
+                    </div>
+                </div>
             </div>
 
-            {/* Jugadores */}
-            {opponents.map((opp) => (
-                <PlayerUI key={opp.id} player={opp} cardsCount={gameState.hands[opp.id]?.length || 0} position="top-8 left-1/2 -translate-x-1/2" isTurn={gameState.turn === opp.id} />
-            ))}
-
-            {/* Mi Mano y Acciones */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center space-y-4">
-                 <div className={`px-4 py-1 rounded-full text-white font-bold transition-all mb-4 ${gameState.turn === user.id ? 'bg-yellow-500 scale-110 shadow-lg' : 'bg-black bg-opacity-50'}`}>
-                    {user.name} (Tú)
-                </div>
-                <div className="flex justify-center space-x-4 h-36">
-                    {myHand.map((card) => <Card key={card.id} card={card} isPlayable={gameState.turn === user.id} onClick={() => handlePlayCard(card.id)} />)}
-                </div>
-                <div className="flex space-x-4 mt-4">
-                    <button className="bg-yellow-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg disabled:bg-gray-500">Envido</button>
-                    <button className="bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg disabled:bg-gray-500">Truco</button>
-                    <button className="bg-gray-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg">Ir al Mazo</button>
-                </div>
+            {/* Área del Chat */}
+            <div className="w-80 flex-shrink-0 border-l-4 border-yellow-800">
+                <GameChat messages={chatMessages} onSendMessage={handleSendMessage} />
             </div>
-
-            {/* Marcador y Salir */}
-            <div className="absolute top-4 left-4">
-                <div className="bg-black bg-opacity-50 p-3 rounded-lg text-white text-lg">
-                    <h3 className="font-bold text-red-400">Equipo Truco: {gameState.scores.A}</h3>
-                    <h3 className="font-bold text-blue-400">Equipo Estrella: {gameState.scores.B}</h3>
-                </div>
-                 <Link to="/" className="bg-red-600 text-white font-bold py-2 px-4 rounded-md mt-4 inline-block">Salir</Link>
-            </div>
-
-            {/* Chat de Partida */}
-            <GameChat messages={chatMessages} onSendMessage={handleSendMessage} />
         </div>
     );
 }
