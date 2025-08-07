@@ -76,6 +76,21 @@ function GameScreen() {
     const [gameState, setGameState] = useState(null);
     const [chatMessages, setChatMessages] = useState([]);
 
+    // **LA CORRECCIÓN CLAVE: Mover el hook useMemo a la parte superior del componente.**
+    const playedCardsByRound = useMemo(() => {
+        if (!gameState) return [[], [], []]; // Devolver un valor por defecto si no hay estado
+        const rounds = [[], [], []];
+        const players = gameState.players;
+        for(let i = 0; i < gameState.table.length; i++) {
+            const roundIndex = Math.floor(i / players.length);
+            if(rounds[roundIndex]) {
+                rounds[roundIndex].push(gameState.table[i]);
+            }
+        }
+        return rounds;
+    }, [gameState]);
+
+
     useEffect(() => {
         const gameServerUrl = sessionStorage.getItem('gameServerUrl');
         if (gameServerUrl) {
@@ -98,16 +113,18 @@ function GameScreen() {
     }, [roomId, user.id, navigate]);
 
     const handlePlayCard = (cardId) => {
-        if (gameState.turn === user.id) {
+        if (gameState && gameState.turn === user.id) {
             gameSocket.emit('play-card', { roomId, userId: user.id, cardId });
         }
     };
 
     const handleSendMessage = (text) => {
-        gameSocket.emit('send-game-message', {
-            roomId,
-            message: { sender: user.name, text, color: user.color }
-        });
+        if(gameSocket) {
+            gameSocket.emit('send-game-message', {
+                roomId,
+                message: { sender: user.name, text, color: user.color }
+            });
+        }
     };
 
     if (!gameState) {
@@ -116,20 +133,6 @@ function GameScreen() {
 
     const myHand = gameState.hands[user.id] || [];
     const opponents = gameState.players.filter(p => p.id !== user.id);
-    
-    // **LÓGICA MEJORADA: Organizar cartas jugadas por ronda**
-    const playedCardsByRound = useMemo(() => {
-        const rounds = [[], [], []];
-        const players = gameState.players;
-        for(let i = 0; i < gameState.table.length; i++) {
-            const roundIndex = Math.floor(i / players.length);
-            if(rounds[roundIndex]) {
-                rounds[roundIndex].push(gameState.table[i]);
-            }
-        }
-        return rounds;
-    }, [gameState.table, gameState.players]);
-
 
     return (
         <div className="w-full h-screen bg-truco-green p-4 flex items-center justify-center relative overflow-hidden">
