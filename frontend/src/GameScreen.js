@@ -159,20 +159,20 @@ function GameScreen() {
             if (totalPlayers === 2) {
                 if (relativeIndex === 1) positions[player.id] = { 
                     ui: 'top-4 left-1/2 -translate-x-1/2', 
-                    table: 'top-8 left-1/2 -translate-x-1/2' 
+                    table: 'top-1/2 -translate-y-[100%] mt-[-20px]' 
                 };
             } else if (totalPlayers === 4) {
                 if (relativeIndex === 1) positions[player.id] = { 
                     ui: 'top-1/2 -translate-y-1/2 right-4', 
-                    table: 'top-1/2 -translate-y-1/2 right-8' 
+                    table: 'top-1/2 -translate-y-1/2 left-full ml-5' 
                 };
                 if (relativeIndex === 2) positions[player.id] = { 
                     ui: 'top-4 left-1/2 -translate-x-1/2', 
-                    table: 'top-8 left-1/2 -translate-x-1/2' 
+                    table: 'bottom-full mb-5' 
                 };
                 if (relativeIndex === 3) positions[player.id] = { 
                     ui: 'top-1/2 -translate-y-1/2 left-4', 
-                    table: 'top-1/2 -translate-y-1/2 left-8' 
+                    table: 'top-1/2 -translate-y-1/2 right-full mr-5' 
                 };
             }
         });
@@ -206,42 +206,37 @@ function GameScreen() {
                     <Link to="/" className="bg-red-600 text-white font-bold py-2 px-4 rounded-md mt-4 inline-block">Abandonar</Link>
                 </div>
 
-                {otherPlayers.map((player) => (
-                    <PlayerUI key={player.id} player={player} cardsCount={gameState.hands[player.id]?.length || 0} position={playerPositions[player.id]?.ui} isTurn={gameState.turn === player.id} />
-                ))}
-
                 {/* Mesa de Juego */}
                 <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-3/4 h-3/4 bg-truco-brown rounded-lg shadow-2xl border-8 border-yellow-800 relative">
                         {/* **DISEÑO MEJORADO: Slots de cartas jugadas para cada jugador** */}
                         {gameState.players.map(player => {
                             const playedCards = gameState.table.filter(c => c.playedBy === player.id);
-                            let positionClass = '';
-                            let layoutClass = 'flex space-x-2.5'; // Horizontal por defecto
-
+                            
+                            // Posicionamiento del contenedor de cartas jugadas
+                            let containerPos = '';
                             if (player.id === user.id) {
-                                positionClass = 'bottom-8 left-1/2 -translate-x-1/2';
+                                containerPos = 'bottom-0 left-1/2 -translate-x-1/2 translate-y-[calc(100%+20px)]';
                             } else {
-                                const pos = playerPositions[player.id]?.table;
-                                if (pos?.includes('left-')) {
-                                    positionClass = `top-1/2 -translate-y-1/2 left-8`;
-                                    layoutClass = 'flex flex-col space-y-2.5';
-                                } else if (pos?.includes('right-')) {
-                                    positionClass = `top-1/2 -translate-y-1/2 right-8`;
-                                    layoutClass = 'flex flex-col space-y-2.5';
-                                } else { // top
-                                    positionClass = 'top-8 left-1/2 -translate-x-1/2';
-                                }
+                                const pos = playerPositions[player.id];
+                                if (pos?.ui.includes('top-')) containerPos = 'top-0 left-1/2 -translate-x-1/2 -translate-y-[calc(100%+20px)]';
+                                if (pos?.ui.includes('left-')) containerPos = 'top-1/2 -translate-y-1/2 left-0 -translate-x-[calc(100%+20px)]';
+                                if (pos?.ui.includes('right-')) containerPos = 'top-1/2 -translate-y-1/2 right-0 translate-x-[calc(100%+20px)]';
                             }
 
                             return (
-                                <div key={player.id} className={`absolute ${positionClass} ${layoutClass}`}>
+                                <div key={player.id} className={`absolute ${containerPos} flex space-x-2.5`}>
                                     {playedCards.map(card => <Card key={card.id} card={card} isPlayed={true} />)}
                                 </div>
                             )
                         })}
                     </div>
                 </div>
+                
+                {/* UI de Jugadores (Nombres y Manos sin jugar) */}
+                {otherPlayers.map((player) => (
+                    <PlayerUI key={player.id} player={player} cardsCount={gameState.hands[player.id]?.length || 0} position={playerPositions[player.id]?.ui} isTurn={gameState.turn === player.id} />
+                ))}
                 
                 {isMyTurnToRespond && <ChantNotification trucoState={gameState.truco} onResponse={handleResponse} />}
 
