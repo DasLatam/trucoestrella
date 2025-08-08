@@ -202,14 +202,11 @@ function GameScreen() {
                     <Link to="/" className="bg-red-600 text-white font-bold py-2 px-4 rounded-md mt-4 inline-block">Abandonar</Link>
                 </div>
 
-                {/* **LA CORRECCIÓN: Se vuelve a centrar al oponente en la parte superior.** */}
                 {otherPlayers.map((player) => (
                     <PlayerUI key={player.id} player={player} cardsCount={gameState.hands[player.id]?.length || 0} position={playerPositions[player.id]} isTurn={gameState.turn === player.id} />
                 ))}
 
-                {/* Mesa Ovalada */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl">
-                    {/* **DISEÑO MEJORADO: Slots fijos para las rondas con posicionamiento absoluto** */}
                     {/* Slot Ronda 1 (Izquierda) */}
                     <div className="absolute top-1/2 -translate-y-1/2 left-[25%] -translate-x-1/2">
                         <div className="flex flex-col items-center space-y-5">
