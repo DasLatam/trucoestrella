@@ -4,11 +4,68 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from './App';
 import { io } from 'socket.io-client';
 
-// --- COMPONENTES VISUALES ---
-const Card = ({ card, onClick, isPlayable }) => { /* ... (código sin cambios) ... */ };
-const CardPlaceholder = () => { /* ... (código sin cambios) ... */ };
-const PlayerUI = ({ player, cardsCount, position, isTurn }) => { /* ... (código sin cambios) ... */ };
-const GameChat = ({ messages, onSendMessage }) => { /* ... (código sin cambios) ... */ };
+// --- COMPONENTES VISUALES (COMPLETOS) ---
+const Card = ({ card, onClick, isPlayable }) => {
+    const cardSymbol = { oro: '💰', copa: '🍷', espada: '⚔️', basto: '🌲' };
+    return (
+        <div 
+            onClick={onClick} 
+            className={`w-24 h-36 bg-white border-2 border-gray-300 rounded-lg shadow-xl flex flex-col justify-between p-2 text-black transition-all duration-200 ${isPlayable ? 'cursor-pointer hover:scale-110 hover:-translate-y-4' : 'opacity-60'}`}
+        >
+            <span className="text-2xl font-bold">{card.number} {cardSymbol[card.suit]}</span>
+            <span className="text-2xl font-bold self-end transform rotate-180">{card.number} {cardSymbol[card.suit]}</span>
+        </div>
+    );
+};
+
+const CardPlaceholder = () => (
+    <div className="w-20 h-28 bg-blue-900 border-2 border-blue-500 rounded-lg shadow-lg" />
+);
+
+const PlayerUI = ({ player, cardsCount, position, isTurn }) => (
+    <div className={`absolute ${position} flex flex-col items-center space-y-2 transition-all duration-500 z-10`}>
+        <div className="flex space-x-[-50px]">
+            {Array.from({ length: cardsCount }).map((_, i) => <CardPlaceholder key={i} />)}
+        </div>
+        <div className={`px-4 py-1 rounded-full text-white font-bold transition-all ${isTurn ? 'bg-yellow-500 scale-110 shadow-lg' : 'bg-black bg-opacity-50'}`}>
+            {player.name}
+        </div>
+    </div>
+);
+
+const GameChat = ({ messages, onSendMessage }) => {
+    const [newMessage, setNewMessage] = useState('');
+    const chatEndRef = React.useRef(null);
+    useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+    const handleSend = (e) => {
+        e.preventDefault();
+        if (newMessage.trim()) {
+            onSendMessage(newMessage.trim());
+            setNewMessage('');
+        }
+    };
+    return (
+        <div className="absolute top-4 right-4 w-80 h-[calc(100vh-2rem)] bg-light-bg rounded-lg shadow-2xl border border-light-border flex flex-col p-2">
+            <h3 className="text-lg font-semibold text-center text-gray-300 p-2 border-b border-light-border flex-shrink-0">Chat Mesa</h3>
+            <div className="flex-grow p-2 overflow-y-auto">
+                {messages.map(msg => (
+                     <div key={msg.id} className="text-sm mb-2">
+                        {msg.type === 'log' ? (
+                            <p className="text-green-400 italic opacity-80">» {msg.text}</p>
+                        ) : (
+                            <p><span style={{color: msg.color}} className="font-bold">{msg.sender}:</span> <span className="text-gray-200 break-words">{msg.text}</span></p>
+                        )}
+                    </div>
+                ))}
+                <div ref={chatEndRef} />
+            </div>
+            <form onSubmit={handleSend} className="flex p-1 mt-2 flex-shrink-0">
+                <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)} className="flex-grow bg-gray-800 p-2 rounded-l-md text-white focus:outline-none focus:ring-2 focus:ring-truco-brown" />
+                <button type="submit" className="bg-truco-brown text-white font-bold px-4 rounded-r-md">Enviar</button>
+            </form>
+        </div>
+    );
+};
 
 const ChantNotification = ({ chant, onResponse }) => {
     return (
@@ -72,7 +129,14 @@ function GameScreen() {
         }
     };
 
-    const handleSendMessage = (text) => { /* ... (código sin cambios) ... */ };
+    const handleSendMessage = (text) => {
+        if(gameSocket) {
+            gameSocket.emit('send-game-message', {
+                roomId,
+                message: { sender: user.name, text, color: user.color }
+            });
+        }
+    };
 
     const playedCardsByRound = useMemo(() => {
         const rounds = { 1: [], 2: [], 3: [] };
@@ -98,8 +162,8 @@ function GameScreen() {
     const myTeam = gameState.players.find(p => p.id === user.id).team;
 
     const canChantTruco = gameState.truco.level === 1;
-    const canChantRetruco = gameState.truco.level === 2 && gameState.truco.offeredByTeam !== myTeam;
-    const canChantValeCuatro = gameState.truco.level === 3 && gameState.truco.offeredByTeam !== myTeam;
+    const canChantRetruco = gameState.truco.level === 2 && gameState.truco.lastChanter !== user.id;
+    const canChantValeCuatro = gameState.truco.level === 3 && gameState.truco.lastChanter !== user.id;
 
     return (
         <div className="w-full h-screen bg-truco-green flex overflow-hidden">
