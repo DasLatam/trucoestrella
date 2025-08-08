@@ -35,8 +35,25 @@ const getCardRank = (card) => {
     return 0;
 };
 
-const createDeck = () => { /* ... (código sin cambios) ... */ };
-const shuffleDeck = (deck) => { /* ... (código sin cambios) ... */ };
+const createDeck = () => {
+    const suits = ['espada', 'basto', 'oro', 'copa'];
+    const numbers = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
+    let deck = [];
+    for (const suit of suits) {
+        for (const number of numbers) {
+            deck.push({ number, suit, id: `${number}-${suit}` });
+        }
+    }
+    return deck;
+};
+
+const shuffleDeck = (deck) => {
+    for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+    return deck;
+};
 
 const addLog = (game, text) => {
     const logMessage = { id: uuidv4(), type: 'log', text, timestamp: Date.now() };
@@ -65,14 +82,53 @@ const startNewHand = (game) => {
 };
 
 // --- ENDPOINT DE HAND-OFF ---
-app.post('/init-game', (req, res) => { /* ... (código sin cambios) ... */ });
+app.post('/init-game', (req, res) => {
+  console.log("Recibida petición en /init-game"); // Log de entrada
+  try {
+    const gameData = req.body;
+    console.log("Datos recibidos:", JSON.stringify(gameData, null, 2)); // Log del payload
+
+    if (!gameData || !gameData.roomId) {
+      console.error("Error: Faltan datos de la partida.");
+      return res.status(400).json({ message: "Faltan datos de la partida." });
+    }
+
+    let game = {
+      ...gameData,
+      status: 'playing',
+      scores: { A: 0, B: 0 },
+      chat: [],
+      handStarterIndex: -1,
+    };
+
+    game = startNewHand(game);
+    activeGames[gameData.roomId] = game;
+
+    console.log(`Partida ${gameData.roomId} inicializada y lista.`);
+    res.status(200).json({ message: "Partida inicializada con éxito." });
+  } catch (error) {
+    console.error("CRASH en /init-game:", error);
+    res.status(500).json({ message: "Error interno del servidor de juego." });
+  }
+});
 
 // --- MANEJO DE CONEXIONES ---
 io.on('connection', (socket) => {
   let currentRoomId = null;
   let currentUserId = null;
 
-  socket.on('join-game-room', ({ roomId, userId }) => { /* ... (código sin cambios) ... */ });
+  socket.on('join-game-room', ({ roomId, userId }) => {
+    const game = activeGames[roomId];
+    if (game && game.players.some(p => p.id === userId)) {
+      currentRoomId = roomId;
+      currentUserId = userId;
+      socket.join(roomId);
+      console.log(`Jugador ${userId} se unió a la sala de juego ${roomId}`);
+      io.to(roomId).emit('update-game-state', game);
+    } else {
+      socket.emit('error', { message: 'No tienes permiso para unirte a esta partida.' });
+    }
+  });
 
   socket.on('play-card', ({ roomId, userId, cardId }) => {
       const game = activeGames[roomId];
@@ -171,7 +227,6 @@ io.on('connection', (socket) => {
 
       const player = game.players.find(p => p.id === userId);
       const chantingTeam = game.truco.offeredBy;
-      const respondingTeam = player.team;
       
       if (response === 'quiero') {
           game.truco.points = 2;
@@ -190,9 +245,18 @@ io.on('connection', (socket) => {
       io.to(roomId).emit('update-game-state', game);
   });
 
+  socket.on('send-game-message', ({ roomId, message }) => {
+      const game = activeGames[roomId];
+      if (game) {
+          const chatMessage = { id: uuidv4(), type: 'user', ...message, timestamp: Date.now() };
+          game.chat.push(chatMessage);
+          io.to(roomId).emit('new-game-message', chatMessage);
+      }
+  });
 
-  socket.on('send-game-message', ({ roomId, message }) => { /* ... (código sin cambios) ... */ });
-  socket.on('disconnect', () => { /* ... (código sin cambios) ... */ });
+  socket.on('disconnect', () => {
+    console.log(`Jugador desconectado: ${socket.id}`);
+  });
 });
 
 const PORT = process.env.PORT || 3002;
