@@ -185,17 +185,30 @@ function GameScreen() {
                     <PlayerUI key={opp.id} player={opp} cardsCount={gameState.hands[opp.id]?.length || 0} position="top-4 left-1/2 -translate-x-1/2" isTurn={gameState.turn === opp.id} />
                 ))}
 
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl flex justify-around items-center px-10">
-                    {[1, 2, 3].map(roundNum => (
-                        <div key={roundNum} className="flex flex-col justify-between h-full py-10">
-                            <div>
-                                {playedCardsByRound[roundNum].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[roundNum].find(c => c.playedBy !== user.id)} />}
-                            </div>
-                            <div>
-                                {playedCardsByRound[roundNum].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[roundNum].find(c => c.playedBy === user.id)} />}
-                            </div>
+                {/* Mesa Ovalada */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl">
+                    {/* **DISEÑO MEJORADO: Slots fijos para las rondas con posicionamiento absoluto** */}
+                    {/* Slot Ronda 1 (Izquierda) */}
+                    <div className="absolute top-1/2 -translate-y-1/2 left-[25%] -translate-x-1/2">
+                        <div className="flex flex-col items-center space-y-5">
+                            {playedCardsByRound[1].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy !== user.id)} />}
+                            {playedCardsByRound[1].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy === user.id)} />}
                         </div>
-                    ))}
+                    </div>
+                    {/* Slot Ronda 2 (Centro) */}
+                    <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2">
+                        <div className="flex flex-col items-center space-y-5">
+                            {playedCardsByRound[2].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy !== user.id)} />}
+                            {playedCardsByRound[2].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy === user.id)} />}
+                        </div>
+                    </div>
+                    {/* Slot Ronda 3 (Derecha) */}
+                    <div className="absolute top-1/2 -translate-y-1/2 left-[75%] -translate-x-1/2">
+                         <div className="flex flex-col items-center space-y-5">
+                            {playedCardsByRound[3].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[3].find(c => c.playedBy !== user.id)} />}
+                            {playedCardsByRound[3].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[3].find(c => c.playedBy === user.id)} />}
+                        </div>
+                    </div>
                 </div>
                 
                 {isMyTurnToRespond && <ChantNotification trucoState={gameState.truco} onResponse={handleResponse} />}
