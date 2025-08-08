@@ -23,7 +23,6 @@ const CardPlaceholder = () => (
 );
 
 const PlayerUI = ({ player, cardsCount, position, isTurn }) => (
-    // **LA CORRECCIÓN: Se invierte el orden de los elementos (nombre arriba, cartas abajo)**
     <div className={`absolute ${position} flex flex-col items-center space-y-2 transition-all duration-500 z-10`}>
         <div className={`px-4 py-1 rounded-full text-white font-bold transition-all ${isTurn ? 'bg-yellow-500 scale-110 shadow-lg' : 'bg-black bg-opacity-50'}`}>
             {player.name}
@@ -180,8 +179,9 @@ function GameScreen() {
                     <Link to="/" className="bg-red-600 text-white font-bold py-2 px-4 rounded-md mt-4 inline-block">Abandonar</Link>
                 </div>
 
+                {/* **LA CORRECCIÓN: Se cambia la posición del oponente a la esquina superior derecha** */}
                 {opponents.map((opp) => (
-                    <PlayerUI key={opp.id} player={opp} cardsCount={gameState.hands[opp.id]?.length || 0} position="top-4 left-1/2 -translate-x-1/2" isTurn={gameState.turn === opp.id} />
+                    <PlayerUI key={opp.id} player={opp} cardsCount={gameState.hands[opp.id]?.length || 0} position="top-4 right-4" isTurn={gameState.turn === opp.id} />
                 ))}
 
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl flex justify-around items-center px-10">
