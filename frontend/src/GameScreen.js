@@ -45,7 +45,7 @@ const GameChat = ({ messages, onSendMessage }) => {
         }
     };
     return (
-        <div className="absolute top-4 right-4 w-80 h-[calc(100vh-2rem)] bg-light-bg rounded-lg shadow-2xl border border-light-border flex flex-col p-2">
+        <div className="w-full h-full bg-light-bg flex flex-col p-2">
             <h3 className="text-lg font-semibold text-center text-gray-300 p-2 border-b border-light-border flex-shrink-0">Chat Mesa</h3>
             <div className="flex-grow p-2 overflow-y-auto">
                 {messages.map(msg => (
@@ -170,6 +170,7 @@ function GameScreen() {
 
     return (
         <div className="w-full h-screen bg-truco-green flex overflow-hidden">
+            {/* Área de Juego Principal */}
             <div className="flex-grow relative p-4 flex flex-col">
                 <div className="absolute top-4 left-4 z-20">
                     <div className="bg-black bg-opacity-50 p-3 rounded-lg text-white text-base w-56">
@@ -179,9 +180,9 @@ function GameScreen() {
                     <Link to="/" className="bg-red-600 text-white font-bold py-2 px-4 rounded-md mt-4 inline-block">Abandonar</Link>
                 </div>
 
-                {/* **LA CORRECCIÓN: Se cambia la posición del oponente a la esquina superior derecha** */}
+                {/* **LA CORRECCIÓN: Se vuelve a centrar al oponente en la parte superior.** */}
                 {opponents.map((opp) => (
-                    <PlayerUI key={opp.id} player={opp} cardsCount={gameState.hands[opp.id]?.length || 0} position="top-4 right-4" isTurn={gameState.turn === opp.id} />
+                    <PlayerUI key={opp.id} player={opp} cardsCount={gameState.hands[opp.id]?.length || 0} position="top-4 left-1/2 -translate-x-1/2" isTurn={gameState.turn === opp.id} />
                 ))}
 
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl flex justify-around items-center px-10">
