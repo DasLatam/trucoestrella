@@ -5,15 +5,17 @@ import { useAppContext } from './App';
 import { io } from 'socket.io-client';
 
 // --- COMPONENTES VISUALES ---
-const Card = ({ card, onClick, isPlayable }) => {
+const Card = ({ card, onClick, isPlayable, isPlayed }) => {
     const cardSymbol = { oro: '💰', copa: '🍷', espada: '⚔️', basto: '🌲' };
+    // **MEJORA: Tamaño de carta adaptable**
+    const size = isPlayed ? 'w-20 h-28 text-xl' : 'w-24 h-36 text-2xl';
     return (
         <div 
             onClick={onClick} 
-            className={`w-24 h-36 bg-white border-2 border-gray-300 rounded-lg shadow-xl flex flex-col justify-between p-2 text-black transition-all duration-200 ${isPlayable ? 'cursor-pointer hover:scale-110 hover:-translate-y-4' : 'opacity-60'}`}
+            className={`bg-white border-2 border-gray-300 rounded-lg shadow-xl flex flex-col justify-between p-2 text-black transition-all duration-200 ${size} ${isPlayable ? 'cursor-pointer hover:scale-110 hover:-translate-y-4' : ''}`}
         >
-            <span className="text-2xl font-bold">{card.number} {cardSymbol[card.suit]}</span>
-            <span className="text-2xl font-bold self-end transform rotate-180">{card.number} {cardSymbol[card.suit]}</span>
+            <span className="font-bold">{card.number} {cardSymbol[card.suit]}</span>
+            <span className="font-bold self-end transform rotate-180">{card.number} {cardSymbol[card.suit]}</span>
         </div>
     );
 };
@@ -142,17 +144,8 @@ function GameScreen() {
             });
         }
     };
-
-    const playedCardsByRound = useMemo(() => {
-        const rounds = { 1: [], 2: [], 3: [] };
-        if (gameState) {
-            gameState.table.forEach(card => {
-                if(rounds[card.round]) rounds[card.round].push(card);
-            });
-        }
-        return rounds;
-    }, [gameState]);
-
+    
+    // **MEJORA: Lógica de posicionamiento para UI y mesa**
     const playerPositions = useMemo(() => {
         if (!gameState) return {};
         const positions = {};
@@ -165,11 +158,11 @@ function GameScreen() {
             const relativeIndex = (index - myIndex + totalPlayers) % totalPlayers;
             
             if (totalPlayers === 2) {
-                if (relativeIndex === 1) positions[player.id] = 'top-4 left-1/2 -translate-x-1/2';
+                if (relativeIndex === 1) positions[player.id] = { ui: 'top-4 left-1/2 -translate-x-1/2', table: 'top-[20%]' };
             } else if (totalPlayers === 4) {
-                if (relativeIndex === 1) positions[player.id] = 'top-1/2 -translate-y-1/2 right-4';
-                if (relativeIndex === 2) positions[player.id] = 'top-4 left-1/2 -translate-x-1/2';
-                if (relativeIndex === 3) positions[player.id] = 'top-1/2 -translate-y-1/2 left-4';
+                if (relativeIndex === 1) positions[player.id] = { ui: 'top-1/2 -translate-y-1/2 right-4', table: 'right-[10%]' };
+                if (relativeIndex === 2) positions[player.id] = { ui: 'top-4 left-1/2 -translate-x-1/2', table: 'top-[20%]' };
+                if (relativeIndex === 3) positions[player.id] = { ui: 'top-1/2 -translate-y-1/2 left-4', table: 'left-[10%]' };
             }
         });
         return positions;
@@ -192,7 +185,6 @@ function GameScreen() {
 
     return (
         <div className="w-full h-screen bg-truco-green flex overflow-hidden">
-            {/* Área de Juego Principal */}
             <div className="flex-grow relative p-4 flex flex-col">
                 <div className="absolute top-4 left-4 z-20">
                     <div className="bg-black bg-opacity-50 p-3 rounded-lg text-white text-base w-56">
@@ -203,30 +195,28 @@ function GameScreen() {
                 </div>
 
                 {otherPlayers.map((player) => (
-                    <PlayerUI key={player.id} player={player} cardsCount={gameState.hands[player.id]?.length || 0} position={playerPositions[player.id]} isTurn={gameState.turn === player.id} />
+                    <PlayerUI key={player.id} player={player} cardsCount={gameState.hands[player.id]?.length || 0} position={playerPositions[player.id]?.ui} isTurn={gameState.turn === player.id} />
                 ))}
 
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl">
-                    {/* Slot Ronda 1 (Izquierda) */}
-                    <div className="absolute top-1/2 -translate-y-1/2 left-[25%] -translate-x-1/2">
-                        <div className="flex flex-col items-center space-y-5">
-                            {playedCardsByRound[1].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy !== user.id)} />}
-                            {playedCardsByRound[1].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy === user.id)} />}
-                        </div>
-                    </div>
-                    {/* Slot Ronda 2 (Centro) */}
-                    <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2">
-                        <div className="flex flex-col items-center space-y-5">
-                            {playedCardsByRound[2].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy !== user.id)} />}
-                            {playedCardsByRound[2].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy === user.id)} />}
-                        </div>
-                    </div>
-                    {/* Slot Ronda 3 (Derecha) */}
-                    <div className="absolute top-1/2 -translate-y-1/2 left-[75%] -translate-x-1/2">
-                         <div className="flex flex-col items-center space-y-5">
-                            {playedCardsByRound[3].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[3].find(c => c.playedBy !== user.id)} />}
-                            {playedCardsByRound[3].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[3].find(c => c.playedBy === user.id)} />}
-                        </div>
+                {/* Mesa de Juego */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-3/4 h-3/4 bg-truco-brown rounded-lg shadow-2xl border-8 border-yellow-800 relative">
+                        {/* **DISEÑO MEJORADO: Slots de cartas jugadas para cada jugador** */}
+                        {gameState.players.map(player => {
+                            const playedCards = gameState.table.filter(c => c.playedBy === player.id);
+                            let positionClass = '';
+                            if (player.id === user.id) {
+                                positionClass = 'bottom-[20%] left-1/2 -translate-x-1/2';
+                            } else {
+                                positionClass = playerPositions[player.id]?.table;
+                            }
+
+                            return (
+                                <div key={player.id} className={`absolute ${positionClass} flex space-x-2.5`}>
+                                    {playedCards.map(card => <Card key={card.id} card={card} isPlayed={true} />)}
+                                </div>
+                            )
+                        })}
                     </div>
                 </div>
                 
