@@ -67,13 +67,18 @@ const GameChat = ({ messages, onSendMessage }) => {
     );
 };
 
-const ChantNotification = ({ chant, onResponse }) => {
+const ChantNotification = ({ trucoState, onResponse }) => {
+    const chantLevel = trucoState.level;
+    const chantText = chantLevel === 2 ? "TRUCO" : chantLevel === 3 ? "RETRUCO" : "VALE CUATRO";
+
     return (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-80 p-8 rounded-xl shadow-2xl z-20 text-center">
-            <p className="text-3xl font-bold text-yellow-400 mb-6">¡El oponente cantó {chant.toUpperCase()}!</p>
+            <p className="text-3xl font-bold text-yellow-400 mb-6">¡El oponente cantó {chantText}!</p>
             <div className="flex space-x-4">
-                <button onClick={() => onResponse('quiero')} className="bg-green-600 text-white font-bold py-3 px-8 rounded-lg text-xl">QUIERO</button>
-                <button onClick={() => onResponse('no-quiero')} className="bg-red-600 text-white font-bold py-3 px-8 rounded-lg text-xl">NO QUIERO</button>
+                <button onClick={() => onResponse('quiero')} className="bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg">QUIERO</button>
+                {chantLevel === 2 && <button onClick={() => onResponse('retruco')} className="bg-red-700 text-white font-bold py-3 px-6 rounded-lg text-lg">RETRUCO</button>}
+                {chantLevel === 3 && <button onClick={() => onResponse('vale-cuatro')} className="bg-red-800 text-white font-bold py-3 px-6 rounded-lg text-lg">VALE CUATRO</button>}
+                <button onClick={() => onResponse('no-quiero')} className="bg-red-600 text-white font-bold py-3 px-6 rounded-lg text-lg">NO QUIERO</button>
             </div>
         </div>
     );
@@ -193,7 +198,7 @@ function GameScreen() {
                     ))}
                 </div>
                 
-                {isMyTurnToRespond && <ChantNotification chant={gameState.truco.level === 2 ? "TRUCO" : gameState.truco.level === 3 ? "RETRUCO" : "VALE CUATRO"} onResponse={handleResponse} />}
+                {isMyTurnToRespond && <ChantNotification trucoState={gameState.truco} onResponse={handleResponse} />}
 
                 <div className="absolute bottom-4 left-0 right-0 flex justify-between items-end px-4">
                     <div className="w-1/3 flex justify-center">

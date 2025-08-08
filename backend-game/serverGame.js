@@ -239,8 +239,9 @@ io.on('connection', (socket) => {
       if (response === 'quiero') {
           game.truco.points = game.truco.level;
           game.truco.responseTurn = null; // Se reanuda el juego
+          game.truco.lastChanter = userId; // El que aceptó ahora puede subir la apuesta
           addLog(game, `${player.name} QUIERE.`);
-      } else { // No quiero
+      } else if (response === 'no-quiero') {
           const pointsWon = game.truco.points; // Gana los puntos de la apuesta anterior
           game.scores[chantingTeam] += pointsWon;
           addLog(game, `${player.name} NO QUIERE. Equipo ${chantingTeam} gana ${pointsWon} punto(s).`);
@@ -248,6 +249,15 @@ io.on('connection', (socket) => {
               activeGames[roomId] = startNewHand(game);
               io.to(roomId).emit('update-game-state', activeGames[roomId]);
           }, 2000);
+      } else { // Es un "canto sobre canto" (retruco o vale cuatro)
+          const chantMap = { 'retruco': 3, 'vale-cuatro': 4 };
+          if (chantMap[response]) {
+              game.truco.level = chantMap[response];
+              game.truco.offeredByTeam = player.team;
+              game.truco.responseTurn = game.players.find(p => p.team !== player.team).id;
+              game.truco.lastChanter = userId;
+              addLog(game, `${player.name} canta ${response.toUpperCase()}.`);
+          }
       }
       io.to(roomId).emit('update-game-state', game);
   });
