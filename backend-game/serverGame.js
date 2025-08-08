@@ -85,32 +85,29 @@ const checkHandWinner = (game) => {
     const getTeam = (playerId) => game.players.find(p => p.id === playerId)?.team;
     const roundWinners = game.roundWinners;
 
-    // Gana el que gana 2 rondas
     const teamAWins = roundWinners.filter(w => getTeam(w) === 'A').length;
     const teamBWins = roundWinners.filter(w => getTeam(w) === 'B').length;
     if (teamAWins === 2) return 'A';
     if (teamBWins === 2) return 'B';
 
-    // Parda en primera, gana el que gana la segunda
-    if (roundWinners.length >= 2 && roundWinners[0] === 'parda' && roundWinners[1] !== 'parda') {
-        return getTeam(roundWinners[1]);
-    }
-
-    // Gana primera y parda en segunda, gana el que gano la primera
-    if (roundWinners.length >= 2 && roundWinners[0] !== 'parda' && roundWinners[1] === 'parda') {
-        return getTeam(roundWinners[0]);
+    if (roundWinners.length >= 2) {
+        if (roundWinners[0] === 'parda') {
+            const winnerId = roundWinners[1];
+            if (winnerId !== 'parda') return getTeam(winnerId);
+        }
+        if (roundWinners[0] !== 'parda' && roundWinners[1] === 'parda') {
+            return getTeam(roundWinners[0]);
+        }
     }
     
-    // Si se completan las 3 rondas
     if (roundWinners.length === 3) {
         if (teamAWins > teamBWins) return 'A';
         if (teamBWins > teamAWins) return 'B';
-        // Si hay empate de rondas ganadas (ej. A, B, Parda), gana el mano.
         const handStarterTeam = getTeam(game.players[game.handStarterIndex].id);
         return handStarterTeam;
     }
 
-    return null; // La mano no ha terminado
+    return null;
 };
 
 
@@ -224,15 +221,10 @@ io.on('connection', (socket) => {
       game.truco.responseTurn = opponent.id;
       game.truco.lastChanter = userId;
 
-      if (chant === 'truco') {
-          game.truco.level = 2;
-          addLog(game, `${player.name} canta TRUCO.`);
-      } else if (chant === 'retruco') {
-          game.truco.level = 3;
-          addLog(game, `${player.name} canta RETRUCO.`);
-      } else if (chant === 'vale-cuatro') {
-          game.truco.level = 4;
-          addLog(game, `${player.name} canta VALE CUATRO.`);
+      const chantMap = { 'truco': 2, 'retruco': 3, 'vale-cuatro': 4 };
+      if (chantMap[chant]) {
+          game.truco.level = chantMap[chant];
+          addLog(game, `${player.name} canta ${chant.toUpperCase()}.`);
       }
       io.to(roomId).emit('update-game-state', game);
   });
@@ -246,10 +238,10 @@ io.on('connection', (socket) => {
       
       if (response === 'quiero') {
           game.truco.points = game.truco.level;
-          game.truco.responseTurn = null;
+          game.truco.responseTurn = null; // Se reanuda el juego
           addLog(game, `${player.name} QUIERE.`);
       } else { // No quiero
-          const pointsWon = game.truco.points;
+          const pointsWon = game.truco.points; // Gana los puntos de la apuesta anterior
           game.scores[chantingTeam] += pointsWon;
           addLog(game, `${player.name} NO QUIERE. Equipo ${chantingTeam} gana ${pointsWon} punto(s).`);
           setTimeout(() => {
@@ -275,8 +267,18 @@ io.on('connection', (socket) => {
       io.to(roomId).emit('update-game-state', game);
   });
 
-  socket.on('send-game-message', ({ roomId, message }) => { /* ... (código sin cambios) ... */ });
-  socket.on('disconnect', () => { /* ... (código sin cambios) ... */ });
+  socket.on('send-game-message', ({ roomId, message }) => {
+      const game = activeGames[roomId];
+      if (game) {
+          const chatMessage = { id: uuidv4(), type: 'user', ...message, timestamp: Date.now() };
+          game.chat.push(chatMessage);
+          io.to(roomId).emit('new-game-message', chatMessage);
+      }
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`Jugador desconectado: ${socket.id}`);
+  });
 });
 
 const PORT = process.env.PORT || 3002;

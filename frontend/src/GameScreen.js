@@ -4,7 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from './App';
 import { io } from 'socket.io-client';
 
-// --- COMPONENTES VISUALES (COMPLETOS) ---
+// --- COMPONENTES VISUALES ---
 const Card = ({ card, onClick, isPlayable }) => {
     const cardSymbol = { oro: '💰', copa: '🍷', espada: '⚔️', basto: '🌲' };
     return (
@@ -198,12 +198,13 @@ function GameScreen() {
                 <div className="absolute bottom-4 left-0 right-0 flex justify-between items-end px-4">
                     <div className="w-1/3 flex justify-center">
                         <div className="flex flex-col items-center space-y-2">
-                            <div className="flex space-x-2">
-                                <button className="bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg disabled:bg-gray-500 text-sm">Envido</button>
-                                <button onClick={() => handleChant('truco')} disabled={!isMyTurnToPlay || !canChantTruco} className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg disabled:bg-gray-500 text-sm">Truco</button>
-                                <button onClick={() => handleChant('retruco')} disabled={!isMyTurnToPlay || !canChantRetruco} className="bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg disabled:bg-gray-500 text-sm">Retruco</button>
-                                <button onClick={() => handleChant('vale-cuatro')} disabled={!isMyTurnToPlay || !canChantValeCuatro} className="bg-red-800 text-white font-bold py-2 px-4 rounded-lg shadow-lg disabled:bg-gray-500 text-sm">Vale 4</button>
-                            </div>
+                            {isMyTurnToPlay && (
+                                <div className="flex space-x-2">
+                                    {canChantTruco && <button onClick={() => handleChant('truco')} className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">TRUCO</button>}
+                                    {canChantRetruco && <button onClick={() => handleChant('retruco')} className="bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">RETRUCO</button>}
+                                    {canChantValeCuatro && <button onClick={() => handleChant('vale-cuatro')} className="bg-red-800 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">VALE CUATRO</button>}
+                                </div>
+                            )}
                             <button onClick={handleGoToMazo} className="bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm w-full">Ir al Mazo</button>
                         </div>
                     </div>
