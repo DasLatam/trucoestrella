@@ -47,7 +47,7 @@ const GameChat = ({ messages, onSendMessage }) => {
         }
     };
     return (
-        <div className="absolute top-4 right-4 w-80 h-[calc(100vh-2rem)] bg-light-bg rounded-lg shadow-2xl border border-light-border flex flex-col p-2">
+        <div className="w-full h-full bg-light-bg flex flex-col p-2">
             <h3 className="text-lg font-semibold text-center text-gray-300 p-2 border-b border-light-border flex-shrink-0">Chat Mesa</h3>
             <div className="flex-grow p-2 overflow-y-auto">
                 {messages.map(msg => (
@@ -185,6 +185,7 @@ function GameScreen() {
 
     return (
         <div className="w-full h-screen bg-truco-green flex overflow-hidden">
+            {/* Área de Juego Principal */}
             <div className="flex-grow relative p-4 flex flex-col">
                 <div className="absolute top-4 left-4 z-20">
                     <div className="bg-black bg-opacity-50 p-3 rounded-lg text-white text-base w-56">
