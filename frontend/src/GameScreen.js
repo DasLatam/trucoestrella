@@ -164,11 +164,13 @@ function GameScreen() {
 
     const isMyTurnToPlay = gameState.turn === user.id && !gameState.truco.responseTurn;
     const isMyTurnToRespond = gameState.truco.responseTurn === user.id;
-    const myTeam = gameState.players.find(p => p.id === user.id).team;
-
+    
+    // **LA CORRECCIÓN CLAVE ESTÁ AQUÍ**
     const canChantTruco = gameState.truco.level === 1;
-    const canChantRetruco = gameState.truco.level === 2 && gameState.truco.lastChanter !== user.id;
-    const canChantValeCuatro = gameState.truco.level === 3 && gameState.truco.lastChanter !== user.id;
+    // Solo puede cantar Retruco si el nivel es 2 y FUE ÉL quien aceptó el Truco anterior.
+    const canChantRetruco = gameState.truco.level === 2 && gameState.truco.lastChanter === user.id;
+    // Solo puede cantar Vale Cuatro si el nivel es 3 y FUE ÉL quien aceptó el Retruco anterior.
+    const canChantValeCuatro = gameState.truco.level === 3 && gameState.truco.lastChanter === user.id;
 
     return (
         <div className="w-full h-screen bg-truco-green flex overflow-hidden">
