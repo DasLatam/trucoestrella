@@ -23,12 +23,13 @@ const CardPlaceholder = () => (
 );
 
 const PlayerUI = ({ player, cardsCount, position, isTurn }) => (
+    // **LA CORRECCIÓN: Se invierte el orden de los elementos (nombre arriba, cartas abajo)**
     <div className={`absolute ${position} flex flex-col items-center space-y-2 transition-all duration-500 z-10`}>
-        <div className="flex space-x-[-50px]">
-            {Array.from({ length: cardsCount }).map((_, i) => <CardPlaceholder key={i} />)}
-        </div>
         <div className={`px-4 py-1 rounded-full text-white font-bold transition-all ${isTurn ? 'bg-yellow-500 scale-110 shadow-lg' : 'bg-black bg-opacity-50'}`}>
             {player.name}
+        </div>
+        <div className="flex space-x-[-50px]">
+            {Array.from({ length: cardsCount }).map((_, i) => <CardPlaceholder key={i} />)}
         </div>
     </div>
 );
@@ -183,30 +184,17 @@ function GameScreen() {
                     <PlayerUI key={opp.id} player={opp} cardsCount={gameState.hands[opp.id]?.length || 0} position="top-4 left-1/2 -translate-x-1/2" isTurn={gameState.turn === opp.id} />
                 ))}
 
-                {/* Mesa Ovalada */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl">
-                    {/* **DISEÑO MEJORADO: Slots fijos para las rondas** */}
-                    {/* Slot Ronda 1 (Izquierda) */}
-                    <div className="absolute top-1/2 -translate-y-1/2 left-[25%] -translate-x-1/2">
-                        <div className="flex flex-col items-center space-y-5">
-                            {playedCardsByRound[1].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy !== user.id)} />}
-                            {playedCardsByRound[1].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy === user.id)} />}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl flex justify-around items-center px-10">
+                    {[1, 2, 3].map(roundNum => (
+                        <div key={roundNum} className="flex flex-col justify-between h-full py-10">
+                            <div>
+                                {playedCardsByRound[roundNum].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[roundNum].find(c => c.playedBy !== user.id)} />}
+                            </div>
+                            <div>
+                                {playedCardsByRound[roundNum].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[roundNum].find(c => c.playedBy === user.id)} />}
+                            </div>
                         </div>
-                    </div>
-                    {/* Slot Ronda 2 (Centro) */}
-                    <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2">
-                        <div className="flex flex-col items-center space-y-5">
-                            {playedCardsByRound[2].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy !== user.id)} />}
-                            {playedCardsByRound[2].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy === user.id)} />}
-                        </div>
-                    </div>
-                    {/* Slot Ronda 3 (Derecha) */}
-                    <div className="absolute top-1/2 -translate-y-1/2 left-[75%] -translate-x-1/2">
-                         <div className="flex flex-col items-center space-y-5">
-                            {playedCardsByRound[3].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[3].find(c => c.playedBy !== user.id)} />}
-                            {playedCardsByRound[3].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[3].find(c => c.playedBy === user.id)} />}
-                        </div>
-                    </div>
+                    ))}
                 </div>
                 
                 {isMyTurnToRespond && <ChantNotification trucoState={gameState.truco} onResponse={handleResponse} />}
