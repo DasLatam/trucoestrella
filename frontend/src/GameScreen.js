@@ -7,7 +7,6 @@ import { io } from 'socket.io-client';
 // --- COMPONENTES VISUALES ---
 const Card = ({ card, onClick, isPlayable, isPlayed }) => {
     const cardSymbol = { oro: '💰', copa: '🍷', espada: '⚔️', basto: '🌲' };
-    // **MEJORA: Tamaño de carta adaptable**
     const size = isPlayed ? 'w-20 h-28 text-xl' : 'w-24 h-36 text-2xl';
     return (
         <div 
@@ -158,11 +157,23 @@ function GameScreen() {
             const relativeIndex = (index - myIndex + totalPlayers) % totalPlayers;
             
             if (totalPlayers === 2) {
-                if (relativeIndex === 1) positions[player.id] = { ui: 'top-4 left-1/2 -translate-x-1/2', table: 'top-[20%]' };
+                if (relativeIndex === 1) positions[player.id] = { 
+                    ui: 'top-4 left-1/2 -translate-x-1/2', 
+                    table: 'top-8 left-1/2 -translate-x-1/2' 
+                };
             } else if (totalPlayers === 4) {
-                if (relativeIndex === 1) positions[player.id] = { ui: 'top-1/2 -translate-y-1/2 right-4', table: 'right-[10%]' };
-                if (relativeIndex === 2) positions[player.id] = { ui: 'top-4 left-1/2 -translate-x-1/2', table: 'top-[20%]' };
-                if (relativeIndex === 3) positions[player.id] = { ui: 'top-1/2 -translate-y-1/2 left-4', table: 'left-[10%]' };
+                if (relativeIndex === 1) positions[player.id] = { 
+                    ui: 'top-1/2 -translate-y-1/2 right-4', 
+                    table: 'top-1/2 -translate-y-1/2 right-8' 
+                };
+                if (relativeIndex === 2) positions[player.id] = { 
+                    ui: 'top-4 left-1/2 -translate-x-1/2', 
+                    table: 'top-8 left-1/2 -translate-x-1/2' 
+                };
+                if (relativeIndex === 3) positions[player.id] = { 
+                    ui: 'top-1/2 -translate-y-1/2 left-4', 
+                    table: 'top-1/2 -translate-y-1/2 left-8' 
+                };
             }
         });
         return positions;
@@ -206,14 +217,25 @@ function GameScreen() {
                         {gameState.players.map(player => {
                             const playedCards = gameState.table.filter(c => c.playedBy === player.id);
                             let positionClass = '';
+                            let layoutClass = 'flex space-x-2.5'; // Horizontal por defecto
+
                             if (player.id === user.id) {
-                                positionClass = 'bottom-[20%] left-1/2 -translate-x-1/2';
+                                positionClass = 'bottom-8 left-1/2 -translate-x-1/2';
                             } else {
-                                positionClass = playerPositions[player.id]?.table;
+                                const pos = playerPositions[player.id]?.table;
+                                if (pos?.includes('left-')) {
+                                    positionClass = `top-1/2 -translate-y-1/2 left-8`;
+                                    layoutClass = 'flex flex-col space-y-2.5';
+                                } else if (pos?.includes('right-')) {
+                                    positionClass = `top-1/2 -translate-y-1/2 right-8`;
+                                    layoutClass = 'flex flex-col space-y-2.5';
+                                } else { // top
+                                    positionClass = 'top-8 left-1/2 -translate-x-1/2';
+                                }
                             }
 
                             return (
-                                <div key={player.id} className={`absolute ${positionClass} flex space-x-2.5`}>
+                                <div key={player.id} className={`absolute ${positionClass} ${layoutClass}`}>
                                     {playedCards.map(card => <Card key={card.id} card={card} isPlayed={true} />)}
                                 </div>
                             )
