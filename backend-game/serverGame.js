@@ -195,7 +195,6 @@ io.on('connection', (socket) => {
           }
           
           game.roundWinners.push(winnerId);
-          game.round++;
           
           const handWinnerTeam = checkHandWinner(game);
           if (handWinnerTeam) {
@@ -205,6 +204,8 @@ io.on('connection', (socket) => {
                   activeGames[roomId] = startNewHand(game);
                   io.to(roomId).emit('update-game-state', activeGames[roomId]);
               }, 4000);
+          } else {
+              game.round++;
           }
       }
       io.to(roomId).emit('update-game-state', game);
@@ -215,7 +216,8 @@ io.on('connection', (socket) => {
       if (!game || game.truco.responseTurn) return;
 
       const player = game.players.find(p => p.id === userId);
-      const opponent = game.players.find(p => p.id !== userId);
+      const opponentTeam = player.team === 'A' ? 'B' : 'A';
+      const opponent = game.players.find(p => p.team === opponentTeam); // Simplificado para 1v1
       
       game.truco.offeredByTeam = player.team;
       game.truco.responseTurn = opponent.id;
@@ -238,18 +240,18 @@ io.on('connection', (socket) => {
       
       if (response === 'quiero') {
           game.truco.points = game.truco.level;
-          game.truco.responseTurn = null; // Se reanuda el juego
-          game.truco.lastChanter = userId; // El que aceptó ahora puede subir la apuesta
+          game.truco.responseTurn = null;
+          game.truco.lastChanter = userId;
           addLog(game, `${player.name} QUIERE.`);
       } else if (response === 'no-quiero') {
-          const pointsWon = game.truco.points; // Gana los puntos de la apuesta anterior
+          const pointsWon = game.truco.points;
           game.scores[chantingTeam] += pointsWon;
           addLog(game, `${player.name} NO QUIERE. Equipo ${chantingTeam} gana ${pointsWon} punto(s).`);
           setTimeout(() => {
               activeGames[roomId] = startNewHand(game);
               io.to(roomId).emit('update-game-state', activeGames[roomId]);
           }, 2000);
-      } else { // Es un "canto sobre canto" (retruco o vale cuatro)
+      } else {
           const chantMap = { 'retruco': 3, 'vale-cuatro': 4 };
           if (chantMap[response]) {
               game.truco.level = chantMap[response];

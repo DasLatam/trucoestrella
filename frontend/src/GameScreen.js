@@ -45,7 +45,7 @@ const GameChat = ({ messages, onSendMessage }) => {
         }
     };
     return (
-        <div className="w-full h-full bg-light-bg flex flex-col p-2">
+        <div className="absolute top-4 right-4 w-80 h-[calc(100vh-2rem)] bg-light-bg rounded-lg shadow-2xl border border-light-border flex flex-col p-2">
             <h3 className="text-lg font-semibold text-center text-gray-300 p-2 border-b border-light-border flex-shrink-0">Chat Mesa</h3>
             <div className="flex-grow p-2 overflow-y-auto">
                 {messages.map(msg => (
@@ -153,12 +153,34 @@ function GameScreen() {
         return rounds;
     }, [gameState]);
 
+    const playerPositions = useMemo(() => {
+        if (!gameState) return {};
+        const positions = {};
+        const myIndex = gameState.players.findIndex(p => p.id === user.id);
+        if (myIndex === -1) return {};
+        
+        const totalPlayers = gameState.players.length;
+
+        gameState.players.forEach((player, index) => {
+            const relativeIndex = (index - myIndex + totalPlayers) % totalPlayers;
+            
+            if (totalPlayers === 2) {
+                if (relativeIndex === 1) positions[player.id] = 'top-4 left-1/2 -translate-x-1/2';
+            } else if (totalPlayers === 4) {
+                if (relativeIndex === 1) positions[player.id] = 'top-1/2 -translate-y-1/2 right-4';
+                if (relativeIndex === 2) positions[player.id] = 'top-4 left-1/2 -translate-x-1/2';
+                if (relativeIndex === 3) positions[player.id] = 'top-1/2 -translate-y-1/2 left-4';
+            }
+        });
+        return positions;
+    }, [gameState, user.id]);
+
     if (!gameState) {
         return <div className="text-center p-10"><h2 className="text-2xl text-truco-brown font-bold animate-pulse">Conectando a la partida...</h2></div>;
     }
 
     const myHand = gameState.hands[user.id] || [];
-    const opponents = gameState.players.filter(p => p.id !== user.id);
+    const otherPlayers = gameState.players.filter(p => p.id !== user.id);
     const teamAPlayers = gameState.teams.A.map(p => p.name).join(' y ');
     const teamBPlayers = gameState.teams.B.map(p => p.name).join(' y ');
 
@@ -170,7 +192,6 @@ function GameScreen() {
 
     return (
         <div className="w-full h-screen bg-truco-green flex overflow-hidden">
-            {/* Área de Juego Principal */}
             <div className="flex-grow relative p-4 flex flex-col">
                 <div className="absolute top-4 left-4 z-20">
                     <div className="bg-black bg-opacity-50 p-3 rounded-lg text-white text-base w-56">
@@ -180,35 +201,21 @@ function GameScreen() {
                     <Link to="/" className="bg-red-600 text-white font-bold py-2 px-4 rounded-md mt-4 inline-block">Abandonar</Link>
                 </div>
 
-                {/* **LA CORRECCIÓN: Se vuelve a centrar al oponente en la parte superior.** */}
-                {opponents.map((opp) => (
-                    <PlayerUI key={opp.id} player={opp} cardsCount={gameState.hands[opp.id]?.length || 0} position="top-4 left-1/2 -translate-x-1/2" isTurn={gameState.turn === opp.id} />
+                {otherPlayers.map((player) => (
+                    <PlayerUI key={player.id} player={player} cardsCount={gameState.hands[player.id]?.length || 0} position={playerPositions[player.id]} isTurn={gameState.turn === player.id} />
                 ))}
 
-                {/* Mesa Ovalada */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl">
-                    {/* **DISEÑO MEJORADO: Slots fijos para las rondas con posicionamiento absoluto** */}
-                    {/* Slot Ronda 1 (Izquierda) */}
-                    <div className="absolute top-1/2 -translate-y-1/2 left-[25%] -translate-x-1/2">
-                        <div className="flex flex-col items-center space-y-5">
-                            {playedCardsByRound[1].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy !== user.id)} />}
-                            {playedCardsByRound[1].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[1].find(c => c.playedBy === user.id)} />}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl flex justify-around items-center px-10">
+                    {[1, 2, 3].map(roundNum => (
+                        <div key={roundNum} className="flex flex-col justify-between h-full py-10">
+                            <div>
+                                {playedCardsByRound[roundNum].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[roundNum].find(c => c.playedBy !== user.id)} />}
+                            </div>
+                            <div>
+                                {playedCardsByRound[roundNum].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[roundNum].find(c => c.playedBy === user.id)} />}
+                            </div>
                         </div>
-                    </div>
-                    {/* Slot Ronda 2 (Centro) */}
-                    <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2">
-                        <div className="flex flex-col items-center space-y-5">
-                            {playedCardsByRound[2].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy !== user.id)} />}
-                            {playedCardsByRound[2].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[2].find(c => c.playedBy === user.id)} />}
-                        </div>
-                    </div>
-                    {/* Slot Ronda 3 (Derecha) */}
-                    <div className="absolute top-1/2 -translate-y-1/2 left-[75%] -translate-x-1/2">
-                         <div className="flex flex-col items-center space-y-5">
-                            {playedCardsByRound[3].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[3].find(c => c.playedBy !== user.id)} />}
-                            {playedCardsByRound[3].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[3].find(c => c.playedBy === user.id)} />}
-                        </div>
-                    </div>
+                    ))}
                 </div>
                 
                 {isMyTurnToRespond && <ChantNotification trucoState={gameState.truco} onResponse={handleResponse} />}
