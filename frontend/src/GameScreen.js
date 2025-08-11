@@ -156,11 +156,11 @@ function GameScreen() {
             const relativeIndex = (index - myIndex + totalPlayers) % totalPlayers;
             
             if (totalPlayers === 2) {
-                if (relativeIndex === 1) positions[player.id] = { ui: 'top-4 left-1/2 -translate-x-1/2', table: 'top-[15%]' };
+                if (relativeIndex === 1) positions[player.id] = { ui: 'top-4 left-1/2 -translate-x-1/2' };
             } else if (totalPlayers === 4) {
-                if (relativeIndex === 1) positions[player.id] = { ui: 'top-1/2 -translate-y-1/2 right-4', table: 'right-[15%]' };
-                if (relativeIndex === 2) positions[player.id] = { ui: 'top-4 left-1/2 -translate-x-1/2', table: 'top-[15%]' };
-                if (relativeIndex === 3) positions[player.id] = { ui: 'top-1/2 -translate-y-1/2 left-4', table: 'left-[15%]' };
+                if (relativeIndex === 1) positions[player.id] = { ui: 'top-1/2 -translate-y-1/2 right-4' };
+                if (relativeIndex === 2) positions[player.id] = { ui: 'top-4 left-1/2 -translate-x-1/2' };
+                if (relativeIndex === 3) positions[player.id] = { ui: 'top-1/2 -translate-y-1/2 left-4' };
             }
         });
         return positions;
@@ -204,16 +204,16 @@ function GameScreen() {
                             let layoutClass = 'flex space-x-2.5'; // Horizontal por defecto
 
                             if (player.id === user.id) {
-                                containerPos = 'bottom-4 left-1/2 -translate-x-1/2';
+                                containerPos = 'bottom-0 left-1/2 -translate-x-1/2 translate-y-[calc(100%+20px)]';
                             } else {
                                 const pos = playerPositions[player.id];
-                                if (pos?.ui.includes('top-')) containerPos = 'top-4 left-1/2 -translate-x-1/2';
+                                if (pos?.ui.includes('top-')) containerPos = 'top-0 left-1/2 -translate-x-1/2 -translate-y-[calc(100%+20px)]';
                                 if (pos?.ui.includes('left-')) {
-                                    containerPos = 'top-1/2 -translate-y-1/2 left-4';
+                                    containerPos = 'top-1/2 -translate-y-1/2 left-0 -translate-x-[calc(100%+20px)]';
                                     layoutClass = 'flex flex-col space-y-2.5';
                                 }
                                 if (pos?.ui.includes('right-')) {
-                                    containerPos = 'top-1/2 -translate-y-1/2 right-4';
+                                    containerPos = 'top-1/2 -translate-y-1/2 right-0 translate-x-[calc(100%+20px)]';
                                     layoutClass = 'flex flex-col space-y-2.5';
                                 }
                             }
