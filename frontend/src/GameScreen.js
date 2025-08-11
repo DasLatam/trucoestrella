@@ -5,15 +5,17 @@ import { useAppContext } from './App';
 import { io } from 'socket.io-client';
 
 // --- COMPONENTES VISUALES ---
-const Card = ({ card, onClick, isPlayable }) => {
+const Card = ({ card, onClick, isPlayable, isPlayed }) => {
     const cardSymbol = { oro: '💰', copa: '🍷', espada: '⚔️', basto: '🌲' };
+    // **MEJORA: Tamaño de carta adaptable**
+    const size = isPlayed ? 'w-20 h-28 text-lg' : 'w-24 h-36 text-2xl';
     return (
         <div 
             onClick={onClick} 
-            className={`w-24 h-36 bg-white border-2 border-gray-300 rounded-lg shadow-xl flex flex-col justify-between p-2 text-black transition-all duration-200 ${isPlayable ? 'cursor-pointer hover:scale-110 hover:-translate-y-4' : 'opacity-60'}`}
+            className={`bg-white border-2 border-gray-300 rounded-lg shadow-xl flex flex-col justify-between p-1 text-black transition-all duration-200 ${size} ${isPlayable ? 'cursor-pointer hover:scale-110 hover:-translate-y-4' : ''}`}
         >
-            <span className="text-2xl font-bold">{card.number} {cardSymbol[card.suit]}</span>
-            <span className="text-2xl font-bold self-end transform rotate-180">{card.number} {cardSymbol[card.suit]}</span>
+            <span className="font-bold">{card.number}{cardSymbol[card.suit]}</span>
+            <span className="font-bold self-end transform rotate-180">{card.number}{cardSymbol[card.suit]}</span>
         </div>
     );
 };
@@ -22,8 +24,13 @@ const CardPlaceholder = () => (
     <div className="w-20 h-28 bg-blue-900 border-2 border-blue-500 rounded-lg shadow-lg" />
 );
 
+// **NUEVO: Componente para los slots vacíos en la mesa**
+const EmptyCardSlot = () => (
+    <div className="w-20 h-28 bg-black bg-opacity-20 rounded-lg border-2 border-dashed border-black border-opacity-30" />
+);
+
 const PlayerUI = ({ player, cardsCount, position, isTurn }) => (
-    <div className={`absolute ${position} flex flex-col items-center space-y-2 transition-all duration-500 z-10`}>
+    <div className={`absolute ${position} flex flex-col items-center space-y-2 transition-all duration-500 z-20`}>
         <div className={`px-4 py-1 rounded-full text-white font-bold transition-all ${isTurn ? 'bg-yellow-500 scale-110 shadow-lg' : 'bg-black bg-opacity-50'}`}>
             {player.name}
         </div>
@@ -45,7 +52,7 @@ const GameChat = ({ messages, onSendMessage }) => {
         }
     };
     return (
-        <div className="absolute top-4 right-4 w-80 h-[calc(100vh-2rem)] bg-light-bg rounded-lg shadow-2xl border border-light-border flex flex-col p-2">
+        <div className="absolute top-4 right-4 w-80 h-[calc(100vh-2rem)] bg-light-bg rounded-lg shadow-2xl border border-light-border flex flex-col p-2 z-30">
             <h3 className="text-lg font-semibold text-center text-gray-300 p-2 border-b border-light-border flex-shrink-0">Chat Mesa</h3>
             <div className="flex-grow p-2 overflow-y-auto">
                 {messages.map(msg => (
@@ -72,7 +79,7 @@ const ChantNotification = ({ trucoState, onResponse }) => {
     const chantText = chantLevel === 2 ? "TRUCO" : chantLevel === 3 ? "RETRUCO" : "VALE CUATRO";
 
     return (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-80 p-8 rounded-xl shadow-2xl z-20 text-center">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-80 p-8 rounded-xl shadow-2xl z-40 text-center">
             <p className="text-3xl font-bold text-yellow-400 mb-6">¡El oponente cantó {chantText}!</p>
             <div className="flex space-x-4">
                 <button onClick={() => onResponse('quiero')} className="bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg">QUIERO</button>
@@ -183,18 +190,22 @@ function GameScreen() {
                     <PlayerUI key={opp.id} player={opp} cardsCount={gameState.hands[opp.id]?.length || 0} position="top-4 left-1/2 -translate-x-1/2" isTurn={gameState.turn === opp.id} />
                 ))}
 
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl flex justify-around items-center px-10">
-                    {[1, 2, 3].map(roundNum => (
-                        <div key={roundNum} className="flex flex-col justify-between h-full py-10">
-                            <div>
-                                {playedCardsByRound[roundNum].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[roundNum].find(c => c.playedBy !== user.id)} />}
-                            </div>
-                            {/* **LA CORRECCIÓN: Se cambia el espaciado de space-y-5 a space-y-2.5 (10px)** */}
-                            <div className="flex flex-col items-center space-y-2.5">
-                                {playedCardsByRound[roundNum].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[roundNum].find(c => c.playedBy === user.id)} />}
-                            </div>
-                        </div>
-                    ))}
+                {/* **DISEÑO MEJORADO: Mesa con slots de cartas fijos** */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[50vw] h-[60vh] z-10">
+                    {/* Slots del Oponente (Arriba) */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 flex space-x-2.5">
+                        { [1, 2, 3].map(roundNum => {
+                            const card = playedCardsByRound[roundNum].find(c => c.playedBy !== user.id);
+                            return card ? <Card key={card.id} card={card} isPlayed={true} /> : <EmptyCardSlot key={roundNum} />;
+                        })}
+                    </div>
+                    {/* Slots Míos (Abajo) */}
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex space-x-2.5">
+                         { [1, 2, 3].map(roundNum => {
+                            const card = playedCardsByRound[roundNum].find(c => c.playedBy === user.id);
+                            return card ? <Card key={card.id} card={card} isPlayed={true} /> : <EmptyCardSlot key={roundNum} />;
+                        })}
+                    </div>
                 </div>
                 
                 {isMyTurnToRespond && <ChantNotification trucoState={gameState.truco} onResponse={handleResponse} />}
