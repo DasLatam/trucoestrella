@@ -24,7 +24,7 @@ const CardPlaceholder = () => (
 );
 
 const PlayerUI = ({ player, cardsCount, position, isTurn }) => (
-    <div className={`absolute ${position} flex flex-col items-center space-y-2 transition-all duration-500 z-10`}>
+    <div className={`absolute ${position} flex flex-col items-center space-y-2 transition-all duration-500 z-20`}>
         <div className={`px-4 py-1 rounded-full text-white font-bold transition-all ${isTurn ? 'bg-yellow-500 scale-110 shadow-lg' : 'bg-black bg-opacity-50'}`}>
             {player.name}
         </div>
@@ -73,7 +73,7 @@ const ChantNotification = ({ trucoState, onResponse }) => {
     const chantText = chantLevel === 2 ? "TRUCO" : chantLevel === 3 ? "RETRUCO" : "VALE CUATRO";
 
     return (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-80 p-8 rounded-xl shadow-2xl z-20 text-center">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-80 p-8 rounded-xl shadow-2xl z-30 text-center">
             <p className="text-3xl font-bold text-yellow-400 mb-6">¡El oponente cantó {chantText}!</p>
             <div className="flex space-x-4">
                 <button onClick={() => onResponse('quiero')} className="bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg">QUIERO</button>
@@ -195,7 +195,7 @@ function GameScreen() {
 
                 {/* Mesa de Juego */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-3/4 h-3/4 bg-truco-brown rounded-lg shadow-2xl border-8 border-yellow-800 relative">
+                    <div className="w-3/4 h-3/4 bg-truco-brown rounded-lg shadow-2xl border-8 border-yellow-800 relative z-0">
                         {/* **DISEÑO MEJORADO: Slots de cartas jugadas para cada jugador** */}
                         {gameState.players.map(player => {
                             const playedCards = gameState.table.filter(c => c.playedBy === player.id);
@@ -204,22 +204,22 @@ function GameScreen() {
                             let layoutClass = 'flex space-x-2.5'; // Horizontal por defecto
 
                             if (player.id === user.id) {
-                                containerPos = 'bottom-0 left-1/2 -translate-x-1/2 translate-y-[calc(100%+20px)]';
+                                containerPos = 'bottom-0 left-1/2 -translate-x-1/2 translate-y-full space-x-2.5';
                             } else {
                                 const pos = playerPositions[player.id];
-                                if (pos?.ui.includes('top-')) containerPos = 'top-0 left-1/2 -translate-x-1/2 -translate-y-[calc(100%+20px)]';
+                                if (pos?.ui.includes('top-')) containerPos = 'top-0 left-1/2 -translate-x-1/2 -translate-y-full space-x-2.5';
                                 if (pos?.ui.includes('left-')) {
-                                    containerPos = 'top-1/2 -translate-y-1/2 left-0 -translate-x-[calc(100%+20px)]';
-                                    layoutClass = 'flex flex-col space-y-2.5';
+                                    containerPos = 'top-1/2 -translate-y-1/2 left-0 -translate-x-full space-y-2.5';
+                                    layoutClass = 'flex flex-col';
                                 }
                                 if (pos?.ui.includes('right-')) {
-                                    containerPos = 'top-1/2 -translate-y-1/2 right-0 translate-x-[calc(100%+20px)]';
-                                    layoutClass = 'flex flex-col space-y-2.5';
+                                    containerPos = 'top-1/2 -translate-y-1/2 right-0 translate-x-full space-y-2.5';
+                                    layoutClass = 'flex flex-col';
                                 }
                             }
 
                             return (
-                                <div key={player.id} className={`absolute ${containerPos} ${layoutClass}`}>
+                                <div key={player.id} className={`absolute ${containerPos} ${layoutClass} p-5`}>
                                     {playedCards.map(card => <Card key={card.id} card={card} isPlayed={true} />)}
                                 </div>
                             )
