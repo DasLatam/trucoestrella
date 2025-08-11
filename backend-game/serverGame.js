@@ -247,7 +247,56 @@ io.on('connection', (socket) => {
       if (!game) return;
       const player = game.players.find(p => p.id === userId);
       if (game.envido.responseTurn === userId) {
-          // Lógica de respuesta al Envido
+          const chantingPlayer = game.players.find(p => p.id === game.envido.offeredBy);
+          const respondingPlayer = player;
+          const chantingTeam = chantingPlayer.team;
+          
+          let pointsInPlay = 0;
+          let isFaltaEnvido = false;
+          const envidoValues = { 'envido': 2, 'real-envido': 3 };
+
+          game.envido.chants.forEach(c => {
+              if(c === 'falta-envido') isFaltaEnvido = true;
+              pointsInPlay += envidoValues[c] || 0;
+          });
+
+          if (response === 'no-quiero') {
+              const pointsWon = pointsInPlay === 0 ? 1 : pointsInPlay;
+              game.scores[chantingTeam] += pointsWon;
+              addLog(game, `${respondingPlayer.name} NO QUIERE. Equipo ${chantingTeam} gana ${pointsWon} punto(s) de envido.`);
+              game.envido.phase = 'closed';
+              game.envido.responseTurn = null;
+          } else if (response === 'quiero') {
+              game.envido.phase = 'resolved';
+              game.envido.responseTurn = null;
+              game.envido.wanted = true;
+              
+              pointsInPlay = (pointsInPlay === 0) ? 2 : pointsInPlay;
+              if (isFaltaEnvido) {
+                  const opponentTeam = chantingTeam === 'A' ? 'B' : 'A';
+                  pointsInPlay = game.points - game.scores[opponentTeam];
+              }
+
+              const handStarter = game.players[game.handStarterIndex];
+              const opponent = game.players.find(p => p.id !== handStarter.id);
+              let winner;
+              if (game.envidoPoints[handStarter.id] > game.envidoPoints[opponent.id]) {
+                  winner = handStarter;
+              } else if (game.envidoPoints[opponent.id] > game.envidoPoints[handStarter.id]) {
+                  winner = opponent;
+              } else {
+                  winner = handStarter;
+              }
+              
+              game.scores[winner.team] += pointsInPlay;
+              addLog(game, `${respondingPlayer.name} QUIERE.`);
+              addLog(game, `El tanto es para ${winner.name} con ${game.envidoPoints[winner.id]} puntos. Equipo ${winner.team} gana ${pointsInPlay} punto(s).`);
+          } else { // Canto sobre canto
+              game.envido.chants.push(response);
+              game.envido.offeredBy = userId;
+              game.envido.responseTurn = chantingPlayer.id;
+              addLog(game, `${respondingPlayer.name} sube la apuesta: ${response.replace('-', ' ').toUpperCase()}.`);
+          }
       } else if (game.truco.responseTurn === userId) {
           const chantingTeam = game.truco.offeredByTeam;
           if (response === 'quiero') {
