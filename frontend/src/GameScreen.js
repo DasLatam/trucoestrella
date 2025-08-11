@@ -189,7 +189,8 @@ function GameScreen() {
                             <div>
                                 {playedCardsByRound[roundNum].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[roundNum].find(c => c.playedBy !== user.id)} />}
                             </div>
-                            <div>
+                            {/* **LA CORRECCIÓN: Se cambia el espaciado de space-y-5 a space-y-2.5 (10px)** */}
+                            <div className="flex flex-col items-center space-y-2.5">
                                 {playedCardsByRound[roundNum].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[roundNum].find(c => c.playedBy === user.id)} />}
                             </div>
                         </div>
