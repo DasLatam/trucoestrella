@@ -7,7 +7,6 @@ import { io } from 'socket.io-client';
 // --- COMPONENTES VISUALES ---
 const Card = ({ card, onClick, isPlayable, isPlayed }) => {
     const cardSymbol = { oro: '💰', copa: '🍷', espada: '⚔️', basto: '🌲' };
-    // **MEJORA: Tamaño de carta adaptable**
     const size = isPlayed ? 'w-20 h-28 text-lg' : 'w-24 h-36 text-2xl';
     return (
         <div 
@@ -24,7 +23,6 @@ const CardPlaceholder = () => (
     <div className="w-20 h-28 bg-blue-900 border-2 border-blue-500 rounded-lg shadow-lg" />
 );
 
-// **NUEVO: Componente para los slots vacíos en la mesa**
 const EmptyCardSlot = () => (
     <div className="w-20 h-28 bg-black bg-opacity-20 rounded-lg border-2 border-dashed border-black border-opacity-30" />
 );
@@ -190,17 +188,17 @@ function GameScreen() {
                     <PlayerUI key={opp.id} player={opp} cardsCount={gameState.hands[opp.id]?.length || 0} position="top-4 left-1/2 -translate-x-1/2" isTurn={gameState.turn === opp.id} />
                 ))}
 
-                {/* **DISEÑO MEJORADO: Mesa con slots de cartas fijos** */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[50vw] h-[60vh] z-10">
+                {/* **DISEÑO MEJORADO: Contenedor central para slots de cartas jugadas** */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-auto h-auto flex flex-col items-center space-y-5 z-10">
                     {/* Slots del Oponente (Arriba) */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 flex space-x-2.5">
+                    <div className="flex space-x-2.5">
                         { [1, 2, 3].map(roundNum => {
                             const card = playedCardsByRound[roundNum].find(c => c.playedBy !== user.id);
                             return card ? <Card key={card.id} card={card} isPlayed={true} /> : <EmptyCardSlot key={roundNum} />;
                         })}
                     </div>
                     {/* Slots Míos (Abajo) */}
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex space-x-2.5">
+                    <div className="flex space-x-2.5">
                          { [1, 2, 3].map(roundNum => {
                             const card = playedCardsByRound[roundNum].find(c => c.playedBy === user.id);
                             return card ? <Card key={card.id} card={card} isPlayed={true} /> : <EmptyCardSlot key={roundNum} />;
