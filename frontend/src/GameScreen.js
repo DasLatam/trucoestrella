@@ -5,16 +5,15 @@ import { useAppContext } from './App';
 import { io } from 'socket.io-client';
 
 // --- COMPONENTES VISUALES ---
-const Card = ({ card, onClick, isPlayable, isPlayed }) => {
+const Card = ({ card, onClick, isPlayable }) => {
     const cardSymbol = { oro: '💰', copa: '🍷', espada: '⚔️', basto: '🌲' };
-    const size = isPlayed ? 'w-20 h-28 text-lg' : 'w-24 h-36 text-2xl';
     return (
         <div 
             onClick={onClick} 
-            className={`bg-white border-2 border-gray-300 rounded-lg shadow-xl flex flex-col justify-between p-1 text-black transition-all duration-200 ${size} ${isPlayable ? 'cursor-pointer hover:scale-110 hover:-translate-y-4' : ''}`}
+            className={`w-24 h-36 bg-white border-2 border-gray-300 rounded-lg shadow-xl flex flex-col justify-between p-2 text-black transition-all duration-200 ${isPlayable ? 'cursor-pointer hover:scale-110 hover:-translate-y-4' : 'opacity-60'}`}
         >
-            <span className="font-bold">{card.number}{cardSymbol[card.suit]}</span>
-            <span className="font-bold self-end transform rotate-180">{card.number}{cardSymbol[card.suit]}</span>
+            <span className="text-2xl font-bold">{card.number} {cardSymbol[card.suit]}</span>
+            <span className="text-2xl font-bold self-end transform rotate-180">{card.number} {cardSymbol[card.suit]}</span>
         </div>
     );
 };
@@ -23,12 +22,8 @@ const CardPlaceholder = () => (
     <div className="w-20 h-28 bg-blue-900 border-2 border-blue-500 rounded-lg shadow-lg" />
 );
 
-const EmptyCardSlot = () => (
-    <div className="w-20 h-28 bg-black bg-opacity-20 rounded-lg border-2 border-dashed border-black border-opacity-30" />
-);
-
 const PlayerUI = ({ player, cardsCount, position, isTurn }) => (
-    <div className={`absolute ${position} flex flex-col items-center space-y-2 transition-all duration-500 z-20`}>
+    <div className={`absolute ${position} flex flex-col items-center space-y-2 transition-all duration-500 z-10`}>
         <div className={`px-4 py-1 rounded-full text-white font-bold transition-all ${isTurn ? 'bg-yellow-500 scale-110 shadow-lg' : 'bg-black bg-opacity-50'}`}>
             {player.name}
         </div>
@@ -50,7 +45,7 @@ const GameChat = ({ messages, onSendMessage }) => {
         }
     };
     return (
-        <div className="absolute top-4 right-4 w-80 h-[calc(100vh-2rem)] bg-light-bg rounded-lg shadow-2xl border border-light-border flex flex-col p-2 z-30">
+        <div className="absolute top-4 right-4 w-80 h-[calc(100vh-2rem)] bg-light-bg rounded-lg shadow-2xl border border-light-border flex flex-col p-2">
             <h3 className="text-lg font-semibold text-center text-gray-300 p-2 border-b border-light-border flex-shrink-0">Chat Mesa</h3>
             <div className="flex-grow p-2 overflow-y-auto">
                 {messages.map(msg => (
@@ -72,18 +67,16 @@ const GameChat = ({ messages, onSendMessage }) => {
     );
 };
 
-const ChantNotification = ({ trucoState, onResponse }) => {
-    const chantLevel = trucoState.level;
-    const chantText = chantLevel === 2 ? "TRUCO" : chantLevel === 3 ? "RETRUCO" : "VALE CUATRO";
-
+const ChantNotification = ({ chant, onResponse, options }) => {
     return (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-80 p-8 rounded-xl shadow-2xl z-40 text-center">
-            <p className="text-3xl font-bold text-yellow-400 mb-6">¡El oponente cantó {chantText}!</p>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-80 p-8 rounded-xl shadow-2xl z-20 text-center">
+            <p className="text-3xl font-bold text-yellow-400 mb-6">¡El oponente cantó {chant.toUpperCase()}!</p>
             <div className="flex space-x-4">
-                <button onClick={() => onResponse('quiero')} className="bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg">QUIERO</button>
-                {chantLevel === 2 && <button onClick={() => onResponse('retruco')} className="bg-red-700 text-white font-bold py-3 px-6 rounded-lg text-lg">RETRUCO</button>}
-                {chantLevel === 3 && <button onClick={() => onResponse('vale-cuatro')} className="bg-red-800 text-white font-bold py-3 px-6 rounded-lg text-lg">VALE CUATRO</button>}
-                <button onClick={() => onResponse('no-quiero')} className="bg-red-600 text-white font-bold py-3 px-6 rounded-lg text-lg">NO QUIERO</button>
+                {options.map(opt => (
+                    <button key={opt.action} onClick={() => onResponse(opt.action)} className={`${opt.color} text-white font-bold py-3 px-6 rounded-lg text-lg`}>
+                        {opt.label}
+                    </button>
+                ))}
             </div>
         </div>
     );
@@ -120,7 +113,7 @@ function GameScreen() {
     }, [roomId, user.id, navigate]);
 
     const handlePlayCard = (cardId) => {
-        if (gameState && gameState.turn === user.id && !gameState.truco.responseTurn) {
+        if (gameState && gameState.turn === user.id && !gameState.truco.responseTurn && !gameState.envido.responseTurn) {
             gameSocket.emit('play-card', { roomId, userId: user.id, cardId });
         }
     };
@@ -167,11 +160,37 @@ function GameScreen() {
     const teamAPlayers = gameState.teams.A.map(p => p.name).join(' y ');
     const teamBPlayers = gameState.teams.B.map(p => p.name).join(' y ');
 
-    const isMyTurnToPlay = gameState.turn === user.id && !gameState.truco.responseTurn;
-    const isMyTurnToRespond = gameState.truco.responseTurn === user.id;
+    const isMyTurnToPlay = gameState.turn === user.id && !gameState.truco.responseTurn && !gameState.envido.responseTurn;
+    const isMyTurnToRespondTruco = gameState.truco.responseTurn === user.id;
+    const isMyTurnToRespondEnvido = gameState.envido.responseTurn === user.id;
+    
+    const canChantEnvido = gameState.envido.phase === 'open';
     const canChantTruco = gameState.truco.level === 1;
     const canChantRetruco = gameState.truco.level === 2 && gameState.truco.lastChanter === user.id;
     const canChantValeCuatro = gameState.truco.level === 3 && gameState.truco.lastChanter === user.id;
+
+    let notificationOptions = [];
+    let notificationChant = '';
+
+    if (isMyTurnToRespondTruco) {
+        const level = gameState.truco.level;
+        notificationChant = level === 2 ? "TRUCO" : level === 3 ? "RETRUCO" : "VALE CUATRO";
+        notificationOptions = [
+            { action: 'quiero', label: 'QUIERO', color: 'bg-green-600' },
+            { action: 'no-quiero', label: 'NO QUIERO', color: 'bg-red-600' },
+        ];
+        if (level === 2) notificationOptions.splice(1, 0, { action: 'retruco', label: 'RETRUCO', color: 'bg-red-700' });
+        if (level === 3) notificationOptions.splice(1, 0, { action: 'vale-cuatro', label: 'VALE CUATRO', color: 'bg-red-800' });
+    } else if (isMyTurnToRespondEnvido) {
+        notificationChant = "ENVIDO";
+        notificationOptions = [
+            { action: 'quiero', label: 'QUIERO', color: 'bg-green-600' },
+            { action: 'no-quiero', label: 'NO QUIERO', color: 'bg-red-600' },
+            { action: 'envido', label: 'ENVIDO', color: 'bg-yellow-600' },
+            { action: 'real-envido', label: 'REAL ENVIDO', color: 'bg-yellow-700' },
+            { action: 'falta-envido', label: 'FALTA ENVIDO', color: 'bg-yellow-800' },
+        ];
+    }
 
     return (
         <div className="w-full h-screen bg-truco-green flex overflow-hidden">
@@ -188,34 +207,28 @@ function GameScreen() {
                     <PlayerUI key={opp.id} player={opp} cardsCount={gameState.hands[opp.id]?.length || 0} position="top-4 left-1/2 -translate-x-1/2" isTurn={gameState.turn === opp.id} />
                 ))}
 
-                {/* **DISEÑO MEJORADO: Contenedor central para slots de cartas jugadas** */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-auto h-auto flex flex-col items-center space-y-5 z-10">
-                    {/* Slots del Oponente (Arriba) */}
-                    <div className="flex space-x-2.5">
-                        { [1, 2, 3].map(roundNum => {
-                            const card = playedCardsByRound[roundNum].find(c => c.playedBy !== user.id);
-                            return card ? <Card key={card.id} card={card} isPlayed={true} /> : <EmptyCardSlot key={roundNum} />;
-                        })}
-                    </div>
-                    {/* Slots Míos (Abajo) */}
-                    <div className="flex space-x-2.5">
-                         { [1, 2, 3].map(roundNum => {
-                            const card = playedCardsByRound[roundNum].find(c => c.playedBy === user.id);
-                            return card ? <Card key={card.id} card={card} isPlayed={true} /> : <EmptyCardSlot key={roundNum} />;
-                        })}
-                    </div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[65vw] h-[55vh] bg-truco-brown rounded-[50%] border-8 border-yellow-800 shadow-2xl flex justify-around items-center px-10">
+                    {[1, 2, 3].map(roundNum => (
+                        <div key={roundNum} className="flex flex-col justify-between h-full py-10">
+                            <div>
+                                {playedCardsByRound[roundNum].find(c => c.playedBy !== user.id) && <Card card={playedCardsByRound[roundNum].find(c => c.playedBy !== user.id)} />}
+                            </div>
+                            <div>
+                                {playedCardsByRound[roundNum].find(c => c.playedBy === user.id) && <Card card={playedCardsByRound[roundNum].find(c => c.playedBy === user.id)} />}
+                            </div>
+                        </div>
+                    ))}
                 </div>
                 
-                {isMyTurnToRespond && <ChantNotification trucoState={gameState.truco} onResponse={handleResponse} />}
+                {(isMyTurnToRespondTruco || isMyTurnToRespondEnvido) && <ChantNotification chant={notificationChant} onResponse={handleResponse} options={notificationOptions} />}
 
                 <div className="absolute bottom-4 left-0 right-0 flex justify-between items-end px-4">
                     <div className="w-1/3 flex justify-center">
                         <div className="flex flex-col items-center space-y-2">
                             {isMyTurnToPlay && (
                                 <div className="flex space-x-2">
+                                    {canChantEnvido && <button onClick={() => handleChant('envido')} className="bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">ENVIDO</button>}
                                     {canChantTruco && <button onClick={() => handleChant('truco')} className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">TRUCO</button>}
-                                    {canChantRetruco && <button onClick={() => handleChant('retruco')} className="bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">RETRUCO</button>}
-                                    {canChantValeCuatro && <button onClick={() => handleChant('vale-cuatro')} className="bg-red-800 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">VALE CUATRO</button>}
                                 </div>
                             )}
                             <button onClick={handleGoToMazo} className="bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm w-full">Ir al Mazo</button>

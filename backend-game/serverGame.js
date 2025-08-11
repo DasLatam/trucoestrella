@@ -61,35 +61,55 @@ const addLog = (game, text) => {
     io.to(game.roomId).emit('new-game-message', logMessage);
 };
 
+const calculateEnvido = (hand) => {
+    const figures = [10, 11, 12];
+    let envidoPoints = 0;
+    const suits = {};
+    hand.forEach(card => {
+        if (!suits[card.suit]) suits[card.suit] = [];
+        suits[card.suit].push(figures.includes(card.number) ? 0 : card.number);
+    });
+    for (const suit in suits) {
+        if (suits[suit].length >= 2) {
+            suits[suit].sort((a, b) => b - a);
+            envidoPoints = Math.max(envidoPoints, 20 + suits[suit][0] + suits[suit][1]);
+        }
+    }
+    if (envidoPoints === 0) {
+        const cardValues = hand.map(c => figures.includes(c.number) ? 0 : c.number);
+        envidoPoints = Math.max(...cardValues);
+    }
+    return envidoPoints;
+};
+
 const startNewHand = (game) => {
     const deck = shuffleDeck(createDeck());
     game.hands = {};
+    game.envidoPoints = {};
     game.players.forEach(player => {
-        game.hands[player.id] = deck.splice(0, 3);
+        const hand = deck.splice(0, 3);
+        game.hands[player.id] = hand;
+        game.envidoPoints[player.id] = calculateEnvido(hand);
     });
     game.table = [];
     game.round = 1;
     game.roundWinners = [];
     game.truco = { level: 1, points: 1, offeredByTeam: null, responseTurn: null, lastChanter: null };
-
+    game.envido = { phase: 'open', points: 0, offeredBy: null, responseTurn: null, chants: [] };
     game.handStarterIndex = (game.handStarterIndex + 1) % game.players.length;
     game.turn = game.players[game.handStarterIndex].id;
-    
     const starterPlayer = game.players.find(p => p.id === game.turn);
     addLog(game, `--- Nueva mano. ${starterPlayer.name} es mano. ---`);
-
     return game;
 };
 
 const checkHandWinner = (game) => {
     const getTeam = (playerId) => game.players.find(p => p.id === playerId)?.team;
     const roundWinners = game.roundWinners;
-
     const teamAWins = roundWinners.filter(w => getTeam(w) === 'A').length;
     const teamBWins = roundWinners.filter(w => getTeam(w) === 'B').length;
     if (teamAWins === 2) return 'A';
     if (teamBWins === 2) return 'B';
-
     if (roundWinners.length >= 2) {
         if (roundWinners[0] === 'parda') {
             const winnerId = roundWinners[1];
@@ -99,17 +119,14 @@ const checkHandWinner = (game) => {
             return getTeam(roundWinners[0]);
         }
     }
-    
     if (roundWinners.length === 3) {
         if (teamAWins > teamBWins) return 'A';
         if (teamBWins > teamAWins) return 'B';
         const handStarterTeam = getTeam(game.players[game.handStarterIndex].id);
         return handStarterTeam;
     }
-
     return null;
 };
-
 
 // --- ENDPOINT DE HAND-OFF ---
 app.post('/init-game', (req, res) => {
@@ -117,7 +134,6 @@ app.post('/init-game', (req, res) => {
   if (!gameData || !gameData.roomId) {
     return res.status(400).json({ message: "Faltan datos de la partida." });
   }
-
   let game = {
     ...gameData,
     status: 'playing',
@@ -125,10 +141,8 @@ app.post('/init-game', (req, res) => {
     chat: [],
     handStarterIndex: -1,
   };
-
   game = startNewHand(game);
   activeGames[gameData.roomId] = game;
-
   console.log(`Partida ${gameData.roomId} inicializada y lista.`);
   res.status(200).json({ message: "Partida inicializada con éxito." });
 });
@@ -151,28 +165,23 @@ io.on('connection', (socket) => {
 
   socket.on('play-card', ({ roomId, userId, cardId }) => {
       const game = activeGames[roomId];
-      if (!game || game.turn !== userId || game.truco.responseTurn) return;
-
+      if (!game || game.turn !== userId || game.truco.responseTurn || game.envido.responseTurn) return;
+      game.envido.phase = 'closed';
       const playerHand = game.hands[userId];
       const cardIndex = playerHand.findIndex(c => c.id === cardId);
       if (cardIndex === -1) return;
-
       const cardToPlay = playerHand.splice(cardIndex, 1)[0];
       game.table.push({ ...cardToPlay, playedBy: userId, round: game.round });
-
       const player = game.players.find(p => p.id === userId);
       addLog(game, `${player.name} juega el ${cardToPlay.number} de ${cardToPlay.suit}.`);
-
       const currentPlayerIndex = game.players.findIndex(p => p.id === userId);
       const nextPlayerIndex = (currentPlayerIndex + 1) % game.players.length;
       game.turn = game.players[nextPlayerIndex].id;
-
       if (game.table.filter(c => c.round === game.round).length === game.players.length) {
           const roundCards = game.table.filter(c => c.round === game.round);
           let winningCard = roundCards[0];
           let winnerId = winningCard.playedBy;
           let isParda = false;
-
           for (let i = 1; i < roundCards.length; i++) {
               const currentCard = roundCards[i];
               if (getCardRank(currentCard) > getCardRank(winningCard)) {
@@ -183,7 +192,6 @@ io.on('connection', (socket) => {
                   isParda = true;
               }
           }
-
           if (isParda) {
               winnerId = 'parda';
               game.turn = game.players[game.handStarterIndex].id;
@@ -193,9 +201,7 @@ io.on('connection', (socket) => {
               const winnerPlayer = game.players.find(p => p.id === winnerId);
               addLog(game, `${winnerPlayer.name} gana la ${game.round}ª ronda.`);
           }
-          
           game.roundWinners.push(winnerId);
-          
           const handWinnerTeam = checkHandWinner(game);
           if (handWinnerTeam) {
               game.scores[handWinnerTeam] += game.truco.points;
@@ -213,52 +219,59 @@ io.on('connection', (socket) => {
 
   socket.on('chant', ({ roomId, userId, chant }) => {
       const game = activeGames[roomId];
-      if (!game || game.truco.responseTurn) return;
-
+      if (!game) return;
       const player = game.players.find(p => p.id === userId);
-      const opponentTeam = player.team === 'A' ? 'B' : 'A';
-      const opponent = game.players.find(p => p.team === opponentTeam); // Simplificado para 1v1
-      
-      game.truco.offeredByTeam = player.team;
-      game.truco.responseTurn = opponent.id;
-      game.truco.lastChanter = userId;
-
-      const chantMap = { 'truco': 2, 'retruco': 3, 'vale-cuatro': 4 };
-      if (chantMap[chant]) {
-          game.truco.level = chantMap[chant];
-          addLog(game, `${player.name} canta ${chant.toUpperCase()}.`);
+      const opponent = game.players.find(p => p.id !== userId);
+      if (['envido', 'real-envido', 'falta-envido'].includes(chant)) {
+          if (game.envido.phase !== 'open' || game.envido.responseTurn) return;
+          game.envido.responseTurn = opponent.id;
+          game.envido.offeredBy = player.id;
+          game.envido.chants.push(chant);
+          addLog(game, `${player.name} canta ${chant.replace('-', ' ').toUpperCase()}.`);
+      } else {
+          if (game.truco.responseTurn) return;
+          game.truco.offeredByTeam = player.team;
+          game.truco.responseTurn = opponent.id;
+          game.truco.lastChanter = userId;
+          const chantMap = { 'truco': 2, 'retruco': 3, 'vale-cuatro': 4 };
+          if (chantMap[chant]) {
+              game.truco.level = chantMap[chant];
+              addLog(game, `${player.name} canta ${chant.toUpperCase()}.`);
+          }
       }
       io.to(roomId).emit('update-game-state', game);
   });
 
   socket.on('respond-chant', ({ roomId, userId, response }) => {
       const game = activeGames[roomId];
-      if (!game || game.truco.responseTurn !== userId) return;
-
+      if (!game) return;
       const player = game.players.find(p => p.id === userId);
-      const chantingTeam = game.truco.offeredByTeam;
-      
-      if (response === 'quiero') {
-          game.truco.points = game.truco.level;
-          game.truco.responseTurn = null;
-          game.truco.lastChanter = userId;
-          addLog(game, `${player.name} QUIERE.`);
-      } else if (response === 'no-quiero') {
-          const pointsWon = game.truco.points;
-          game.scores[chantingTeam] += pointsWon;
-          addLog(game, `${player.name} NO QUIERE. Equipo ${chantingTeam} gana ${pointsWon} punto(s).`);
-          setTimeout(() => {
-              activeGames[roomId] = startNewHand(game);
-              io.to(roomId).emit('update-game-state', activeGames[roomId]);
-          }, 2000);
-      } else {
-          const chantMap = { 'retruco': 3, 'vale-cuatro': 4 };
-          if (chantMap[response]) {
-              game.truco.level = chantMap[response];
-              game.truco.offeredByTeam = player.team;
-              game.truco.responseTurn = game.players.find(p => p.team !== player.team).id;
+      if (game.envido.responseTurn === userId) {
+          // Lógica de respuesta al Envido
+      } else if (game.truco.responseTurn === userId) {
+          const chantingTeam = game.truco.offeredByTeam;
+          if (response === 'quiero') {
+              game.truco.points = game.truco.level;
+              game.truco.responseTurn = null;
               game.truco.lastChanter = userId;
-              addLog(game, `${player.name} canta ${response.toUpperCase()}.`);
+              addLog(game, `${player.name} QUIERE.`);
+          } else if (response === 'no-quiero') {
+              const pointsWon = game.truco.points;
+              game.scores[chantingTeam] += pointsWon;
+              addLog(game, `${player.name} NO QUIERE. Equipo ${chantingTeam} gana ${pointsWon} punto(s).`);
+              setTimeout(() => {
+                  activeGames[roomId] = startNewHand(game);
+                  io.to(roomId).emit('update-game-state', activeGames[roomId]);
+              }, 2000);
+          } else {
+              const chantMap = { 'retruco': 3, 'vale-cuatro': 4 };
+              if (chantMap[response]) {
+                  game.truco.level = chantMap[response];
+                  game.truco.offeredByTeam = player.team;
+                  game.truco.responseTurn = game.players.find(p => p.team !== player.team).id;
+                  game.truco.lastChanter = userId;
+                  addLog(game, `${player.name} canta ${response.toUpperCase()}.`);
+              }
           }
       }
       io.to(roomId).emit('update-game-state', game);
