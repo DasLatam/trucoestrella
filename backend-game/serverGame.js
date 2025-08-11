@@ -128,6 +128,18 @@ const checkHandWinner = (game) => {
     return null;
 };
 
+const checkGameWinner = (game) => {
+    if (game.scores.A >= game.points) {
+        game.status = 'finished';
+        game.winner = 'A';
+        addLog(game, `¡El Equipo Truco ha ganado la partida!`);
+    } else if (game.scores.B >= game.points) {
+        game.status = 'finished';
+        game.winner = 'B';
+        addLog(game, `¡El Equipo Estrella ha ganado la partida!`);
+    }
+};
+
 // --- ENDPOINT DE HAND-OFF ---
 app.post('/init-game', (req, res) => {
   const gameData = req.body;
@@ -206,10 +218,13 @@ io.on('connection', (socket) => {
           if (handWinnerTeam) {
               game.scores[handWinnerTeam] += game.truco.points;
               addLog(game, `Equipo ${handWinnerTeam} gana la mano y ${game.truco.points} punto(s).`);
-              setTimeout(() => {
-                  activeGames[roomId] = startNewHand(game);
-                  io.to(roomId).emit('update-game-state', activeGames[roomId]);
-              }, 4000);
+              checkGameWinner(game);
+              if (game.status !== 'finished') {
+                  setTimeout(() => {
+                      activeGames[roomId] = startNewHand(game);
+                      io.to(roomId).emit('update-game-state', activeGames[roomId]);
+                  }, 4000);
+              }
           } else {
               game.round++;
           }
@@ -250,16 +265,13 @@ io.on('connection', (socket) => {
           const chantingPlayer = game.players.find(p => p.id === game.envido.offeredBy);
           const respondingPlayer = player;
           const chantingTeam = chantingPlayer.team;
-          
           let pointsInPlay = 0;
           let isFaltaEnvido = false;
           const envidoValues = { 'envido': 2, 'real-envido': 3 };
-
           game.envido.chants.forEach(c => {
               if(c === 'falta-envido') isFaltaEnvido = true;
               pointsInPlay += envidoValues[c] || 0;
           });
-
           if (response === 'no-quiero') {
               const pointsWon = pointsInPlay === 0 ? 1 : pointsInPlay;
               game.scores[chantingTeam] += pointsWon;
@@ -270,13 +282,11 @@ io.on('connection', (socket) => {
               game.envido.phase = 'resolved';
               game.envido.responseTurn = null;
               game.envido.wanted = true;
-              
               pointsInPlay = (pointsInPlay === 0) ? 2 : pointsInPlay;
               if (isFaltaEnvido) {
                   const opponentTeam = chantingTeam === 'A' ? 'B' : 'A';
                   pointsInPlay = game.points - game.scores[opponentTeam];
               }
-
               const handStarter = game.players[game.handStarterIndex];
               const opponent = game.players.find(p => p.id !== handStarter.id);
               let winner;
@@ -287,16 +297,16 @@ io.on('connection', (socket) => {
               } else {
                   winner = handStarter;
               }
-              
               game.scores[winner.team] += pointsInPlay;
               addLog(game, `${respondingPlayer.name} QUIERE.`);
               addLog(game, `El tanto es para ${winner.name} con ${game.envidoPoints[winner.id]} puntos. Equipo ${winner.team} gana ${pointsInPlay} punto(s).`);
-          } else { // Canto sobre canto
+          } else {
               game.envido.chants.push(response);
               game.envido.offeredBy = userId;
               game.envido.responseTurn = chantingPlayer.id;
               addLog(game, `${respondingPlayer.name} sube la apuesta: ${response.replace('-', ' ').toUpperCase()}.`);
           }
+          checkGameWinner(game);
       } else if (game.truco.responseTurn === userId) {
           const chantingTeam = game.truco.offeredByTeam;
           if (response === 'quiero') {
@@ -308,10 +318,13 @@ io.on('connection', (socket) => {
               const pointsWon = game.truco.points;
               game.scores[chantingTeam] += pointsWon;
               addLog(game, `${player.name} NO QUIERE. Equipo ${chantingTeam} gana ${pointsWon} punto(s).`);
-              setTimeout(() => {
-                  activeGames[roomId] = startNewHand(game);
-                  io.to(roomId).emit('update-game-state', activeGames[roomId]);
-              }, 2000);
+              checkGameWinner(game);
+              if (game.status !== 'finished') {
+                  setTimeout(() => {
+                      activeGames[roomId] = startNewHand(game);
+                      io.to(roomId).emit('update-game-state', activeGames[roomId]);
+                  }, 2000);
+              }
           } else {
               const chantMap = { 'retruco': 3, 'vale-cuatro': 4 };
               if (chantMap[response]) {
@@ -334,10 +347,13 @@ io.on('connection', (socket) => {
       const pointsWon = game.truco.points;
       game.scores[opponentTeam] += pointsWon;
       addLog(game, `${player.name} se fue al mazo. Equipo ${opponentTeam} gana ${pointsWon} punto(s).`);
-      setTimeout(() => {
-          activeGames[roomId] = startNewHand(game);
-          io.to(roomId).emit('update-game-state', activeGames[roomId]);
-      }, 2000);
+      checkGameWinner(game);
+      if (game.status !== 'finished') {
+          setTimeout(() => {
+              activeGames[roomId] = startNewHand(game);
+              io.to(roomId).emit('update-game-state', activeGames[roomId]);
+          }, 2000);
+      }
       io.to(roomId).emit('update-game-state', game);
   });
 

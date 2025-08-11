@@ -82,6 +82,22 @@ const ChantNotification = ({ chant, onResponse, options }) => {
     );
 };
 
+const GameOverNotification = ({ winnerTeam, teamAPlayers, teamBPlayers, scores }) => {
+    const winnerName = winnerTeam === 'A' ? teamAPlayers : teamBPlayers;
+    return (
+        <div className="absolute inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+            <div className="text-center p-10 bg-light-bg rounded-2xl shadow-2xl border-4 border-truco-brown">
+                <h2 className="text-5xl font-bold text-yellow-400 mb-4">¡Fin de la Partida!</h2>
+                <p className="text-2xl text-white mb-2">Ganador: <span className="font-bold">{winnerName}</span></p>
+                <p className="text-xl text-gray-300 mb-8">Resultado: {scores.A} a {scores.B}</p>
+                <Link to="/" className="bg-truco-green text-white font-bold py-3 px-8 rounded-lg text-xl">
+                    Volver al Lobby
+                </Link>
+            </div>
+        </div>
+    );
+};
+
 // --- PANTALLA DE JUEGO PRINCIPAL ---
 function GameScreen() {
     const { user } = useAppContext();
@@ -195,6 +211,14 @@ function GameScreen() {
     return (
         <div className="w-full h-screen bg-truco-green flex overflow-hidden">
             <div className="flex-grow relative p-4 flex flex-col">
+                {gameState.status === 'finished' && (
+                    <GameOverNotification 
+                        winnerTeam={gameState.winner} 
+                        teamAPlayers={teamAPlayers}
+                        teamBPlayers={teamBPlayers}
+                        scores={gameState.scores}
+                    />
+                )}
                 <div className="absolute top-4 left-4 z-20">
                     <div className="bg-black bg-opacity-50 p-3 rounded-lg text-white text-base w-56">
                         <h3 className="font-bold text-red-400 truncate">{teamAPlayers}: {gameState.scores.A}</h3>
