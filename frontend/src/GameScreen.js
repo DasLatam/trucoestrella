@@ -7,14 +7,14 @@ import { io } from 'socket.io-client';
 // --- COMPONENTES VISUALES ---
 const Card = ({ card, onClick, isPlayable, isPlayed }) => {
     const cardSymbol = { oro: '💰', copa: '🍷', espada: '⚔️', basto: '🌲' };
-    const size = isPlayed ? 'w-20 h-28 text-xl' : 'w-24 h-36 text-2xl';
+    const size = isPlayed ? 'w-20 h-28 text-lg' : 'w-24 h-36 text-2xl';
     return (
         <div 
             onClick={onClick} 
-            className={`bg-white border-2 border-gray-300 rounded-lg shadow-xl flex flex-col justify-between p-2 text-black transition-all duration-200 ${size} ${isPlayable ? 'cursor-pointer hover:scale-110 hover:-translate-y-4' : ''}`}
+            className={`bg-white border-2 border-gray-300 rounded-lg shadow-xl flex flex-col justify-between p-1 text-black transition-all duration-200 ${size} ${isPlayable ? 'cursor-pointer hover:scale-110 hover:-translate-y-4' : ''}`}
         >
-            <span className="font-bold">{card.number} {cardSymbol[card.suit]}</span>
-            <span className="font-bold self-end transform rotate-180">{card.number} {cardSymbol[card.suit]}</span>
+            <span className="font-bold">{card.number}{cardSymbol[card.suit]}</span>
+            <span className="font-bold self-end transform rotate-180">{card.number}{cardSymbol[card.suit]}</span>
         </div>
     );
 };
@@ -46,7 +46,7 @@ const GameChat = ({ messages, onSendMessage }) => {
         }
     };
     return (
-        <div className="w-full h-full bg-light-bg flex flex-col p-2">
+        <div className="absolute top-4 right-4 w-80 h-[calc(100vh-2rem)] bg-light-bg rounded-lg shadow-2xl border border-light-border flex flex-col p-2 z-30">
             <h3 className="text-lg font-semibold text-center text-gray-300 p-2 border-b border-light-border flex-shrink-0">Chat Mesa</h3>
             <div className="flex-grow p-2 overflow-y-auto">
                 {messages.map(msg => (
@@ -73,7 +73,7 @@ const ChantNotification = ({ trucoState, onResponse }) => {
     const chantText = chantLevel === 2 ? "TRUCO" : chantLevel === 3 ? "RETRUCO" : "VALE CUATRO";
 
     return (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-80 p-8 rounded-xl shadow-2xl z-30 text-center">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-80 p-8 rounded-xl shadow-2xl z-40 text-center">
             <p className="text-3xl font-bold text-yellow-400 mb-6">¡El oponente cantó {chantText}!</p>
             <div className="flex space-x-4">
                 <button onClick={() => onResponse('quiero')} className="bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg">QUIERO</button>
@@ -144,6 +144,7 @@ function GameScreen() {
         }
     };
     
+    // **LÓGICA DE POSICIONAMIENTO MEJORADA**
     const playerPositions = useMemo(() => {
         if (!gameState) return {};
         const positions = {};
@@ -155,12 +156,16 @@ function GameScreen() {
         gameState.players.forEach((player, index) => {
             const relativeIndex = (index - myIndex + totalPlayers) % totalPlayers;
             
-            if (totalPlayers === 2) {
-                if (relativeIndex === 1) positions[player.id] = { ui: 'top-4 left-1/2 -translate-x-1/2' };
-            } else if (totalPlayers === 4) {
-                if (relativeIndex === 1) positions[player.id] = { ui: 'top-1/2 -translate-y-1/2 right-4' };
-                if (relativeIndex === 2) positions[player.id] = { ui: 'top-4 left-1/2 -translate-x-1/2' };
-                if (relativeIndex === 3) positions[player.id] = { ui: 'top-1/2 -translate-y-1/2 left-4' };
+            if (totalPlayers === 4) {
+                if (relativeIndex === 0) { // Yo
+                    positions[player.id] = { ui: 'bottom-4 left-1/2 -translate-x-1/2', table: 'bottom-0 left-1/2 -translate-x-1/2 translate-y-[calc(100%+20px)]' };
+                } else if (relativeIndex === 1) { // Derecha
+                    positions[player.id] = { ui: 'top-1/2 -translate-y-1/2 right-4', table: 'top-1/2 -translate-y-1/2 right-0 translate-x-[calc(100%+20px)]' };
+                } else if (relativeIndex === 2) { // Arriba
+                    positions[player.id] = { ui: 'top-4 left-1/2 -translate-x-1/2', table: 'top-0 left-1/2 -translate-x-1/2 -translate-y-[calc(100%+20px)]' };
+                } else if (relativeIndex === 3) { // Izquierda
+                    positions[player.id] = { ui: 'top-1/2 -translate-y-1/2 left-4', table: 'top-1/2 -translate-y-1/2 left-0 -translate-x-[calc(100%+20px)]' };
+                }
             }
         });
         return positions;
@@ -195,31 +200,20 @@ function GameScreen() {
 
                 {/* Mesa de Juego */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-3/4 h-3/4 bg-truco-brown rounded-lg shadow-2xl border-8 border-yellow-800 relative z-0">
+                    <div className="w-3/4 h-3/4 bg-truco-brown rounded-lg shadow-2xl border-8 border-yellow-800 relative z-10">
                         {/* **DISEÑO MEJORADO: Slots de cartas jugadas para cada jugador** */}
                         {gameState.players.map(player => {
                             const playedCards = gameState.table.filter(c => c.playedBy === player.id);
-                            
-                            let containerPos = '';
+                            const pos = playerPositions[player.id];
+                            if (!pos) return null;
+
                             let layoutClass = 'flex space-x-2.5'; // Horizontal por defecto
-
-                            if (player.id === user.id) {
-                                containerPos = 'bottom-0 left-1/2 -translate-x-1/2 translate-y-full space-x-2.5';
-                            } else {
-                                const pos = playerPositions[player.id];
-                                if (pos?.ui.includes('top-')) containerPos = 'top-0 left-1/2 -translate-x-1/2 -translate-y-full space-x-2.5';
-                                if (pos?.ui.includes('left-')) {
-                                    containerPos = 'top-1/2 -translate-y-1/2 left-0 -translate-x-full space-y-2.5';
-                                    layoutClass = 'flex flex-col';
-                                }
-                                if (pos?.ui.includes('right-')) {
-                                    containerPos = 'top-1/2 -translate-y-1/2 right-0 translate-x-full space-y-2.5';
-                                    layoutClass = 'flex flex-col';
-                                }
+                            if (pos.ui.includes('left-') || pos.ui.includes('right-')) {
+                                layoutClass = 'flex flex-col space-y-2.5';
                             }
-
+                            
                             return (
-                                <div key={player.id} className={`absolute ${containerPos} ${layoutClass} p-5`}>
+                                <div key={player.id} className={`absolute ${pos.table} ${layoutClass}`}>
                                     {playedCards.map(card => <Card key={card.id} card={card} isPlayed={true} />)}
                                 </div>
                             )
@@ -234,28 +228,27 @@ function GameScreen() {
                 
                 {isMyTurnToRespond && <ChantNotification trucoState={gameState.truco} onResponse={handleResponse} />}
 
-                <div className="absolute bottom-4 left-0 right-0 flex justify-between items-end px-4">
-                    <div className="w-1/3 flex justify-center">
-                        <div className="flex flex-col items-center space-y-2">
-                            {isMyTurnToPlay && (
-                                <div className="flex space-x-2">
-                                    {canChantTruco && <button onClick={() => handleChant('truco')} className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">TRUCO</button>}
-                                    {canChantRetruco && <button onClick={() => handleChant('retruco')} className="bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">RETRUCO</button>}
-                                    {canChantValeCuatro && <button onClick={() => handleChant('vale-cuatro')} className="bg-red-800 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">VALE CUATRO</button>}
-                                </div>
-                            )}
-                            <button onClick={handleGoToMazo} className="bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm w-full">Ir al Mazo</button>
-                        </div>
-                    </div>
-                    
+                {/* Mi Área (Abajo) */}
+                <div className={`absolute ${playerPositions[user.id]?.ui} flex flex-col items-center space-y-2 z-20`}>
                     <div className="flex justify-center space-x-4 h-36">
                         {myHand.map((card) => <Card key={card.id} card={card} isPlayable={isMyTurnToPlay} onClick={() => handlePlayCard(card.id)} />)}
                     </div>
+                     <div className={`px-4 py-1 rounded-full text-white font-bold transition-all ${gameState.turn === user.id ? 'bg-yellow-500 scale-110 shadow-lg' : 'bg-black bg-opacity-50'}`}>
+                        {user.name} (Tú)
+                    </div>
+                </div>
 
-                    <div className="w-1/3 flex justify-center">
-                         <div className={`px-4 py-1 rounded-full text-white font-bold transition-all ${gameState.turn === user.id ? 'bg-yellow-500 scale-110 shadow-lg' : 'bg-black bg-opacity-50'}`}>
-                            {user.name} (Tú)
-                        </div>
+                 {/* Botonera de Acciones */}
+                <div className="absolute bottom-4 left-4 z-20">
+                    <div className="flex flex-col items-center space-y-2">
+                        {isMyTurnToPlay && (
+                            <div className="flex space-x-2">
+                                {canChantTruco && <button onClick={() => handleChant('truco')} className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">TRUCO</button>}
+                                {canChantRetruco && <button onClick={() => handleChant('retruco')} className="bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">RETRUCO</button>}
+                                {canChantValeCuatro && <button onClick={() => handleChant('vale-cuatro')} className="bg-red-800 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">VALE CUATRO</button>}
+                            </div>
+                        )}
+                        <button onClick={handleGoToMazo} className="bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm w-full">Ir al Mazo</button>
                     </div>
                 </div>
             </div>
