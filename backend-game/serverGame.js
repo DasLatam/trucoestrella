@@ -95,7 +95,7 @@ const startNewHand = (game) => {
     game.round = 1;
     game.roundWinners = [];
     game.truco = { level: 1, points: 1, offeredByTeam: null, responseTurn: null, lastChanter: null };
-    game.envido = { phase: 'open', points: 0, offeredBy: null, responseTurn: null, chants: [] };
+    game.envido = { phase: 'open', points: 0, wanted: false, offeredBy: null, responseTurn: null, chants: [] };
     game.handStarterIndex = (game.handStarterIndex + 1) % game.players.length;
     game.turn = game.players[game.handStarterIndex].id;
     const starterPlayer = game.players.find(p => p.id === game.turn);

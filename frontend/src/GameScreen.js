@@ -70,7 +70,7 @@ const GameChat = ({ messages, onSendMessage }) => {
 const ChantNotification = ({ chant, onResponse, options }) => {
     return (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-80 p-8 rounded-xl shadow-2xl z-20 text-center">
-            <p className="text-3xl font-bold text-yellow-400 mb-6">¡El oponente cantó {chant.toUpperCase()}!</p>
+            <p className="text-3xl font-bold text-yellow-400 mb-6">¡El oponente cantó {chant.toUpperCase().replace('-', ' ')}!</p>
             <div className="flex space-x-4">
                 {options.map(opt => (
                     <button key={opt.action} onClick={() => onResponse(opt.action)} className={`${opt.color} text-white font-bold py-3 px-6 rounded-lg text-lg`}>
@@ -164,7 +164,7 @@ function GameScreen() {
     const isMyTurnToRespondTruco = gameState.truco.responseTurn === user.id;
     const isMyTurnToRespondEnvido = gameState.envido.responseTurn === user.id;
     
-    const canChantEnvido = gameState.envido.phase === 'open';
+    const canChantEnvido = gameState.envido.phase === 'open' && !gameState.envido.responseTurn;
     const canChantTruco = gameState.truco.level === 1;
     const canChantRetruco = gameState.truco.level === 2 && gameState.truco.lastChanter === user.id;
     const canChantValeCuatro = gameState.truco.level === 3 && gameState.truco.lastChanter === user.id;
@@ -182,7 +182,7 @@ function GameScreen() {
         if (level === 2) notificationOptions.splice(1, 0, { action: 'retruco', label: 'RETRUCO', color: 'bg-red-700' });
         if (level === 3) notificationOptions.splice(1, 0, { action: 'vale-cuatro', label: 'VALE CUATRO', color: 'bg-red-800' });
     } else if (isMyTurnToRespondEnvido) {
-        notificationChant = "ENVIDO";
+        notificationChant = gameState.envido.chants.slice(-1)[0];
         notificationOptions = [
             { action: 'quiero', label: 'QUIERO', color: 'bg-green-600' },
             { action: 'no-quiero', label: 'NO QUIERO', color: 'bg-red-600' },
@@ -227,7 +227,13 @@ function GameScreen() {
                         <div className="flex flex-col items-center space-y-2">
                             {isMyTurnToPlay && (
                                 <div className="flex space-x-2">
-                                    {canChantEnvido && <button onClick={() => handleChant('envido')} className="bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">ENVIDO</button>}
+                                    {canChantEnvido && (
+                                        <>
+                                            <button onClick={() => handleChant('envido')} className="bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">ENVIDO</button>
+                                            <button onClick={() => handleChant('real-envido')} className="bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">REAL ENVIDO</button>
+                                            <button onClick={() => handleChant('falta-envido')} className="bg-yellow-800 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">FALTA ENVIDO</button>
+                                        </>
+                                    )}
                                     {canChantTruco && <button onClick={() => handleChant('truco')} className="bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg text-sm">TRUCO</button>}
                                 </div>
                             )}
