@@ -82,6 +82,19 @@ const ChantNotification = ({ chant, onResponse, options }) => {
     );
 };
 
+const EnvidoWinnerNotification = ({ winner, onClose }) => {
+    useEffect(() => {
+        const timer = setTimeout(onClose, 3000);
+        return () => clearTimeout(timer);
+    }, [onClose]);
+
+    return (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-80 p-8 rounded-xl shadow-2xl z-20 text-center">
+            <p className="text-3xl font-bold text-yellow-400">{winner.name} gana con {winner.points} de envido.</p>
+        </div>
+    );
+};
+
 // --- PANTALLA DE JUEGO PRINCIPAL ---
 function GameScreen() {
     const { user } = useAppContext();
@@ -187,10 +200,13 @@ function GameScreen() {
             { action: 'quiero', label: 'QUIERO', color: 'bg-green-600' },
             { action: 'no-quiero', label: 'NO QUIERO', color: 'bg-red-600' },
         ];
-        if (!gameState.envido.chants.includes('real-envido')) {
-            notificationOptions.push({ action: 'real-envido', label: 'REAL ENVIDO', color: 'bg-yellow-700' });
-        }
         if (!gameState.envido.chants.includes('falta-envido')) {
+            if (!gameState.envido.chants.includes('real-envido')) {
+                notificationOptions.push({ action: 'real-envido', label: 'REAL ENVIDO', color: 'bg-yellow-700' });
+            }
+            if (!gameState.envido.chants.includes('envido')) {
+                 notificationOptions.push({ action: 'envido', label: 'ENVIDO', color: 'bg-yellow-600' });
+            }
             notificationOptions.push({ action: 'falta-envido', label: 'FALTA ENVIDO', color: 'bg-yellow-800' });
         }
     }
@@ -224,6 +240,7 @@ function GameScreen() {
                 </div>
                 
                 {(isMyTurnToRespondTruco || isMyTurnToRespondEnvido) && <ChantNotification chant={notificationChant} onResponse={handleResponse} options={notificationOptions} />}
+                {gameState.envido.winner && <EnvidoWinnerNotification winner={gameState.envido.winner} onClose={() => setGameState(prev => ({...prev, envido: {...prev.envido, winner: null}}))} />}
 
                 <div className="absolute bottom-4 left-0 right-0 flex justify-between items-end px-4">
                     <div className="w-1/3 flex justify-center">

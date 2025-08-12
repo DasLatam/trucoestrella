@@ -3,11 +3,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../App';
 
-const OptionButton = ({ label, value, selectedValue, onClick }) => (
+const OptionButton = ({ label, value, selectedValue, onClick, disabled }) => (
     <button
         type="button"
-        onClick={() => onClick(value)}
-        className={`flex-1 py-3 text-sm font-bold rounded-md transition-all ${selectedValue === value ? 'bg-truco-brown text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+        onClick={() => !disabled && onClick(value)}
+        disabled={disabled}
+        className={`flex-1 py-3 text-sm font-bold rounded-md transition-all ${selectedValue === value ? 'bg-truco-brown text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
         {label}
     </button>
@@ -15,8 +16,8 @@ const OptionButton = ({ label, value, selectedValue, onClick }) => (
 
 export default function CreateGameModal({ onClose }) {
   const { socket, user } = useAppContext();
-  const navigate = useNavigate(); // Se añade el hook para la navegación
-  const [options, setOptions] = useState({ points: 30, flor: true, gameMode: '2v2', vsAI: false, isPrivate: false });
+  const navigate = useNavigate();
+  const [options, setOptions] = useState({ points: 30, flor: true, gameMode: '1v1', vsAI: false, isPrivate: false });
   const [error, setError] = useState('');
 
   const handleCreate = () => {
@@ -24,7 +25,6 @@ export default function CreateGameModal({ onClose }) {
     socket.emit('create-game', gameOptions, (response) => {
       if (response.success) {
         onClose();
-        // **CORRECCIÓN: Navegar a la sala DESPUÉS de la confirmación del servidor.**
         navigate(`/sala/${response.roomId}`);
       } else {
         setError(response.message || 'No se pudo crear la partida.');
@@ -42,8 +42,8 @@ export default function CreateGameModal({ onClose }) {
                 <label className="block text-sm font-medium text-gray-400 mb-2">Modo de Juego</label>
                 <div className="flex space-x-2 mt-2">
                     <OptionButton label="1 vs 1" value="1v1" selectedValue={options.gameMode} onClick={(v) => setOptions({...options, gameMode: v})} />
-                    <OptionButton label="2 vs 2" value="2v2" selectedValue={options.gameMode} onClick={(v) => setOptions({...options, gameMode: v})} />
-                    <OptionButton label="3 vs 3" value="3v3" selectedValue={options.gameMode} onClick={(v) => setOptions({...options, gameMode: v})} />
+                    <OptionButton label="2 vs 2" value="2v2" selectedValue={options.gameMode} onClick={(v) => setOptions({...options, gameMode: v})} disabled={true} />
+                    <OptionButton label="3 vs 3" value="3v3" selectedValue={options.gameMode} onClick={(v) => setOptions({...options, gameMode: v})} disabled={true} />
                 </div>
             </div>
              <div>

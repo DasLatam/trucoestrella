@@ -95,7 +95,7 @@ const startNewHand = (game) => {
     game.round = 1;
     game.roundWinners = [];
     game.truco = { level: 1, points: 1, offeredByTeam: null, responseTurn: null, lastChanter: null };
-    game.envido = { phase: 'open', points: 0, wanted: false, offeredBy: null, responseTurn: null, chants: [] };
+    game.envido = { phase: 'open', points: 0, wanted: false, offeredBy: null, responseTurn: null, chants: [], winner: null };
     game.handStarterIndex = (game.handStarterIndex + 1) % game.players.length;
     game.turn = game.players[game.handStarterIndex].id;
     const starterPlayer = game.players.find(p => p.id === game.turn);
@@ -204,8 +204,9 @@ io.on('connection', (socket) => {
           game.roundWinners.push(winnerId);
           const handWinnerTeam = checkHandWinner(game);
           if (handWinnerTeam) {
+              const teamName = game.teams[handWinnerTeam].map(p => p.name).join(' y ');
               game.scores[handWinnerTeam] += game.truco.points;
-              addLog(game, `Equipo ${handWinnerTeam} gana la mano y ${game.truco.points} punto(s).`);
+              addLog(game, `El equipo de ${teamName} gana la mano y ${game.truco.points} punto(s).`);
               setTimeout(() => {
                   activeGames[roomId] = startNewHand(game);
                   io.to(roomId).emit('update-game-state', activeGames[roomId]);
@@ -250,6 +251,7 @@ io.on('connection', (socket) => {
           const chantingPlayer = game.players.find(p => p.id === game.envido.offeredBy);
           const respondingPlayer = player;
           const chantingTeam = chantingPlayer.team;
+          const chantingTeamName = game.teams[chantingTeam].map(p => p.name).join(' y ');
           
           let pointsNotAccepted = 1;
           if(game.envido.chants.length > 1) {
@@ -263,7 +265,7 @@ io.on('connection', (socket) => {
 
           if (response === 'no-quiero') {
               game.scores[chantingTeam] += pointsNotAccepted;
-              addLog(game, `${respondingPlayer.name} NO QUIERE. Equipo ${chantingTeam} gana ${pointsNotAccepted} punto(s).`);
+              addLog(game, `${respondingPlayer.name} NO QUIERE. El equipo de ${chantingTeamName} gana ${pointsNotAccepted} punto(s).`);
               game.envido.phase = 'closed';
               game.envido.responseTurn = null;
           } else if (response === 'quiero') {
@@ -278,7 +280,7 @@ io.on('connection', (socket) => {
                   if(c === 'real-envido') pointsInPlay += 3;
                   if(c === 'falta-envido') isFaltaEnvido = true;
               });
-              if(pointsInPlay === 0) pointsInPlay = 2; // Envido simple querido
+              if(pointsInPlay === 0) pointsInPlay = 2;
 
               if (isFaltaEnvido) {
                   const opponentTeam = chantingTeam === 'A' ? 'B' : 'A';
@@ -297,9 +299,11 @@ io.on('connection', (socket) => {
               }
               
               game.scores[winner.team] += pointsInPlay;
+              game.envido.winner = { name: winner.name, points: game.envidoPoints[winner.id] };
               addLog(game, `${respondingPlayer.name} QUIERE.`);
-              addLog(game, `El tanto es para ${winner.name} con ${game.envidoPoints[winner.id]} puntos. Equipo ${winner.team} gana ${pointsInPlay} punto(s).`);
-          } else { // Canto sobre canto
+              const winnerTeamName = game.teams[winner.team].map(p => p.name).join(' y ');
+              addLog(game, `El tanto es para ${winner.name} con ${game.envidoPoints[winner.id]}. El equipo de ${winnerTeamName} gana ${pointsInPlay} punto(s).`);
+          } else {
               game.envido.chants.push(response);
               game.envido.offeredBy = userId;
               game.envido.responseTurn = chantingPlayer.id;
@@ -307,15 +311,16 @@ io.on('connection', (socket) => {
           }
       } else if (game.truco.responseTurn === userId) {
           const chantingTeam = game.truco.offeredByTeam;
+          const chantingTeamName = game.teams[chantingTeam].map(p => p.name).join(' y ');
           if (response === 'quiero') {
               game.truco.points = game.truco.level;
               game.truco.responseTurn = null;
               game.truco.lastChanter = userId;
               addLog(game, `${player.name} QUIERE.`);
           } else if (response === 'no-quiero') {
-              const pointsWon = game.truco.points;
+              const pointsWon = game.truco.level - 1;
               game.scores[chantingTeam] += pointsWon;
-              addLog(game, `${player.name} NO QUIERE. Equipo ${chantingTeam} gana ${pointsWon} punto(s).`);
+              addLog(game, `${player.name} NO QUIERE. El equipo de ${chantingTeamName} gana ${pointsWon} punto(s).`);
               setTimeout(() => {
                   activeGames[roomId] = startNewHand(game);
                   io.to(roomId).emit('update-game-state', activeGames[roomId]);
@@ -339,9 +344,10 @@ io.on('connection', (socket) => {
       if (!game) return;
       const player = game.players.find(p => p.id === userId);
       const opponentTeam = player.team === 'A' ? 'B' : 'A';
+      const opponentTeamName = game.teams[opponentTeam].map(p => p.name).join(' y ');
       const pointsWon = game.truco.points;
       game.scores[opponentTeam] += pointsWon;
-      addLog(game, `${player.name} se fue al mazo. Equipo ${opponentTeam} gana ${pointsWon} punto(s).`);
+      addLog(game, `${player.name} se fue al mazo. El equipo de ${opponentTeamName} gana ${pointsWon} punto(s).`);
       setTimeout(() => {
           activeGames[roomId] = startNewHand(game);
           io.to(roomId).emit('update-game-state', activeGames[roomId]);
