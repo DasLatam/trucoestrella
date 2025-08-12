@@ -103,6 +103,8 @@ function GameScreen() {
     const [gameSocket, setGameSocket] = useState(null);
     const [gameState, setGameState] = useState(null);
     const [chatMessages, setChatMessages] = useState([]);
+    // **LA CORRECCIÓN: Estado local para controlar la visibilidad del popup**
+    const [showEnvidoWinner, setShowEnvidoWinner] = useState(false);
 
     useEffect(() => {
         const gameServerUrl = sessionStorage.getItem('gameServerUrl');
@@ -113,6 +115,10 @@ function GameScreen() {
                 newSocket.emit('join-game-room', { roomId, userId: user.id });
             });
             newSocket.on('update-game-state', (state) => {
+                // **LA CORRECCIÓN: Detectar si hay un nuevo ganador del envido**
+                if (state.envido.winner && gameState?.envido?.winner?.id !== state.envido.winner.id) {
+                    setShowEnvidoWinner(true);
+                }
                 setGameState(state);
                 setChatMessages(state.chat || []);
             });
@@ -123,7 +129,7 @@ function GameScreen() {
         } else {
             navigate('/');
         }
-    }, [roomId, user.id, navigate]);
+    }, [roomId, user.id, navigate, gameState]);
 
     const handlePlayCard = (cardId) => {
         if (gameState && gameState.turn === user.id && !gameState.truco.responseTurn && !gameState.envido.responseTurn) {
@@ -240,7 +246,8 @@ function GameScreen() {
                 </div>
                 
                 {(isMyTurnToRespondTruco || isMyTurnToRespondEnvido) && <ChantNotification chant={notificationChant} onResponse={handleResponse} options={notificationOptions} />}
-                {gameState.envido.winner && <EnvidoWinnerNotification winner={gameState.envido.winner} onClose={() => setGameState(prev => ({...prev, envido: {...prev.envido, winner: null}}))} />}
+                {/* **LA CORRECCIÓN: El popup ahora se controla con el estado local** */}
+                {showEnvidoWinner && gameState.envido.winner && <EnvidoWinnerNotification winner={gameState.envido.winner} onClose={() => setShowEnvidoWinner(false)} />}
 
                 <div className="absolute bottom-4 left-0 right-0 flex justify-between items-end px-4">
                     <div className="w-1/3 flex justify-center">
