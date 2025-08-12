@@ -129,16 +129,16 @@ const checkHandWinner = (game) => {
 };
 
 const checkGameWinner = (game) => {
+    const teamAName = game.teams.A.map(p => p.name).join(' y ');
+    const teamBName = game.teams.B.map(p => p.name).join(' y ');
     if (game.scores.A >= game.points) {
         game.status = 'finished';
-        game.winner = 'A';
-        const teamName = game.teams.A.map(p => p.name).join(' y ');
-        addLog(game, `¡El equipo de ${teamName} ha ganado la partida!`);
+        game.winner = teamAName;
+        addLog(game, `¡El equipo de ${teamAName} ha ganado la partida!`);
     } else if (game.scores.B >= game.points) {
         game.status = 'finished';
-        game.winner = 'B';
-        const teamName = game.teams.B.map(p => p.name).join(' y ');
-        addLog(game, `¡El equipo de ${teamName} ha ganado la partida!`);
+        game.winner = teamBName;
+        addLog(game, `¡El equipo de ${teamBName} ha ganado la partida!`);
     }
 };
 
